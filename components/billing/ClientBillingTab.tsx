@@ -18,6 +18,8 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { BurnRateBar } from "./BurnRateBar";
 import { PaymentStatusChip } from "./PaymentStatusChip";
 import { MarkPaidSheet } from "./MarkPaidSheet";
+import type { BankBurn } from "@/lib/billing/queries";
+import { useT } from "@/lib/i18n/client";
 import type { MonthlyBillingStatus, HourlyBankStatus, PaymentStatus, Currency } from "@prisma/client";
 import { Plus, Pencil, Trash2, CreditCard, Clock, Zap } from "lucide-react";
 
@@ -92,6 +94,10 @@ interface Props {
   clientName: string;
   billingAccount: BillingAccount | null;
   payments: PaymentRow[];
+  /** Per-bank burn projection. Keyed by bank id. `null` means the strip is off. */
+  burnByBank?: Record<string, BankBurn> | null;
+  /** When false, burn projection lines are hidden. */
+  burnEnabled?: boolean;
 }
 
 function fmtDate(d: string | Date | null) {
@@ -269,8 +275,21 @@ function MonthlySection({ clientId, items, currency }: { clientId: string; items
   );
 }
 
-function HourlyBanksSection({ clientId, banks, currency }: { clientId: string; banks: HourlyBank[]; currency: string }) {
+function HourlyBanksSection({
+  clientId,
+  banks,
+  currency,
+  burnByBank,
+  burnEnabled,
+}: {
+  clientId: string;
+  banks: HourlyBank[];
+  currency: string;
+  burnByBank: Record<string, BankBurn> | null;
+  burnEnabled: boolean;
+}) {
   const router = useRouter();
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const [logUsageBankId, setLogUsageBankId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -411,6 +430,19 @@ function HourlyBanksSection({ clientId, banks, currency }: { clientId: string; b
                   alertThresholdPercent={bank.alertThresholdPercent}
                   currency={bank.currency}
                   pricePerHour={bank.pricePerHourPlaceholder}
+                  burn={
+                    burnEnabled && burnByBank && burnByBank[bank.id]
+                      ? {
+                          avgMonthlyMinutes: burnByBank[bank.id]!.avgMonthlyMinutes,
+                          projectedMonthsRemaining: burnByBank[bank.id]!.projectedMonthsRemaining,
+                          labels: {
+                            avgMonthly: t("billing.burn.avgMonthly"),
+                            monthsRemaining: t("billing.burn.monthsRemaining"),
+                            monthsRemainingNa: t("billing.burn.monthsRemainingNa"),
+                          },
+                        }
+                      : undefined
+                  }
                 />
                 {bank.usages.length > 0 && (
                   <p className="text-[11px] text-muted-foreground">
@@ -857,7 +889,14 @@ function PaymentsSection({
   );
 }
 
-export function ClientBillingTab({ clientId, clientName, billingAccount, payments }: Props) {
+export function ClientBillingTab({
+  clientId,
+  clientName,
+  billingAccount,
+  payments,
+  burnByBank = null,
+  burnEnabled = false,
+}: Props) {
   if (!billingAccount) {
     return (
       <div className="rounded-lg border border-dashed p-10 text-center">
@@ -875,7 +914,13 @@ export function ClientBillingTab({ clientId, clientName, billingAccount, payment
 
       <MonthlySection clientId={clientId} items={billingAccount.monthlyBillingItems} currency={billingAccount.defaultCurrency} />
       <Separator />
-      <HourlyBanksSection clientId={clientId} banks={billingAccount.hourlyBanks} currency={billingAccount.defaultCurrency} />
+      <HourlyBanksSection
+        clientId={clientId}
+        banks={billingAccount.hourlyBanks}
+        currency={billingAccount.defaultCurrency}
+        burnByBank={burnByBank}
+        burnEnabled={burnEnabled}
+      />
       <Separator />
       <OneTimeSection clientId={clientId} charges={billingAccount.oneTimeCharges} />
       <Separator />

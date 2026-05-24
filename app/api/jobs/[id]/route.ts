@@ -5,6 +5,7 @@ import { requireAuth, forbidden, notFound, badRequest } from "@/lib/api-utils";
 import { isAdmin } from "@/lib/permissions";
 import { getJobForUser } from "@/lib/jobs/queries";
 import { writeAudit } from "@/lib/audit";
+import { notifyJobAssigned } from "@/lib/notifications/triggers";
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -70,6 +71,22 @@ export async function PATCH(req: Request, { params }: Params) {
         Object.entries(parsed.data).map(([k, v]) => [k, { old: null, new: v }])
       ),
     });
+
+    // Notify newly-assigned employee on reassignment (not for null/self).
+    const newAssignee = parsed.data.assignedEmployeeId;
+    if (
+      newAssignee !== undefined &&
+      newAssignee !== null &&
+      newAssignee !== user.id &&
+      newAssignee !== job.assignedEmployeeId
+    ) {
+      await notifyJobAssigned(tx, {
+        userId: newAssignee,
+        jobId: id,
+        publicNumber: u.publicNumber,
+        title: u.title,
+      });
+    }
 
     return u;
   });

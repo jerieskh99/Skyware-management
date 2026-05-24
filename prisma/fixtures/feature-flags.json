@@ -13,5 +13,40 @@
     "key": "agent_control_center_module",
     "enabled": false,
     "description": "Show the Agent Control Center page (Phase 4 feature)."
+  },
+  {
+    "key": "saved_views_enabled",
+    "enabled": false,
+    "description": "Show the personal Saved Views bar on /my-jobs, /clients, and /billing. Phase 2 §4.2 — personal scope only; team-shared scope is Phase 3."
+  },
+  {
+    "key": "fts_search_enabled",
+    "enabled": false,
+    "description": "Show search scope chips and the /search results page. The /api/search endpoint stays callable so a power-user URL still works."
+  },
+  {
+    "key": "notifications_enabled",
+    "enabled": false,
+    "description": "Show the notification bell in the header and write notification rows from triggers (job assigned, mention, SLA breach). Admin enables when the surface is ready for the pilot."
+  },
+  {
+    "key": "statistics_me_enabled",
+    "enabled": false,
+    "description": "Open /statistics/me for employees and show the 'My Statistics' sidebar link. Phase 2 §4.5 - personal self-view scoped to the caller's jobs."
+  },
+  {
+    "key": "job_detail_tabs_enabled",
+    "enabled": false,
+    "description": "Render the new Overview/Timeline/Related/Files tab layout on /my-jobs/[id], plus the admin reassign control and inline active-timer panel. Phase 2 §4.6. When off, the legacy single-page layout renders unchanged."
+  },
+  {
+    "key": "aging_buckets_enabled",
+    "enabled": false,
+    "description": "Show the 4-bucket AR aging strip (0-30 / 31-60 / 61-90 / 91+) on /billing and on the admin dashboard, with bucket click-through filtering. Phase 2 §4.3."
+  },
+  {
+    "key": "hourly_burn_enabled",
+    "enabled": false,
+    "description": "Show hourly-bank burn-rate (projected months remaining) on each bank in the client billing tab, and the admin dashboard 'Hourly banks low' strip. Phase 2 §4.4."
   }
 ]

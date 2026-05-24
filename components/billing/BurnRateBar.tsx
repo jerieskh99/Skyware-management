@@ -4,6 +4,21 @@ interface Props {
   alertThresholdPercent: number;
   currency: string;
   pricePerHour: number | null;
+  /**
+   * Optional burn-rate projection. When present, an additional one-line row is
+   * appended showing avg minutes/month and projected months remaining. Pass
+   * `null` for `projectedMonthsRemaining` when avg is zero. Labels are passed
+   * in to keep the component i18n-agnostic.
+   */
+  burn?: {
+    avgMonthlyMinutes: number;
+    projectedMonthsRemaining: number | null;
+    labels: {
+      avgMonthly: string;
+      monthsRemaining: string;
+      monthsRemainingNa: string;
+    };
+  };
 }
 
 function fmt(minutes: number): string {
@@ -12,17 +27,31 @@ function fmt(minutes: number): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
+function fmtMonths(m: number | null, naLabel: string): string {
+  if (m === null) return naLabel;
+  if (m < 0.1) return "< 0.1";
+  return m.toFixed(1);
+}
+
 export function BurnRateBar({
   totalMinutes,
   usedMinutes,
   alertThresholdPercent,
   currency,
   pricePerHour,
+  burn,
 }: Props) {
   if (totalMinutes === null) {
     return (
       <div className="space-y-1.5">
         <p className="text-xs text-muted-foreground">Used: {fmt(usedMinutes)} · Total purchased: TBD</p>
+        {burn && (
+          <p className="text-[11px] text-muted-foreground">
+            {burn.labels.avgMonthly}: {fmt(Math.round(burn.avgMonthlyMinutes))}
+            {" · "}
+            {burn.labels.monthsRemaining}: {fmtMonths(burn.projectedMonthsRemaining, burn.labels.monthsRemainingNa)}
+          </p>
+        )}
       </div>
     );
   }
@@ -62,6 +91,16 @@ export function BurnRateBar({
           <span className="font-medium text-red-600">Low balance</span>
         )}
       </div>
+      {burn && (
+        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+          <span>
+            {burn.labels.avgMonthly}: {fmt(Math.round(burn.avgMonthlyMinutes))}
+          </span>
+          <span>
+            {burn.labels.monthsRemaining}: {fmtMonths(burn.projectedMonthsRemaining, burn.labels.monthsRemainingNa)}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

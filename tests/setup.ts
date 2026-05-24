@@ -53,7 +53,13 @@ function buildPrismaMock() {
     channel: modelStub(),
     channelPost: modelStub(),
     channelPostReply: modelStub(),
+    communicationChannel: modelStub(),
+    communicationPost: modelStub(),
+    communicationReply: modelStub(),
+    postTag: modelStub(),
+    notification: modelStub(),
     featureFlag: modelStub(),
+    savedView: modelStub(),
     $transaction: vi.fn(async (arg: unknown) => {
       if (typeof arg === "function") {
         return (arg as AnyFn)(client);

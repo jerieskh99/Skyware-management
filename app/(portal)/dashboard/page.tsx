@@ -8,12 +8,17 @@ import {
   getAdminDashboardLists,
   getEmployeeKpis,
   getEmployeeDashboardLists,
+  getHourlyBanksLow,
+  type HourlyBankLowRow,
 } from "@/lib/dashboard/queries";
+import { getAgingBuckets, type AgingBuckets } from "@/lib/billing/queries";
+import { getFeatureFlags } from "@/lib/feature-flags";
 import { JobStatusChip } from "@/components/jobs/JobStatusChip";
 import { JobPriorityChip } from "@/components/jobs/JobPriorityChip";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { KpiCard } from "@/components/shared/KpiCard";
 import { SectionCard } from "@/components/shared/SectionCard";
+import { AgingStrip } from "@/components/billing/AgingStrip";
 import { getT } from "@/lib/i18n/server";
 import {
   Briefcase,
@@ -26,6 +31,7 @@ import {
   Timer,
   CalendarClock,
   Hourglass,
+  Clock,
 } from "lucide-react";
 
 export default async function DashboardPage() {
@@ -35,11 +41,27 @@ export default async function DashboardPage() {
   const { t } = await getT();
 
   if (isAdmin(user)) {
-    const [kpis, lists] = await Promise.all([
+    const flags = await getFeatureFlags(["aging_buckets_enabled", "hourly_burn_enabled"]);
+    const agingEnabled = flags["aging_buckets_enabled"] ?? false;
+    const burnEnabled = flags["hourly_burn_enabled"] ?? false;
+
+    const [kpis, lists, agingBuckets, banksLow] = await Promise.all([
       getAdminKpis(),
       getAdminDashboardLists(),
+      agingEnabled ? getAgingBuckets() : Promise.resolve(null),
+      burnEnabled ? getHourlyBanksLow() : Promise.resolve([] as HourlyBankLowRow[]),
     ]);
-    return <AdminDashboard user={user} kpis={kpis} lists={lists} t={t} />;
+    return (
+      <AdminDashboard
+        user={user}
+        kpis={kpis}
+        lists={lists}
+        agingBuckets={agingBuckets}
+        banksLow={banksLow}
+        burnEnabled={burnEnabled}
+        t={t}
+      />
+    );
   }
 
   const [kpis, lists] = await Promise.all([
@@ -90,11 +112,17 @@ function AdminDashboard({
   user,
   kpis,
   lists,
+  agingBuckets,
+  banksLow,
+  burnEnabled,
   t,
 }: {
   user: SessionUser;
   kpis: AdminKpis;
   lists: AdminLists;
+  agingBuckets: AgingBuckets | null;
+  banksLow: HourlyBankLowRow[];
+  burnEnabled: boolean;
   t: T;
 }) {
   const greet = greeting(t);
@@ -138,6 +166,32 @@ function AdminDashboard({
           href="/billing"
         />
       </div>
+
+      {/* Receivables aging strip (feature-flagged) */}
+      {agingBuckets && (
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold">{t("dashboard.agingTitle")}</h2>
+          <AgingStrip
+            buckets={agingBuckets}
+            hrefFor={(b) => `/billing?aging=${b}`}
+            labels={{
+              title: t("billing.aging.title"),
+              b0_30: t("billing.aging.b0_30"),
+              b31_60: t("billing.aging.b31_60"),
+              b61_90: t("billing.aging.b61_90"),
+              b91_plus: t("billing.aging.b91_plus"),
+              count: t("billing.aging.count"),
+              amount: t("billing.aging.amount"),
+              empty: t("billing.aging.empty"),
+            }}
+          />
+        </section>
+      )}
+
+      {/* Hourly banks low strip (feature-flagged) */}
+      {burnEnabled && (
+        <BanksLowSection rows={banksLow} t={t} />
+      )}
 
       {/* Quick actions */}
       <QuickActions
@@ -359,6 +413,65 @@ function greeting(t: T): string {
 function EmptySectionInline({ children }: { children: React.ReactNode }) {
   return (
     <p className="px-2 py-6 text-center text-xs text-muted-foreground">{children}</p>
+  );
+}
+
+function fmtMinutesShort(minutes: number): string {
+  if (minutes <= 0) return "0h";
+  const h = Math.floor(minutes / 60);
+  const m = Math.round(minutes % 60);
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+
+function fmtMonths(months: number | null, t: T): string {
+  if (months === null) return t("billing.burn.monthsRemainingNa");
+  if (months < 0.1) return "< 0.1";
+  return months.toFixed(1);
+}
+
+function BanksLowSection({ rows, t }: { rows: HourlyBankLowRow[]; t: T }) {
+  return (
+    <SectionCard
+      title={t("dashboard.banksLowTitle")}
+      icon={Clock}
+      count={rows.length}
+      seeAllHref="/billing"
+      seeAllLabel={t("common.viewAll")}
+      className={rows.length > 0 ? "border-warn/30 bg-warn-soft/30" : undefined}
+    >
+      {rows.length === 0 ? (
+        <EmptySectionInline>{t("dashboard.banksLowEmpty")}</EmptySectionInline>
+      ) : (
+        <div className="divide-y">
+          {rows.map((r) => (
+            <Link
+              key={r.bankId}
+              href={`/clients/${r.clientId}?tab=billing`}
+              className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm transition-colors hover:bg-accent/40"
+            >
+              <div className="min-w-0">
+                <p className="truncate font-medium">{r.clientName}</p>
+                <p className="text-xs text-muted-foreground">
+                  {t("billing.burn.remaining")}: {fmtMinutesShort(r.remainingMinutes)}
+                  {" · "}
+                  {t("billing.burn.avgMonthly")}: {fmtMinutesShort(Math.round(r.avgMonthlyMinutes))}
+                </p>
+              </div>
+              <div className="shrink-0 text-end">
+                <p className="text-sm font-semibold">
+                  {fmtMonths(r.projectedMonthsRemaining, t)}
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  {t("billing.burn.monthsRemaining")}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </SectionCard>
   );
 }
 

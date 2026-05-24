@@ -15,6 +15,7 @@
     "financialDocuments": "Financial Documents",
     "financialDocumentsShort": "Financial Docs",
     "statistics": "Statistics",
+    "myStatistics": "My Statistics",
     "agent": "Agent Control Center",
     "agentShort": "Agent Center",
     "admin": "Admin Panel",
@@ -146,7 +147,31 @@
     "timeSpent": "Time spent (minutes)",
     "timeMinAtLeastOne": "Time spent must be at least 1 minute.",
     "billable": "Billable",
-    "submitFailed": "Failed to submit."
+    "submitFailed": "Failed to submit.",
+    "detail": {
+      "tab": {
+        "overview": "Overview",
+        "timeline": "Timeline",
+        "related": "Related",
+        "files": "Files"
+      },
+      "filesPlaceholder": "Attachments coming in Phase 3",
+      "reassignTo": "Reassign to",
+      "reassignConfirmTitle": "Reassign job?",
+      "reassignConfirmBody": "Reassign this job to {user}? They will be notified.",
+      "reassignButton": "Reassign",
+      "reassignSuccess": "Job reassigned.",
+      "activeTimer": "Active timer",
+      "timerElapsed": "Elapsed",
+      "timerStop": "Stop",
+      "timerPause": "Pause",
+      "timerResume": "Resume",
+      "tooltipSla": "Time elapsed since the job was assigned, against the department SLA target.",
+      "tooltipReassign": "Move this job to a different employee. The new assignee is notified.",
+      "noRelated": "No related posts or payments.",
+      "linkedPayment": "Linked payment",
+      "relatedPosts": "Related posts"
+    }
   },
   "payment": {
     "status": {
@@ -219,7 +244,10 @@
     "emptyReviews": "No jobs waiting for review.",
     "emptyWaitingAdmin": "No jobs waiting for admin.",
     "emptyWorking": "No active jobs.",
-    "emptyAssigned": "Nothing waiting to start."
+    "emptyAssigned": "Nothing waiting to start.",
+    "agingTitle": "Receivables aging",
+    "banksLowTitle": "Hourly banks running low",
+    "banksLowEmpty": "All active hourly banks have healthy runway."
   },
   "billing": {
     "title": "Billing",
@@ -266,7 +294,25 @@
     "method_cheque": "Cheque",
     "method_cash": "Cash",
     "method_credit_card": "Credit card",
-    "method_other": "Other"
+    "method_other": "Other",
+    "aging": {
+      "title": "Aging",
+      "b0_30": "0-30 days",
+      "b31_60": "31-60 days",
+      "b61_90": "61-90 days",
+      "b91_plus": "91+ days",
+      "count": "Count",
+      "amount": "Amount",
+      "empty": "No open payments with a due date."
+    },
+    "burn": {
+      "title": "Burn rate",
+      "remaining": "Remaining",
+      "avgMonthly": "Avg / month",
+      "monthsRemaining": "Projected months",
+      "monthsRemainingNa": "Not enough usage to project",
+      "viewClient": "Open client"
+    }
   },
   "clients": {
     "title": "Clients",
@@ -343,6 +389,82 @@
     "colTotal": "Total jobs",
     "footerNote": "Statistics reflect operational activity, not employee surveillance. All metrics are based on job lifecycle data."
   },
+  "statisticsMe": {
+    "title": "My Statistics",
+    "description": "Your own activity and completion times. Scoped to jobs assigned to you.",
+    "kpiActive": "Active jobs",
+    "kpiActiveTip": "Jobs currently assigned to you in any in-progress status.",
+    "kpiCompleted": "Completed in window",
+    "kpiCompletedTip": "Jobs you completed (status done or reviewed) with completion timestamp in the selected range.",
+    "kpiHours": "Hours reported",
+    "kpiHoursTip": "Sum of time recorded on your closed jobs with completion timestamp in the selected range.",
+    "kpiReopens": "Reopen events",
+    "kpiReopensTip": "Number of times your jobs were reopened in the selected range. A count of transitions, not a rate.",
+    "kpiAvg": "Avg. completion",
+    "kpiAvgTip": "Mean hours from assigned timestamp to done. Closed jobs in the selected range.",
+    "kpiMedian": "Median completion",
+    "kpiMedianTip": "Median hours from assigned to done. Closed jobs in the selected range.",
+    "kpiP90": "p90 completion",
+    "kpiP90Tip": "90th percentile hours from assigned to done. Closed jobs in the selected range.",
+    "sampleSize": "n={n}",
+    "sectionCurrentlyWorking": "Currently working",
+    "sectionDelayed": "Past SLA on my jobs",
+    "noActive": "You have no active jobs right now.",
+    "noDelayed": "None of your active jobs are past SLA.",
+    "colJob": "Job",
+    "colJobTip": "Public job number and short title.",
+    "colClient": "Client",
+    "colStatus": "Status",
+    "colStatusTip": "Current job status.",
+    "colPriority": "Priority",
+    "colPriorityTip": "Job priority set by the admin or hub.",
+    "colAssignedAt": "Assigned",
+    "colAssignedAtTip": "Timestamp the job was assigned to you.",
+    "colBreach": "Past SLA",
+    "colBreachTip": "Minutes past the SLA target.",
+    "footerNote": "This view is yours alone. Admins see the cross-team view at /statistics."
+  },
+  "search": {
+    "placeholder": "Search jobs, clients, posts...",
+    "results": "Search results",
+    "noResults": "No results for \"{q}\".",
+    "loadMore": "Load more",
+    "adminOnlyScope": "This search scope is admin only.",
+    "tooShort": "Type at least 2 characters.",
+    "scope": {
+      "all": "All",
+      "jobs": "Jobs",
+      "clients": "Clients",
+      "posts": "Posts"
+    }
+  },
+  "savedViews": {
+    "title": "Saved views",
+    "empty": "No saved views yet.",
+    "saveCurrent": "Save current",
+    "applyFirst": "Apply at least one filter before saving a view.",
+    "pinDefault": "Pin as default for this view",
+    "unpinDefault": "Unpin default",
+    "manage": "Manage saved view",
+    "rename": "Rename",
+    "delete": "Delete",
+    "deleteConfirmTitle": "Delete saved view?",
+    "deleteConfirmBody": "This cannot be undone.",
+    "nameLabel": "View name",
+    "namePlaceholder": "e.g. Urgent open jobs",
+    "nameRequired": "View name is required.",
+    "nameTooLong": "View name must be 80 characters or fewer.",
+    "scopeJobs": "Jobs",
+    "scopeClients": "Clients",
+    "scopeBilling": "Billing",
+    "saved": "View saved.",
+    "renamed": "View renamed.",
+    "deleted": "View deleted.",
+    "pinned": "Pinned as default.",
+    "unpinned": "Default cleared.",
+    "saveFailed": "Failed to save view.",
+    "deleteFailed": "Failed to delete view."
+  },
   "admin": {
     "title": "Admin Panel",
     "description": "User management, tags, feature flags, audit log, and configuration.",
@@ -416,6 +538,24 @@
       "deleteFailed": "Delete failed.",
       "uses": "uses",
       "deleteConfirm": "This cannot be undone."
+    }
+  },
+  "notifications": {
+    "bell": "Notifications",
+    "title": "Notifications",
+    "markAllRead": "Mark all as read",
+    "empty": "No notifications",
+    "kindJobAssigned": "Job assigned",
+    "kindMention": "Mention",
+    "kindSlaBreached": "SLA breach",
+    "assignedYou": "Assigned you to job {publicNumber}",
+    "mentionedYou": "Mentioned you in {channel}",
+    "slaBreach": "Job {publicNumber} is past SLA",
+    "relativeTime": {
+      "justNow": "just now",
+      "minutesAgo": "{n}m ago",
+      "hoursAgo": "{n}h ago",
+      "daysAgo": "{n}d ago"
     }
   }
 }

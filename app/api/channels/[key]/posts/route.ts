@@ -9,6 +9,8 @@ import {
   getChannelOrNull,
   listChannelPosts,
 } from "@/lib/communication/queries";
+import { extractUsernames } from "@/lib/notifications/mention-parse";
+import { notifyMention } from "@/lib/notifications/triggers";
 
 interface Params { params: Promise<{ key: string }> }
 
@@ -102,6 +104,32 @@ export async function POST(req: Request, { params }: Params) {
       entityType: "CommunicationPost",
       entityId: newPost.id,
     });
+
+    // Resolve @mentions across title + body and notify each unique user once.
+    // Skip the author and any unknown / inactive usernames.
+    const candidates = Array.from(
+      new Set([
+        ...extractUsernames(title).map((u) => u.toLowerCase()),
+        ...extractUsernames(postBody).map((u) => u.toLowerCase()),
+      ])
+    );
+    if (candidates.length > 0) {
+      const mentioned = await tx.user.findMany({
+        where: {
+          username: { in: candidates },
+          isActive: true,
+          id: { not: user.id },
+        },
+        select: { id: true },
+      });
+      for (const m of mentioned) {
+        await notifyMention(tx, {
+          userId: m.id,
+          postId: newPost.id,
+          channelKey: channel.key,
+        });
+      }
+    }
 
     return newPost;
   });

@@ -8,6 +8,7 @@ import QueryProvider from "@/components/providers/QueryProvider";
 import { ToastProvider } from "@/components/ui/toast";
 import { getT } from "@/lib/i18n/server";
 import { LocaleProvider } from "@/lib/i18n/client";
+import { getFeatureFlag } from "@/lib/feature-flags";
 
 export default async function PortalLayout({
   children,
@@ -18,14 +19,17 @@ export default async function PortalLayout({
   if (!session?.user) redirect("/login");
 
   const user = session.user as SessionUser;
-  const { locale, dict } = await getT();
+  const [{ locale, dict }, statisticsMeEnabled] = await Promise.all([
+    getT(),
+    getFeatureFlag("statistics_me_enabled"),
+  ]);
 
   return (
     <LocaleProvider locale={locale} dict={dict}>
       <QueryProvider>
         <ToastProvider>
           <div className="app-shell-bg flex h-screen overflow-hidden">
-            <Sidebar user={user} />
+            <Sidebar user={user} statisticsMeEnabled={statisticsMeEnabled} />
             <div className="flex flex-1 flex-col overflow-hidden">
               <Header user={user} />
               {/* pb-16 reserves space so content isn't hidden behind TimerBar */}

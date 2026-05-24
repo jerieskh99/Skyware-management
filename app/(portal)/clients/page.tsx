@@ -6,7 +6,9 @@ import { isAdmin } from "@/lib/permissions";
 import { listClients } from "@/lib/clients/queries";
 import { ClientFiltersBar } from "@/components/clients/ClientFiltersBar";
 import { ClientsPageHeader } from "@/components/clients/ClientsPageHeader";
+import { SavedViewBar } from "@/components/saved-views/SavedViewBar";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { getFeatureFlag } from "@/lib/feature-flags";
 import { getT } from "@/lib/i18n/server";
 import { Building2 } from "lucide-react";
 import type { ClientStatus } from "@prisma/client";
@@ -31,12 +33,22 @@ export default async function ClientsPage({ searchParams }: Props) {
       ? (statusParam as ClientStatus)
       : undefined;
 
-  const clients = await listClients({ search, status });
+  const [clients, savedViewsEnabled] = await Promise.all([
+    listClients({ search, status }),
+    getFeatureFlag("saved_views_enabled"),
+  ]);
   const { t } = await getT();
+
+  const currentFilters: Record<string, string> = {};
+  if (search) currentFilters["search"] = search;
+  if (status) currentFilters["status"] = status;
 
   return (
     <div className="space-y-4">
       <ClientsPageHeader />
+      {savedViewsEnabled && (
+        <SavedViewBar scope="clients" currentFilters={currentFilters} />
+      )}
       <ClientFiltersBar initialSearch={search ?? ""} initialStatus={status ?? ""} />
 
       {clients.length === 0 ? (

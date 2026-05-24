@@ -8,7 +8,8 @@ import {
   getClientJobs,
   getClientEnvironmentNotes,
 } from "@/lib/clients/queries";
-import { getClientBillingData } from "@/lib/billing/queries";
+import { getClientBillingData, getBankBurn, type BankBurn } from "@/lib/billing/queries";
+import { getFeatureFlag } from "@/lib/feature-flags";
 import { EnvironmentNotesSection } from "@/components/clients/EnvironmentNotesSection";
 import { ClientDetailHeader } from "@/components/clients/ClientDetailHeader";
 import { ClientBillingTab } from "@/components/billing/ClientBillingTab";
@@ -53,6 +54,17 @@ export default async function ClientDetailPage({ params, searchParams }: Props) 
     activeTab === "environment" ? getClientEnvironmentNotes(id) : Promise.resolve([]),
     activeTab === "billing" ? getClientBillingData(id) : Promise.resolve(null),
   ]);
+
+  let burnByBank: Record<string, BankBurn> | null = null;
+  let burnEnabled = false;
+  if (activeTab === "billing" && billingData?.billingAccount?.hourlyBanks?.length) {
+    burnEnabled = await getFeatureFlag("hourly_burn_enabled");
+    if (burnEnabled) {
+      const ids = billingData.billingAccount.hourlyBanks.map((b) => b.id);
+      const burnMap = await getBankBurn(ids);
+      burnByBank = Object.fromEntries(burnMap);
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -101,6 +113,8 @@ export default async function ClientDetailPage({ params, searchParams }: Props) 
           clientName={client.companyName}
           billingAccount={billingData?.billingAccount ?? null}
           payments={billingData?.payments ?? []}
+          burnByBank={burnByBank}
+          burnEnabled={burnEnabled}
         />
       )}
       {activeTab === "receipts" && <ReceiptsPlaceholder />}

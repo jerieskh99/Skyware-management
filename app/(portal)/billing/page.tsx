@@ -3,21 +3,34 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { SessionUser } from "@/lib/permissions";
 import { isAdmin } from "@/lib/permissions";
-import { getBillingKpis, listPayments, getAgingPayments } from "@/lib/billing/queries";
+import {
+  getBillingKpis,
+  listPayments,
+  listPaymentsByAgingBucket,
+  getAgingPayments,
+  getAgingBuckets,
+  AGING_BUCKET_KEYS,
+  type AgingBucketKey,
+} from "@/lib/billing/queries";
 import { PaymentStatusChip } from "@/components/billing/PaymentStatusChip";
 import { BillingPageActions } from "@/components/billing/BillingPageActions";
+import { AgingStrip } from "@/components/billing/AgingStrip";
+import { SavedViewBar } from "@/components/saved-views/SavedViewBar";
 import type { PaymentStatus } from "@prisma/client";
 import { CreditCard, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { KpiCard } from "@/components/shared/KpiCard";
 import { SectionCard } from "@/components/shared/SectionCard";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { getFeatureFlags } from "@/lib/feature-flags";
 import { getT } from "@/lib/i18n/server";
 
 const VALID_STATUSES = new Set<string>([
   "draft", "sent_to_client", "waiting_for_payment",
   "partially_paid", "paid", "cancelled", "overdue",
 ]);
+
+const VALID_AGING = new Set<string>(AGING_BUCKET_KEYS);
 
 interface Props {
   searchParams: Promise<Record<string, string>>;
@@ -42,14 +55,27 @@ export default async function BillingPage({ searchParams }: Props) {
   const sp = await searchParams;
   const rawStatuses = (sp["status"] ? [sp["status"]] : []).filter((s) => VALID_STATUSES.has(s)) as PaymentStatus[];
   const clientFilter = sp["clientId"] ?? undefined;
+  const agingFilter = sp["aging"] && VALID_AGING.has(sp["aging"]) ? (sp["aging"] as AgingBucketKey) : undefined;
 
-  const [kpis, payments, aging] = await Promise.all([
+  const flags = await getFeatureFlags(["saved_views_enabled", "aging_buckets_enabled"]);
+  const savedViewsEnabled = flags["saved_views_enabled"] ?? false;
+  const agingEnabled = flags["aging_buckets_enabled"] ?? false;
+
+  const [kpis, payments, aging, agingBuckets] = await Promise.all([
     getBillingKpis(),
-    listPayments({ status: rawStatuses.length ? rawStatuses : undefined, clientId: clientFilter }),
+    agingFilter
+      ? listPaymentsByAgingBucket(agingFilter)
+      : listPayments({ status: rawStatuses.length ? rawStatuses : undefined, clientId: clientFilter }),
     getAgingPayments(),
+    agingEnabled ? getAgingBuckets() : Promise.resolve(null),
   ]);
 
   const { t } = await getT();
+
+  const currentFilters: Record<string, string> = {};
+  if (rawStatuses[0]) currentFilters["status"] = rawStatuses[0];
+  if (clientFilter) currentFilters["clientId"] = clientFilter;
+  if (agingFilter) currentFilters["aging"] = agingFilter;
 
   return (
     <div className="space-y-8">
@@ -58,6 +84,10 @@ export default async function BillingPage({ searchParams }: Props) {
         title={t("billing.title")}
         description={t("billing.description")}
       />
+
+      {savedViewsEnabled && (
+        <SavedViewBar scope="billing" currentFilters={currentFilters} />
+      )}
 
       {/* KPI strip */}
       <div className="grid gap-3 sm:grid-cols-3">
@@ -83,6 +113,25 @@ export default async function BillingPage({ searchParams }: Props) {
           href="?status=paid"
         />
       </div>
+
+      {/* Aging buckets strip (feature-flagged) */}
+      {agingEnabled && agingBuckets && (
+        <AgingStrip
+          buckets={agingBuckets}
+          active={agingFilter}
+          hrefFor={(b) => `?aging=${b}`}
+          labels={{
+            title: t("billing.aging.title"),
+            b0_30: t("billing.aging.b0_30"),
+            b31_60: t("billing.aging.b31_60"),
+            b61_90: t("billing.aging.b61_90"),
+            b91_plus: t("billing.aging.b91_plus"),
+            count: t("billing.aging.count"),
+            amount: t("billing.aging.amount"),
+            empty: t("billing.aging.empty"),
+          }}
+        />
+      )}
 
       {/* Aging payments highlight */}
       {aging.length > 0 && (

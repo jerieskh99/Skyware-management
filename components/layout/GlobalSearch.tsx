@@ -1,22 +1,35 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Search, Loader2, MessageSquare } from "lucide-react";
+import { Search, Loader2, MessageSquare, Building2 } from "lucide-react";
 import { JobStatusChip } from "@/components/jobs/JobStatusChip";
+import { useT } from "@/lib/i18n/client";
+import { cn } from "@/lib/utils";
 import type { JobStatus } from "@prisma/client";
 
-interface JobResult {
+type Scope = "all" | "jobs" | "clients" | "posts";
+
+interface JobHit {
   id: string;
   publicNumber: string;
   title: string;
   status: JobStatus;
   priority: string;
-  client: { companyName: string } | null;
+  client: { id: string; companyName: string } | null;
   department: { key: string; nameEn: string };
 }
 
-interface PostResult {
+interface ClientHit {
+  id: string;
+  companyName: string;
+  contactPerson: string | null;
+  email: string | null;
+  status: string;
+}
+
+interface PostHit {
   id: string;
   title: string;
   channelKey: string;
@@ -25,16 +38,36 @@ interface PostResult {
   createdAt: string;
 }
 
-interface SearchResults {
-  jobs: JobResult[];
-  posts: PostResult[];
+interface Page<T> {
+  items: T[];
+  nextCursor: string | null;
 }
 
-const EMPTY: SearchResults = { jobs: [], posts: [] };
+interface ApiResponse {
+  q: string;
+  scope: Scope;
+  results: {
+    jobs?: Page<JobHit>;
+    clients?: Page<ClientHit>;
+    posts?: Page<PostHit>;
+  };
+}
 
-export function GlobalSearch() {
+const EMPTY: ApiResponse["results"] = {};
+
+interface Props {
+  /** Show scope chips and route to /search on submit. */
+  ftsEnabled?: boolean;
+  /** Hide clients chip for non-admins. */
+  isAdmin?: boolean;
+}
+
+export function GlobalSearch({ ftsEnabled = false, isAdmin = false }: Props) {
+  const { t } = useT();
+  const router = useRouter();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResults>(EMPTY);
+  const [scope, setScope] = useState<Scope>("all");
+  const [results, setResults] = useState<ApiResponse["results"]>(EMPTY);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState(false);
@@ -42,15 +75,15 @@ export function GlobalSearch() {
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const search = useCallback(async (q: string) => {
+  const search = useCallback(async (q: string, s: Scope) => {
     if (q.length < 2) { setResults(EMPTY); setLoading(false); return; }
     setLoading(true);
     setError(false);
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&scope=all`);
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&scope=${s}`);
       if (!res.ok) throw new Error();
-      const data = await res.json() as SearchResults;
-      setResults(data);
+      const data = (await res.json()) as ApiResponse;
+      setResults(data.results ?? EMPTY);
     } catch {
       setError(true);
       setResults(EMPTY);
@@ -65,7 +98,23 @@ export function GlobalSearch() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!val.trim()) { setResults(EMPTY); setLoading(false); return; }
     setLoading(true);
-    debounceRef.current = setTimeout(() => search(val.trim()), 300);
+    debounceRef.current = setTimeout(() => search(val.trim(), scope), 300);
+  }
+
+  function handleScopeChange(next: Scope) {
+    setScope(next);
+    if (query.trim().length >= 2) {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      search(query.trim(), next);
+    }
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const q = query.trim();
+    if (!ftsEnabled || q.length < 2) return;
+    setOpen(false);
+    router.push(`/search?q=${encodeURIComponent(q)}&scope=${scope}`);
   }
 
   // Keyboard shortcut: /
@@ -106,52 +155,84 @@ export function GlobalSearch() {
     setResults(EMPTY);
   }
 
-  const hasResults = results.jobs.length > 0 || results.posts.length > 0;
+  const jobs = results.jobs?.items ?? [];
+  const clients = results.clients?.items ?? [];
+  const posts = results.posts?.items ?? [];
+  const hasResults = jobs.length > 0 || clients.length > 0 || posts.length > 0;
   const showDropdown = open && (query.length >= 2 || loading);
-  const showSectionHeaders = results.jobs.length > 0 && results.posts.length > 0;
+  const sectionCount = (jobs.length > 0 ? 1 : 0) + (clients.length > 0 ? 1 : 0) + (posts.length > 0 ? 1 : 0);
+  const showSectionHeaders = sectionCount > 1;
+
+  const chips: { value: Scope; label: string }[] = [
+    { value: "all", label: t("search.scope.all") },
+    { value: "jobs", label: t("search.scope.jobs") },
+  ];
+  if (isAdmin) chips.push({ value: "clients", label: t("search.scope.clients") });
+  chips.push({ value: "posts", label: t("search.scope.posts") });
 
   return (
     <div ref={containerRef} className="relative flex-1">
-      <div className="relative flex items-center">
-        {loading ? (
-          <Loader2 className="pointer-events-none absolute start-3 h-4 w-4 animate-spin text-muted-foreground" />
-        ) : (
-          <Search className="pointer-events-none absolute start-3 h-4 w-4 text-muted-foreground" />
+      <form onSubmit={handleSubmit} className="space-y-1.5">
+        {ftsEnabled && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {chips.map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => handleScopeChange(c.value)}
+                aria-pressed={scope === c.value}
+                className={cn(
+                  "rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors",
+                  scope === c.value
+                    ? "border-brand bg-brand-soft text-brand"
+                    : "border-input bg-background text-muted-foreground hover:bg-accent"
+                )}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
         )}
-        <input
-          ref={inputRef}
-          type="text"
-          value={query}
-          onChange={(e) => handleChange(e.target.value)}
-          onFocus={() => { if (query.length >= 2) setOpen(true); }}
-          placeholder="Search jobs and posts..."
-          className="h-9 w-full rounded-md border border-input bg-background ps-9 pe-8 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        />
-        <kbd className="pointer-events-none absolute end-2.5 hidden rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground sm:inline-block">
-          /
-        </kbd>
-      </div>
+        <div className="relative flex items-center">
+          {loading ? (
+            <Loader2 className="pointer-events-none absolute start-3 h-4 w-4 animate-spin text-muted-foreground" />
+          ) : (
+            <Search className="pointer-events-none absolute start-3 h-4 w-4 text-muted-foreground" />
+          )}
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => handleChange(e.target.value)}
+            onFocus={() => { if (query.length >= 2) setOpen(true); }}
+            placeholder={t("search.placeholder")}
+            aria-label={t("search.placeholder")}
+            className="h-9 w-full rounded-md border border-input bg-background ps-9 pe-8 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
+          <kbd className="pointer-events-none absolute end-2.5 hidden rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground sm:inline-block">
+            /
+          </kbd>
+        </div>
+      </form>
 
       {showDropdown && (
         <div className="absolute start-0 end-0 top-full z-50 mt-1 max-h-80 overflow-y-auto rounded-lg border bg-background shadow-lg">
           {error && (
-            <p className="px-4 py-3 text-sm text-destructive">Search failed. Try again.</p>
+            <p className="px-4 py-3 text-sm text-destructive">{t("common.error")}</p>
           )}
 
           {!error && !loading && !hasResults && query.length >= 2 && (
             <p className="px-4 py-3 text-sm text-muted-foreground">
-              No results for &ldquo;{query}&rdquo;.
+              {t("search.noResults").replace("{q}", query)}
             </p>
           )}
 
-          {results.jobs.length > 0 && (
+          {jobs.length > 0 && (
             <>
               {showSectionHeaders && (
-                <div className="border-b px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Jobs
-                </div>
+                <SectionLabel first>{t("search.scope.jobs")}</SectionLabel>
               )}
-              {results.jobs.map((job) => (
+              {jobs.map((job) => (
                 <Link
                   key={job.id}
                   href={`/my-jobs/${job.id}`}
@@ -176,12 +257,38 @@ export function GlobalSearch() {
             </>
           )}
 
-          {results.posts.length > 0 && (
+          {clients.length > 0 && (
             <>
-              <div className={`px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground ${results.jobs.length > 0 ? "border-y" : "border-b"}`}>
-                Posts
-              </div>
-              {results.posts.map((post) => (
+              {showSectionHeaders && (
+                <SectionLabel first={jobs.length === 0}>{t("search.scope.clients")}</SectionLabel>
+              )}
+              {clients.map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/clients/${c.id}`}
+                  onClick={handleResultClick}
+                  className="flex items-start gap-3 px-4 py-2.5 text-sm hover:bg-accent"
+                >
+                  <Building2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{c.companyName}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {c.contactPerson ?? c.email ?? c.status}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </>
+          )}
+
+          {posts.length > 0 && (
+            <>
+              {showSectionHeaders && (
+                <SectionLabel first={jobs.length === 0 && clients.length === 0}>
+                  {t("search.scope.posts")}
+                </SectionLabel>
+              )}
+              {posts.map((post) => (
                 <Link
                   key={post.id}
                   href={`/communication/${post.channelKey}/${post.id}`}
@@ -201,6 +308,19 @@ export function GlobalSearch() {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function SectionLabel({ children, first }: { children: React.ReactNode; first?: boolean }) {
+  return (
+    <div
+      className={cn(
+        "px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground",
+        first ? "border-b" : "border-y"
+      )}
+    >
+      {children}
     </div>
   );
 }

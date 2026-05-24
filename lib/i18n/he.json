@@ -15,6 +15,7 @@
     "financialDocuments": "מסמכים פיננסיים",
     "financialDocumentsShort": "מסמכי כספים",
     "statistics": "סטטיסטיקה",
+    "myStatistics": "הסטטיסטיקה שלי",
     "agent": "מרכז אוטומציה",
     "agentShort": "מרכז סוכן",
     "admin": "פאנל ניהול",
@@ -146,7 +147,31 @@
     "timeSpent": "זמן שהושקע (דקות)",
     "timeMinAtLeastOne": "זמן שהושקע חייב להיות לפחות דקה אחת.",
     "billable": "בר חיוב",
-    "submitFailed": "השליחה נכשלה."
+    "submitFailed": "השליחה נכשלה.",
+    "detail": {
+      "tab": {
+        "overview": "סקירה",
+        "timeline": "ציר זמן",
+        "related": "קשור",
+        "files": "קבצים"
+      },
+      "filesPlaceholder": "צירוף קבצים יגיע בשלב 3",
+      "reassignTo": "הקצאה מחדש אל",
+      "reassignConfirmTitle": "להקצות את המשימה מחדש?",
+      "reassignConfirmBody": "להעביר את המשימה אל {user}? תישלח אליו התראה.",
+      "reassignButton": "הקצאה מחדש",
+      "reassignSuccess": "המשימה הוקצתה מחדש.",
+      "activeTimer": "טיימר פעיל",
+      "timerElapsed": "זמן שחלף",
+      "timerStop": "עצירה",
+      "timerPause": "השהיה",
+      "timerResume": "המשך",
+      "tooltipSla": "הזמן שחלף מאז שהמשימה הוקצתה, מול יעד ה-SLA של המחלקה.",
+      "tooltipReassign": "העברת המשימה לעובד אחר. העובד החדש יקבל התראה.",
+      "noRelated": "אין פוסטים או תשלומים קשורים.",
+      "linkedPayment": "תשלום מקושר",
+      "relatedPosts": "פוסטים קשורים"
+    }
   },
   "payment": {
     "status": {
@@ -219,7 +244,10 @@
     "emptyReviews": "אין משימות הממתינות לבדיקה.",
     "emptyWaitingAdmin": "אין משימות הממתינות למנהל.",
     "emptyWorking": "אין משימות פעילות.",
-    "emptyAssigned": "אין משימות הממתינות להתחיל."
+    "emptyAssigned": "אין משימות הממתינות להתחיל.",
+    "agingTitle": "התיישנות חייבים",
+    "banksLowTitle": "בנקי שעות שהולכים ואוזלים",
+    "banksLowEmpty": "לכל בנקי השעות הפעילים יש מסלול בריא."
   },
   "billing": {
     "title": "חיוב",
@@ -266,7 +294,25 @@
     "method_cheque": "צ'ק",
     "method_cash": "מזומן",
     "method_credit_card": "כרטיס אשראי",
-    "method_other": "אחר"
+    "method_other": "אחר",
+    "aging": {
+      "title": "התיישנות",
+      "b0_30": "0-30 ימים",
+      "b31_60": "31-60 ימים",
+      "b61_90": "61-90 ימים",
+      "b91_plus": "91+ ימים",
+      "count": "מספר",
+      "amount": "סכום",
+      "empty": "אין תשלומים פתוחים עם תאריך פירעון."
+    },
+    "burn": {
+      "title": "קצב שריפה",
+      "remaining": "נותר",
+      "avgMonthly": "ממוצע חודשי",
+      "monthsRemaining": "חודשים צפויים",
+      "monthsRemainingNa": "אין מספיק נתונים לחיזוי",
+      "viewClient": "פתח לקוח"
+    }
   },
   "clients": {
     "title": "לקוחות",
@@ -343,6 +389,82 @@
     "colTotal": "סה\"כ משימות",
     "footerNote": "הסטטיסטיקה משקפת פעילות תפעולית, ולא מעקב אחר עובדים. כל המדדים מבוססים על נתוני מחזור חיי המשימה."
   },
+  "statisticsMe": {
+    "title": "הסטטיסטיקה שלי",
+    "description": "הפעילות האישית וזמני ההשלמה שלך. מסונן למשימות המשויכות אליך.",
+    "kpiActive": "משימות פעילות",
+    "kpiActiveTip": "משימות המשויכות אליך כעת בכל סטטוס פעיל.",
+    "kpiCompleted": "הושלמו בתקופה",
+    "kpiCompletedTip": "משימות שהשלמת (סטטוס בוצע או נבדק) עם מועד השלמה בטווח הנבחר.",
+    "kpiHours": "שעות מדווחות",
+    "kpiHoursTip": "סכום הזמן שתועד במשימות הסגורות שלך עם מועד השלמה בטווח הנבחר.",
+    "kpiReopens": "פתיחות מחדש",
+    "kpiReopensTip": "מספר הפעמים שמשימות שלך נפתחו מחדש בטווח הנבחר. ספירה של מעברים, לא יחס.",
+    "kpiAvg": "ממוצע השלמה",
+    "kpiAvgTip": "ממוצע שעות ממועד השיוך עד הסיום. משימות סגורות בטווח הנבחר.",
+    "kpiMedian": "חציון השלמה",
+    "kpiMedianTip": "חציון שעות ממועד השיוך עד הסיום. משימות סגורות בטווח הנבחר.",
+    "kpiP90": "אחוזון 90 השלמה",
+    "kpiP90Tip": "אחוזון 90 של שעות ממועד השיוך עד הסיום. משימות סגורות בטווח הנבחר.",
+    "sampleSize": "n={n}",
+    "sectionCurrentlyWorking": "פעיל כעת",
+    "sectionDelayed": "חרגו מ-SLA במשימות שלי",
+    "noActive": "אין לך משימות פעילות כרגע.",
+    "noDelayed": "אף אחת מהמשימות הפעילות שלך לא חרגה מ-SLA.",
+    "colJob": "משימה",
+    "colJobTip": "מספר משימה ציבורי וכותרת קצרה.",
+    "colClient": "לקוח",
+    "colStatus": "סטטוס",
+    "colStatusTip": "סטטוס המשימה הנוכחי.",
+    "colPriority": "עדיפות",
+    "colPriorityTip": "עדיפות המשימה שנקבעה על ידי המנהל או ההאב.",
+    "colAssignedAt": "מועד שיוך",
+    "colAssignedAtTip": "המועד שבו המשימה שויכה אליך.",
+    "colBreach": "חריגה",
+    "colBreachTip": "דקות מעבר ליעד ה-SLA.",
+    "footerNote": "המסך הזה אישי בלבד. מנהלים רואים את התצוגה הצוותית ב-/statistics."
+  },
+  "search": {
+    "placeholder": "חפש משימות, לקוחות, פוסטים...",
+    "results": "תוצאות חיפוש",
+    "noResults": "לא נמצאו תוצאות עבור \"{q}\".",
+    "loadMore": "טען עוד",
+    "adminOnlyScope": "תחום חיפוש זה זמין למנהלים בלבד.",
+    "tooShort": "הקלד לפחות 2 תווים.",
+    "scope": {
+      "all": "הכל",
+      "jobs": "משימות",
+      "clients": "לקוחות",
+      "posts": "פוסטים"
+    }
+  },
+  "savedViews": {
+    "title": "תצוגות שמורות",
+    "empty": "אין עדיין תצוגות שמורות.",
+    "saveCurrent": "שמור נוכחי",
+    "applyFirst": "החל לפחות סינון אחד לפני שמירת תצוגה.",
+    "pinDefault": "קבע כברירת מחדל לתצוגה זו",
+    "unpinDefault": "בטל ברירת מחדל",
+    "manage": "נהל תצוגה שמורה",
+    "rename": "שנה שם",
+    "delete": "מחק",
+    "deleteConfirmTitle": "למחוק את התצוגה השמורה?",
+    "deleteConfirmBody": "פעולה זו אינה ניתנת לביטול.",
+    "nameLabel": "שם התצוגה",
+    "namePlaceholder": "למשל: משימות דחופות פתוחות",
+    "nameRequired": "שם התצוגה הוא שדה חובה.",
+    "nameTooLong": "שם התצוגה חייב להיות עד 80 תווים.",
+    "scopeJobs": "משימות",
+    "scopeClients": "לקוחות",
+    "scopeBilling": "חיוב",
+    "saved": "התצוגה נשמרה.",
+    "renamed": "שם התצוגה עודכן.",
+    "deleted": "התצוגה נמחקה.",
+    "pinned": "נקבע כברירת מחדל.",
+    "unpinned": "ברירת המחדל נוקתה.",
+    "saveFailed": "שמירת התצוגה נכשלה.",
+    "deleteFailed": "מחיקת התצוגה נכשלה."
+  },
   "admin": {
     "title": "פאנל ניהול",
     "description": "ניהול משתמשים, תגיות, דגלי תכונה, יומן ביקורת והגדרות.",
@@ -416,6 +538,24 @@
       "deleteFailed": "המחיקה נכשלה.",
       "uses": "שימושים",
       "deleteConfirm": "פעולה זו אינה ניתנת לביטול."
+    }
+  },
+  "notifications": {
+    "bell": "התראות",
+    "title": "התראות",
+    "markAllRead": "סמן הכל כנקרא",
+    "empty": "אין התראות",
+    "kindJobAssigned": "משימה שויכה",
+    "kindMention": "אזכור",
+    "kindSlaBreached": "חריגת SLA",
+    "assignedYou": "שויכת למשימה {publicNumber}",
+    "mentionedYou": "אוזכרת ב-{channel}",
+    "slaBreach": "משימה {publicNumber} חרגה מ-SLA",
+    "relativeTime": {
+      "justNow": "ממש עכשיו",
+      "minutesAgo": "לפני {n} דק'",
+      "hoursAgo": "לפני {n} שעות",
+      "daysAgo": "לפני {n} ימים"
     }
   }
 }

@@ -77,9 +77,10 @@ const GROUPS: NavGroup[] = [
 
 interface Props {
   user: SessionUser;
+  statisticsMeEnabled?: boolean;
 }
 
-export function Sidebar({ user }: Props) {
+export function Sidebar({ user, statisticsMeEnabled = false }: Props) {
   const pathname = usePathname();
   const { t } = useT();
 
@@ -87,7 +88,22 @@ export function Sidebar({ user }: Props) {
     return pathname === href || pathname.startsWith(href + "/");
   }
 
-  const visibleGroups = GROUPS.filter((g) => !g.adminOnly || user.isAdmin);
+  // Employees get a personal "My Statistics" entry under Overview when the
+  // statistics_me_enabled flag is on. Admins already have /statistics in the
+  // Admin group, so they do not see this duplicate.
+  const groups: NavGroup[] = GROUPS.map((g) => {
+    if (g.labelKey !== "nav.groupOverview") return g;
+    if (user.isAdmin || !statisticsMeEnabled) return g;
+    return {
+      ...g,
+      items: [
+        ...g.items,
+        { href: "/statistics/me", labelKey: "nav.myStatistics", icon: BarChart2 },
+      ],
+    };
+  });
+
+  const visibleGroups = groups.filter((g) => !g.adminOnly || user.isAdmin);
 
   return (
     <aside className="flex h-full w-56 shrink-0 flex-col border-e bg-card/80">

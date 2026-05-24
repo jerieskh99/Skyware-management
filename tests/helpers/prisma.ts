@@ -44,7 +44,13 @@ export interface MockedPrisma {
   channel: MockedModel;
   channelPost: MockedModel;
   channelPostReply: MockedModel;
+  communicationChannel: MockedModel;
+  communicationPost: MockedModel;
+  communicationReply: MockedModel;
+  postTag: MockedModel;
+  notification: MockedModel;
   featureFlag: MockedModel;
+  savedView: MockedModel;
   $transaction: Mock;
   $queryRaw: Mock;
   $executeRaw: Mock;

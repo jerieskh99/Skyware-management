@@ -719,6 +719,7 @@ model SavedView {
   name        String
   filterJson  Json           @map("filter_json")
   isTeam      Boolean        @default(false) @map("is_team")
+  isDefault   Boolean        @default(false) @map("is_default")
   createdById String         @map("created_by_user_id") @db.Uuid
 
   owner     User? @relation("SavedViewOwner", fields: [userId], references: [id])
@@ -727,6 +728,8 @@ model SavedView {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  // At most one default per (user, scope) is enforced by a partial unique
+  // index in the follow-up migration `20260524000300_saved_view_extras`.
   @@index([userId, scope])
   @@index([isTeam, scope])
   @@map("saved_views")

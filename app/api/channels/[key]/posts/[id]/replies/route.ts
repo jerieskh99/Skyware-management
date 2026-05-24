@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, badRequest, notFound } from "@/lib/api-utils";
 import { writeAudit } from "@/lib/audit";
 import { getChannelOrNull } from "@/lib/communication/queries";
+import { extractUsernames } from "@/lib/notifications/mention-parse";
+import { notifyMention } from "@/lib/notifications/triggers";
 
 interface Params { params: Promise<{ key: string; id: string }> }
 
@@ -45,6 +47,29 @@ export async function POST(req: Request, { params }: Params) {
       entityType: "CommunicationReply",
       entityId: r.id,
     });
+
+    const candidates = extractUsernames(parsed.data.body).map((u) =>
+      u.toLowerCase()
+    );
+    if (candidates.length > 0) {
+      const mentioned = await tx.user.findMany({
+        where: {
+          username: { in: candidates },
+          isActive: true,
+          id: { not: user.id },
+        },
+        select: { id: true },
+      });
+      for (const m of mentioned) {
+        await notifyMention(tx, {
+          userId: m.id,
+          postId,
+          replyId: r.id,
+          channelKey: channel.key,
+        });
+      }
+    }
+
     return r;
   });
 

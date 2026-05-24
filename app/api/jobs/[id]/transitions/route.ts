@@ -5,6 +5,7 @@ import { requireAuth, notFound, badRequest } from "@/lib/api-utils";
 import { getJobForUser } from "@/lib/jobs/queries";
 import { isTransitionAllowed, resolveActorRelation, isReopening } from "@/lib/jobs/lifecycle";
 import { writeAudit } from "@/lib/audit";
+import { notifyJobAssigned } from "@/lib/notifications/triggers";
 import type { JobStatus } from "@prisma/client";
 
 interface Params { params: Promise<{ id: string }> }
@@ -101,6 +102,21 @@ export async function POST(req: Request, { params }: Params) {
         ...(note ? { note: { old: null, new: note } } : {}),
       },
     });
+
+    // Notify the new assignee when the actor assigns someone else.
+    // Self-assignment (admin assigning themselves) is silent.
+    if (
+      toStatus === "assigned" &&
+      assignedEmployeeId &&
+      assignedEmployeeId !== user.id
+    ) {
+      await notifyJobAssigned(tx, {
+        userId: assignedEmployeeId,
+        jobId: id,
+        publicNumber: u.publicNumber,
+        title: u.title,
+      });
+    }
 
     return u;
   });

@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { SessionUser } from "@/lib/permissions";
 import { isAdmin } from "@/lib/permissions";
 import { getJobForUser } from "@/lib/jobs/queries";
+import { getFeatureFlag } from "@/lib/feature-flags";
 import { JobStatusChip } from "@/components/jobs/JobStatusChip";
 import { JobPriorityChip } from "@/components/jobs/JobPriorityChip";
 import { JobSeverityChip } from "@/components/jobs/JobSeverityChip";
@@ -11,6 +12,11 @@ import { JobSlaBar } from "@/components/jobs/JobSlaBar";
 import { JobTimeline } from "@/components/jobs/JobTimeline";
 import { JobTagChips } from "@/components/jobs/JobTagChips";
 import { JobTransitionButtons } from "@/components/jobs/JobTransitionButtons";
+import { JobDetailTabs, type JobDetailTabKey } from "@/components/jobs/JobDetailTabs";
+import { JobOverviewTab } from "@/components/jobs/JobOverviewTab";
+import { JobTimelineTab } from "@/components/jobs/JobTimelineTab";
+import { JobRelatedTab } from "@/components/jobs/JobRelatedTab";
+import { JobFilesTab } from "@/components/jobs/JobFilesTab";
 import { Separator } from "@/components/ui/separator";
 import { formatTz, timeAgo } from "@/lib/time";
 import { ArrowLeft } from "lucide-react";
@@ -28,6 +34,8 @@ const FROM_HREFS: Record<string, string> = {
   hub: "/hub",
 };
 
+const VALID_TABS: JobDetailTabKey[] = ["overview", "timeline", "related", "files"];
+
 interface Props {
   params: Promise<{ id: string }>;
   searchParams: Promise<Record<string, string>>;
@@ -44,13 +52,22 @@ export default async function JobDetailPage({ params, searchParams }: Props) {
   const backLabel = FROM_LABELS[from] ?? "My Jobs";
   const backHref = FROM_HREFS[from] ?? "/my-jobs";
 
-  const job = await getJobForUser(user, id);
+  const [job, tabsEnabled] = await Promise.all([
+    getJobForUser(user, id),
+    getFeatureFlag("job_detail_tabs_enabled"),
+  ]);
   if (!job) notFound();
 
   const admin = isAdmin(user);
+  const requestedTab = sp["tab"];
+  const activeTab: JobDetailTabKey = VALID_TABS.includes(
+    requestedTab as JobDetailTabKey
+  )
+    ? (requestedTab as JobDetailTabKey)
+    : "overview";
 
-  return (
-    <div className="mx-auto max-w-4xl space-y-6">
+  const header = (
+    <>
       <Link
         href={backHref}
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
@@ -59,7 +76,6 @@ export default async function JobDetailPage({ params, searchParams }: Props) {
         Back to {backLabel}
       </Link>
 
-      {/* Header */}
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-mono text-xs text-muted-foreground">
@@ -70,19 +86,40 @@ export default async function JobDetailPage({ params, searchParams }: Props) {
           <JobSeverityChip severity={job.severity} />
         </div>
         <h1 className="text-xl font-semibold">{job.title}</h1>
-        <JobSlaBar
-          assignedTimestamp={job.assignedTimestamp}
-          startedTimestamp={job.startedTimestamp}
-          slaTargetMinutes={job.slaTargetMinutes}
-          status={job.status}
-        />
+        {!tabsEnabled && (
+          <JobSlaBar
+            assignedTimestamp={job.assignedTimestamp}
+            startedTimestamp={job.startedTimestamp}
+            slaTargetMinutes={job.slaTargetMinutes}
+            status={job.status}
+          />
+        )}
         <JobTagChips tags={job.tags.map((t) => t.tag)} />
       </div>
+    </>
+  );
+
+  if (tabsEnabled) {
+    return (
+      <div className="mx-auto max-w-4xl space-y-6">
+        {header}
+        <JobDetailTabs jobId={job.id} active={activeTab} from={from} />
+        {activeTab === "overview" && (
+          <JobOverviewTab job={job} admin={admin} currentUserId={user.id} />
+        )}
+        {activeTab === "timeline" && <JobTimelineTab job={job} />}
+        {activeTab === "related" && <JobRelatedTab job={job} />}
+        {activeTab === "files" && <JobFilesTab />}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-4xl space-y-6">
+      {header}
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left: main content */}
         <div className="space-y-6 lg:col-span-2">
-          {/* Description */}
           {job.description && (
             <section className="space-y-2">
               <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
@@ -92,7 +129,6 @@ export default async function JobDetailPage({ params, searchParams }: Props) {
             </section>
           )}
 
-          {/* Work report */}
           {job.workReport && (
             <section className="space-y-2 rounded-lg border bg-muted/30 p-4">
               <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
@@ -110,7 +146,6 @@ export default async function JobDetailPage({ params, searchParams }: Props) {
             </section>
           )}
 
-          {/* Timeline */}
           <section className="space-y-3">
             <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
               Timeline
@@ -119,7 +154,6 @@ export default async function JobDetailPage({ params, searchParams }: Props) {
           </section>
         </div>
 
-        {/* Right: meta + actions */}
         <div className="space-y-5">
           <section className="space-y-2">
             <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">

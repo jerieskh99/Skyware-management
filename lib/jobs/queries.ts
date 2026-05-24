@@ -46,6 +46,8 @@ export type JobSummary = Awaited<
   ReturnType<typeof listJobsForUser>
 >[number];
 
+export type JobDetail = NonNullable<Awaited<ReturnType<typeof getJobForUser>>>;
+
 /** Permission-filtered job list. Admins see all. Employees see own + dept + global. */
 export async function listJobsForUser(
   user: SessionUser,
@@ -90,6 +92,27 @@ export async function getJobForUser(user: SessionUser, id: string) {
         where: { userId: user.id },
         orderBy: { startedAt: "desc" },
         take: 20,
+      },
+      relatedPosts: {
+        select: {
+          id: true,
+          title: true,
+          createdAt: true,
+          channel: { select: { key: true } },
+          author: { select: { id: true, username: true, displayName: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      },
+      linkedPayment: {
+        select: {
+          id: true,
+          status: true,
+          amountPlaceholder: true,
+          currency: true,
+          issuedDate: true,
+          dueDate: true,
+        },
       },
       _count: { select: { statusEvents: true } },
     },

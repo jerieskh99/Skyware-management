@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Skyware Portal: Improvement Plan for Approval</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --surface: #ffffff;
+    --ink: #0f172a;
+    --ink-muted: #475569;
+    --ink-soft: #64748b;
+    --line: #e2e8f0;
+    --accent: #0f766e;
+    --accent-soft: #ccfbf1;
+    --warn: #b45309;
+    --warn-soft: #fef3c7;
+    --crit: #b91c1c;
+    --crit-soft: #fee2e2;
+    --ok: #15803d;
+    --ok-soft: #dcfce7;
+    --code-bg: #0f172a;
+    --code-ink: #e2e8f0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1220;
+      --surface: #0f172a;
+      --ink: #e2e8f0;
+      --ink-muted: #cbd5e1;
+      --ink-soft: #94a3b8;
+      --line: #1e293b;
+      --accent: #2dd4bf;
+      --accent-soft: #134e4a;
+      --warn: #f59e0b;
+      --warn-soft: #422006;
+      --crit: #f87171;
+      --crit-soft: #450a0a;
+      --ok: #4ade80;
+      --ok-soft: #052e16;
+      --code-bg: #020617;
+      --code-ink: #e2e8f0;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .deck {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 24px 24px 96px;
+  }
+  .hud {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(8px);
+  }
+  .hud .brand {
+    font-weight: 600;
+    letter-spacing: 0.2px;
+  }
+  .hud .meta {
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .hud .controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .hud button {
+    background: transparent;
+    color: var(--ink-muted);
+    border: 1px solid var(--line);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .hud button:hover { color: var(--ink); border-color: var(--accent); }
+  .pill {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); }
+  .pill.crit { background: var(--crit-soft); color: var(--crit); }
+  .pill.ok { background: var(--ok-soft); color: var(--ok); }
+  .slide {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 36px 40px;
+    margin-bottom: 28px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    scroll-margin-top: 80px;
+  }
+  .slide header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 14px;
+    margin-bottom: 22px;
+  }
+  .slide header .num {
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .slide header h2 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .slide header .sub {
+    margin: 4px 0 0;
+    color: var(--ink-soft);
+    font-size: 14px;
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+  }
+  .grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .card h3 {
+    margin: 0 0 8px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .card .num-big {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+  .card .label {
+    color: var(--ink-soft);
+    font-size: 13px;
+  }
+  .card p {
+    margin: 6px 0 0;
+    color: var(--ink-muted);
+    font-size: 14px;
+  }
+  ul, ol {
+    padding-left: 22px;
+    margin: 0 0 12px;
+  }
+  li {
+    margin-bottom: 6px;
+    color: var(--ink-muted);
+  }
+  li strong { color: var(--ink); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+  thead th {
+    text-align: left;
+    background: var(--bg);
+    color: var(--ink-soft);
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+    color: var(--ink-muted);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  code, .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: var(--bg);
+    color: var(--ink);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .lede {
+    font-size: 17px;
+    color: var(--ink-muted);
+    margin: 0 0 14px;
+  }
+  .strong-callout {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-left: 4px solid var(--accent);
+    padding: 14px 18px;
+    border-radius: 6px;
+    margin: 16px 0;
+    font-weight: 500;
+  }
+  .strong-callout.warn { background: var(--warn-soft); color: var(--warn); border-left-color: var(--warn); }
+  .strong-callout.crit { background: var(--crit-soft); color: var(--crit); border-left-color: var(--crit); }
+  .strong-callout.ok { background: var(--ok-soft); color: var(--ok); border-left-color: var(--ok); }
+  .section-h {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 18px 0 8px;
+  }
+  .footer {
+    color: var(--ink-soft);
+    font-size: 13px;
+    text-align: center;
+    padding: 24px 0 8px;
+  }
+  .check { display: inline-block; width: 18px; }
+  .nav-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    list-style: none;
+    padding: 0;
+  }
+  .nav-list a {
+    color: var(--ink-muted);
+    text-decoration: none;
+    font-size: 14px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+  }
+  .nav-list a:hover { background: var(--bg); border-color: var(--line); color: var(--ink); }
+  .phase-block {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .phase-block h3 {
+    margin: 0 0 8px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .phase-block .meta {
+    color: var(--ink-soft);
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+  .timeline {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  @media (max-width: 900px) {
+    .grid-2, .grid-3, .grid-4, .timeline { grid-template-columns: 1fr; }
+    .deck { padding: 16px; }
+    .slide { padding: 24px 20px; }
+  }
+  @media print {
+    .hud { display: none; }
+    .slide { page-break-after: always; box-shadow: none; border-color: #ccc; }
+  }
+</style>
+</head>
+<body>
+<div class="deck">
+
+  <div class="hud" role="navigation" aria-label="Deck controls">
+    <div class="brand">Skyware Portal: Improvement Plan</div>
+    <div class="meta">Audit: 2026-05-24. Status: <span class="pill warn">Awaiting approval</span></div>
+    <div class="controls">
+      <button type="button" onclick="window.print()">Print</button>
+      <button type="button" id="toggleNav">Slides</button>
+    </div>
+  </div>
+
+  <nav id="navList" class="slide" hidden aria-label="Slide list">
+    <header>
+      <div>
+        <h2>Contents</h2>
+        <p class="sub">10 slides plus this index.</p>
+      </div>
+    </header>
+    <ul class="nav-list">
+      <li><a href="#s1">1. Current state summary</a></li>
+      <li><a href="#s2">2. Main problems found</a></li>
+      <li><a href="#s3">3. Product and UX direction</a></li>
+      <li><a href="#s4">4. Backend, frontend, database plan</a></li>
+      <li><a href="#s5">5. Preserved MVP functionality</a></li>
+      <li><a href="#s6">6. New and enhanced functionality</a></li>
+      <li><a href="#s7">7. Phased roadmap</a></li>
+      <li><a href="#s8">8. Risks and tradeoffs</a></li>
+      <li><a href="#s9">9. Definition of done</a></li>
+      <li><a href="#s10">10. Approval checkpoint</a></li>
+    </ul>
+  </nav>
+
+  <!-- Slide 1: Current state summary -->
+  <section class="slide" id="s1">
+    <header>
+      <div>
+        <h2>Current state summary</h2>
+        <p class="sub">Skyware Internal Management Portal MVP. Audited 2026-05-24.</p>
+      </div>
+      <div class="num">01 / 10</div>
+    </header>
+
+    <p class="lede">
+      The portal is functionally substantial and architecturally consistent.
+      It ships with 22 server pages, 38 API routes, 52 components, and a
+      35-model Prisma schema. The team has been disciplined: zero
+      <code>TODO</code>, <code>FIXME</code>, <code>console.log</code>, or
+      <code>as any</code> markers in <code>app/</code> or
+      <code>components/</code>.
+    </p>
+
+    <div class="grid-4">
+      <div class="card"><div class="label">Server pages</div><div class="num-big">22</div></div>
+      <div class="card"><div class="label">API routes</div><div class="num-big">38</div></div>
+      <div class="card"><div class="label">Components</div><div class="num-big">52</div></div>
+      <div class="card"><div class="label">Prisma models</div><div class="num-big">35</div></div>
+      <div class="card"><div class="label">Unit tests</div><div class="num-big">5</div></div>
+      <div class="card"><div class="label">E2E specs</div><div class="num-big">~25</div></div>
+      <div class="card"><div class="label">Migrations</div><div class="num-big">0</div></div>
+      <div class="card"><div class="label">CI workflows</div><div class="num-big">0</div></div>
+    </div>
+
+    <h3 class="section-h">What works well</h3>
+    <ul>
+      <li><strong>Uniform API shape.</strong> Every mutation goes auth then role gate then Zod then transaction with audit. Every sampled route follows it.</li>
+      <li><strong>Coherent route group layout</strong> under <code>(auth)</code>, <code>(portal)</code>, <code>api</code>.</li>
+      <li><strong>Shared primitives.</strong> <code>PageHeader</code>, <code>KpiCard</code>, <code>SectionCard</code>, <code>EmptyState</code>, plus job-domain reusables, give the app a consistent visual vocabulary.</li>
+      <li><strong>Audit log on every mutation.</strong> Transaction-only enforcement via <code>writeAudit</code>.</li>
+      <li><strong>Honest placeholders.</strong> Receipts, Agent, Financial Documents pages are well-built stubs gated by feature flags.</li>
+    </ul>
+
+    <div class="strong-callout">
+      Verdict: the MVP skeleton is sound. The improvement work is about
+      operational plumbing, UX polish, missing migrations, missing tests,
+      and a small set of analytics fixes. The product concept stays.
+    </div>
+  </section>
+
+  <!-- Slide 2: Main problems found -->
+  <section class="slide" id="s2">
+    <header>
+      <div>
+        <h2>Main problems found</h2>
+        <p class="sub">Top 10 across architecture, data, frontend, analytics, QA, rollout.</p>
+      </div>
+      <div class="num">02 / 10</div>
+    </header>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 4%;">#</th>
+          <th>Problem</th>
+          <th style="width: 14%;">Owner</th>
+          <th style="width: 12%;">Severity</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>No baselined Prisma migration.</strong> <code>prisma/migrations/</code> contains only the lock file. <code>prisma migrate deploy</code> is a no-op today.</td>
+          <td>Data</td>
+          <td><span class="pill crit">Critical</span></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>Notification model missing.</strong> Promoted to MVP by the enhancement spec but absent in schema and API.</td>
+          <td>Data, Product</td>
+          <td><span class="pill crit">Critical</span></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>No CI.</strong> Lint, typecheck, unit, e2e all runnable but nothing enforces them. E2E is broken at HEAD (seed mismatch).</td>
+          <td>QA</td>
+          <td><span class="pill crit">Critical</span></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><strong>i18n unwired.</strong> JSON dictionaries exist. No component reads them. Hebrew users get RTL with English text.</td>
+          <td>Frontend</td>
+          <td><span class="pill warn">High</span></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><strong>Hand-rolled modals and silent deletes.</strong> Eight bespoke overlays with no focus trap. Four destructive actions with no confirmation.</td>
+          <td>Frontend</td>
+          <td><span class="pill warn">High</span></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><strong>N+1 in statistics and dashboard.</strong> 2-3 Prisma queries per employee / department / client inside <code>Promise.all</code>.</td>
+          <td>Architecture, Data</td>
+          <td><span class="pill warn">High</span></td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td><strong>Two analytics metrics are wrong.</strong> <code>avgCompletionHours</code> samples 500 rows with no ordering. "Reopened" is a raw count labeled like a rate.</td>
+          <td>Analytics</td>
+          <td><span class="pill warn">High</span></td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td><strong>No logging or error reporter.</strong> Zero <code>console.*</code> calls in the app. <code>/api/health</code> returns ok when Postgres is down.</td>
+          <td>Architecture, Ops</td>
+          <td><span class="pill warn">High</span></td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td><strong>Spec compliance gap in analytics.</strong> Aging buckets, hourly-bank burn, monthly retainer status, employee self-view, hub-take latency all missing.</td>
+          <td>Analytics, Product</td>
+          <td><span class="pill">Medium</span></td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td><strong>High-risk mutations untested.</strong> Hub take, mark-paid, admin self-deactivation, job transitions: no contract tests.</td>
+          <td>QA</td>
+          <td><span class="pill">Medium</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="lede" style="font-size:15px;">
+      Each is detailed in the underlying audit files. See
+      <code>audit_overview.md</code> Section 4.
+    </p>
+  </section>
+
+  <!-- Slide 3: Product and UX direction -->
+  <section class="slide" id="s3">
+    <header>
+      <div>
+        <h2>Product and UX improvement direction</h2>
+        <p class="sub">Keep the concept. Sharpen the surface.</p>
+      </div>
+      <div class="num">03 / 10</div>
+    </header>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Principles</h3>
+        <ul>
+          <li><strong>Bilingual by default.</strong> Hebrew renders translated text, not just RTL layout.</li>
+          <li><strong>Safe-by-default mutations.</strong> No silent destructive action.</li>
+          <li><strong>Visible feedback.</strong> Loading skeletons, toast on every success, notification bell.</li>
+          <li><strong>Honest analytics.</strong> Metric tooltips, deterministic computations, self-view for employees.</li>
+          <li><strong>Faster pages.</strong> No N+1, FTS indexes, single aggregated queries.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Surface changes that ship</h3>
+        <ul>
+          <li>Radix <code>Dialog</code> replaces bespoke overlays.</li>
+          <li><code>ConfirmDialog</code> for irreversible deletes.</li>
+          <li>Global toast surface for cross-page feedback.</li>
+          <li>Notification bell in header with three triggers.</li>
+          <li>Saved views on Jobs, Clients, Billing.</li>
+          <li>Time-bucketed aging strip on billing and dashboard.</li>
+          <li>Hourly-bank burn-rate bar on client card.</li>
+          <li><code>/statistics/me</code> employee self-view with tooltips.</li>
+          <li>Job detail tabs and reassign control.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 class="section-h">Strengths to preserve</h3>
+    <p>
+      The shared primitive layer (<code>PageHeader</code>,
+      <code>KpiCard</code>, <code>SectionCard</code>,
+      <code>EmptyState</code>, <code>JobStatusChip</code>,
+      <code>JobPriorityChip</code>, <code>JobSeverityChip</code>,
+      <code>JobTagChips</code>, <code>JobSlaBar</code>,
+      <code>JobRow</code>) stays. Replicate the pattern for billing and
+      clients (a <code>PaymentStatusChip</code> already exists, a
+      <code>ClientStatusBadge</code> would close the duplication).
+    </p>
+  </section>
+
+  <!-- Slide 4: Backend / frontend / database plan -->
+  <section class="slide" id="s4">
+    <header>
+      <div>
+        <h2>Backend, frontend, and database plan</h2>
+        <p class="sub">What changes in each layer and why.</p>
+      </div>
+      <div class="num">04 / 10</div>
+    </header>
+
+    <div class="grid-3">
+      <div class="phase-block">
+        <h3>Backend <span class="pill">API + Ops</span></h3>
+        <p class="meta">Goal: reliable, observable, deduplicated.</p>
+        <ul>
+          <li>Apply uniform API shape to every new route.</li>
+          <li>Centralize duplicated job-scope permission filter.</li>
+          <li>Real database ping on <code>/api/health</code>; return 503 on failure.</li>
+          <li>Add <code>lib/logger.ts</code> and pipe API catches through it.</li>
+          <li>Rate-limit NextAuth credentials endpoint and admin password reset.</li>
+          <li>Return JSON 401 from <code>/api/*</code> instead of redirecting to <code>/login</code> HTML.</li>
+          <li>Split <code>app/(portal)/admin/page.tsx</code> into per-tab files.</li>
+        </ul>
+      </div>
+      <div class="phase-block">
+        <h3>Frontend <span class="pill">UI + UX</span></h3>
+        <p class="meta">Goal: safe, feedback-rich, bilingual.</p>
+        <ul>
+          <li>Wire <code>lib/i18n/</code> to every visible string.</li>
+          <li>Replace eight bespoke modals with Radix <code>Dialog</code>.</li>
+          <li>Add <code>ConfirmDialog</code> to destructive deletes.</li>
+          <li>Global toast surface; remove inline "Saved." patterns.</li>
+          <li>Per-domain <code>loading.tsx</code> and <code>Suspense</code> boundaries.</li>
+          <li>Notification bell with last-10 dropdown and read state.</li>
+          <li>Saved views UI on Jobs, Clients, Billing.</li>
+          <li>Job detail tabs (Overview, Timeline, Related, Files) and reassign control.</li>
+          <li>Time-bucketed aging strip and hourly-bank burn-rate bar.</li>
+        </ul>
+      </div>
+      <div class="phase-block">
+        <h3>Database <span class="pill">Schema + Queries</span></h3>
+        <p class="meta">Goal: reproducible, indexed, deployable.</p>
+        <ul>
+          <li>Generate a baseline migration from current schema and mark applied on existing dev DBs.</li>
+          <li>Switch the team workflow from <code>db push</code> to <code>migrate dev</code>.</li>
+          <li>Add the Notification model and three triggers.</li>
+          <li>Add partial unique index on <code>Client.israeli_tax_id</code>.</li>
+          <li>Add partial index on <code>TimeSession(user_id) WHERE ended_at IS NULL</code>.</li>
+          <li>Add <code>pg_trgm</code> indexes on Job and CommunicationPost text fields.</li>
+          <li>Rewrite N+1 statistics and dashboard queries as single aggregated queries.</li>
+          <li>Document deletion semantics for relations that default to RESTRICT.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 5: Preserved MVP functionality -->
+  <section class="slide" id="s5">
+    <header>
+      <div>
+        <h2>Preserved MVP functionality</h2>
+        <p class="sub">The core skeleton stays. Nothing here is removed.</p>
+      </div>
+      <div class="num">05 / 10</div>
+    </header>
+
+    <div class="grid-2">
+      <div>
+        <h3 class="section-h">Identity and access</h3>
+        <ul>
+          <li>Employee login (username and password) via NextAuth.</li>
+          <li>Three employee groups: Helpdesk, IT, R&amp;D.</li>
+          <li>Two admin roles: CEO, CTO.</li>
+          <li>Role-aware admin redirect at layout level.</li>
+        </ul>
+        <h3 class="section-h">Jobs and time</h3>
+        <ul>
+          <li>Job status machine with all 10 states.</li>
+          <li>Timestamped <code>JobStatusEvent</code> timeline.</li>
+          <li>Hub pull with concurrency guard.</li>
+          <li>Admin assignment.</li>
+          <li>Severity and priority kept as separate dimensions.</li>
+          <li>Time sessions and work reports at <code>done</code>.</li>
+          <li>SLA display on job (automation comes in Phase 3).</li>
+          <li>Job tags via <code>Tag</code> / <code>JobTag</code>.</li>
+        </ul>
+        <h3 class="section-h">Communication</h3>
+        <ul>
+          <li>Per-department channels: Global, Helpdesk, IT, R&amp;D.</li>
+          <li>Posts and replies.</li>
+          <li>Resolve and pin.</li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="section-h">Clients</h3>
+        <ul>
+          <li>Client CRUD, admin only.</li>
+          <li>Environment notes lite (free text per section).</li>
+          <li>Billing tab combining all billing categories.</li>
+        </ul>
+        <h3 class="section-h">Billing and payments</h3>
+        <ul>
+          <li>Three categories: Monthly, Hourly Bank, One-Time Job.</li>
+          <li>Payment status workflow.</li>
+          <li>Mark-paid handoff with create-receipt step.</li>
+          <li>Aging list (buckets added in Phase 2).</li>
+        </ul>
+        <h3 class="section-h">Receipts and Tax</h3>
+        <ul>
+          <li>Schema-ready, six document types.</li>
+          <li>Finalization gated by <code>receipt_finalize_enabled</code>.</li>
+          <li>Accountant sign-off required before enabling.</li>
+        </ul>
+        <h3 class="section-h">Admin</h3>
+        <ul>
+          <li>Users, tags, feature flags, audit log.</li>
+          <li>Roles and departments.</li>
+          <li>SLA and Company Details tabs (storage in Phase 3).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="strong-callout ok">
+      Preservation rule: when in doubt, keep. Every audit ranked rearrange
+      and improve above remove.
+    </div>
+  </section>
+
+  <!-- Slide 6: New and enhanced functionality -->
+  <section class="slide" id="s6">
+    <header>
+      <div>
+        <h2>New and enhanced functionality</h2>
+        <p class="sub">High-value additions, grouped by impact.</p>
+      </div>
+      <div class="num">06 / 10</div>
+    </header>
+
+    <h3 class="section-h">Add now (Phase 1 or 2)</h3>
+    <table>
+      <thead>
+        <tr><th>Feature</th><th>Why</th><th>Phase</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Notification model + bell + three triggers</td><td>Promoted to MVP in 08-additions. Surfaces SLA breach, assignment, mention.</td><td>1 schema, 2 UI</td></tr>
+        <tr><td>Saved views (Jobs, Clients, Billing)</td><td>Schema ready. Repeated filter-set use case.</td><td>2</td></tr>
+        <tr><td>Time-bucketed aging strip</td><td>Spec calls for 0-30 / 31-60 / 61-90 / 90+.</td><td>2</td></tr>
+        <tr><td>Hourly-bank burn-rate bar</td><td>Catches the most common upsell moment.</td><td>2</td></tr>
+        <tr><td>Employee self-view <code>/statistics/me</code></td><td>Restores spec promise of dual framing.</td><td>2</td></tr>
+        <tr><td>Job detail tabs and reassign</td><td>Spec compliance; lowers oversized-page risk.</td><td>2</td></tr>
+        <tr><td>Toast feedback + per-domain loading.tsx</td><td>Reduces "did it save?" support cost.</td><td>2</td></tr>
+        <tr><td>FTS indexes on Job and Post text fields</td><td>Existing search uses <code>ilike</code>; scales poorly.</td><td>2</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="section-h">Add later (Phase 3)</h3>
+    <table>
+      <thead>
+        <tr><th>Feature</th><th>Why</th><th>Pre-req</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>SLA defaults DB-backed + breach automation</td><td>Removes hardcoded <code>lib/sla.ts</code>; powers notifications.</td><td>Phase 1 migration baseline</td></tr>
+        <tr><td>Company Details storage</td><td>Replaces disabled-input mockup with real persistence.</td><td>Schema review</td></tr>
+        <tr><td>File attachments on jobs, posts, replies</td><td>Schema ready; UI absent.</td><td>Storage decision (local vs S3)</td></tr>
+        <tr><td>Receipt finalization</td><td>Closes the compliance hold.</td><td>Accountant sign-off + Tax Authority allocation</td></tr>
+        <tr><td>Recurring job templates</td><td>Eliminates repeat manual job creation.</td><td>Phase 2 stable</td></tr>
+        <tr><td>Knowledge articles</td><td>Lowers repeat ticket volume; supports global search.</td><td>Search scope chips</td></tr>
+        <tr><td>Client health snapshots</td><td>Weekly trend for renewal and risk reviews.</td><td>None blocking</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="section-h">Explicitly out of scope</h3>
+    <p>
+      Multi-tenant client portal. Customer-facing surfaces. Mobile app. ML
+      or predictive features. A/B testing infrastructure. IMAP / email
+      ingestion for jobs. Agent Control Center logic. Optimizely-style
+      flag platform. All revisitable after Phase 3.
+    </p>
+  </section>
+
+  <!-- Slide 7: Phased roadmap -->
+  <section class="slide" id="s7">
+    <header>
+      <div>
+        <h2>Phased roadmap</h2>
+        <p class="sub">Three phases, each gated by an exit checklist.</p>
+      </div>
+      <div class="num">07 / 10</div>
+    </header>
+
+    <div class="timeline">
+      <div class="phase-block">
+        <h3>Phase 1 <span class="pill warn">Pre-pilot hardening</span></h3>
+        <p class="meta">2 weeks. Blocks pilot launch.</p>
+        <ul>
+          <li>Baseline migration + Notification model + indexes.</li>
+          <li>CI workflow; fix broken e2e; add P0 contract tests.</li>
+          <li>Real <code>/api/health</code>; rate-limit auth; JSON 401.</li>
+          <li>Radix modals; ConfirmDialog; remove <code>window.alert</code>.</li>
+          <li>Toast surface; wire i18n; fix two wrong metrics.</li>
+        </ul>
+      </div>
+      <div class="phase-block">
+        <h3>Phase 2 <span class="pill">Pilot polish</span></h3>
+        <p class="meta">3 weeks. Runs during the first half of the pilot.</p>
+        <ul>
+          <li>Notification bell with three triggers; settings prefs.</li>
+          <li>Saved views on Jobs, Clients, Billing.</li>
+          <li>Aging buckets; hourly-bank burn; admin dashboard strips.</li>
+          <li>Employee self-view + tooltips on every KPI.</li>
+          <li>Job detail tabs and reassign control.</li>
+          <li>Skeleton loaders and toast feedback everywhere.</li>
+          <li>FTS indexes; global search with scope chips.</li>
+          <li>N+1 fixes in statistics and dashboard.</li>
+        </ul>
+      </div>
+      <div class="phase-block">
+        <h3>Phase 3 <span class="pill ok">Post-pilot expansion</span></h3>
+        <p class="meta">4-6 weeks. Driven by pilot feedback.</p>
+        <ul>
+          <li>SLA DB-backed defaults + breach automation.</li>
+          <li>Company Details storage and edit UI.</li>
+          <li>File attachments on jobs, posts, replies.</li>
+          <li>Receipt finalization (after accountant sign-off).</li>
+          <li>Recurring job templates.</li>
+          <li>Knowledge articles.</li>
+          <li>Client health snapshots.</li>
+          <li>Saved views team-shared.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="strong-callout">
+      Resourcing: 2 engineers half-time finishes Phase 1 in two weeks and
+      starts Phase 2 in parallel. Cuts list in <code>implementation_plan.md</code>
+      Section 7 if only one engineer is available.
+    </div>
+  </section>
+
+  <!-- Slide 8: Risks and tradeoffs -->
+  <section class="slide" id="s8">
+    <header>
+      <div>
+        <h2>Risks and tradeoffs</h2>
+        <p class="sub">Each risk has a mitigation. Top three are pilot-blocking.</p>
+      </div>
+      <div class="num">08 / 10</div>
+    </header>
+
+    <table>
+      <thead>
+        <tr><th>#</th><th>Risk</th><th>Likelihood</th><th>Impact</th><th>Mitigation</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>R1</td><td>Baseline migration breaks dev DBs</td><td>Medium</td><td>High</td><td>Stop schema edits; <code>migrate diff</code> from empty; <code>migrate resolve --applied</code> on existing DBs</td></tr>
+        <tr><td>R2</td><td>i18n wire-up causes missing-key crashes in Hebrew</td><td>Medium</td><td>Medium</td><td>Fallback to English; lint script comparing en.json and he.json keys</td></tr>
+        <tr><td>R3</td><td>Notifications scope creep delays pilot</td><td>High</td><td>Medium</td><td>Cap scope to three triggers in 08-spec; bell + dropdown only</td></tr>
+        <tr><td>R4</td><td>CI flakes block work</td><td>Medium</td><td>Low</td><td>Allow re-run; e2e non-blocking initially; promote after one stable week</td></tr>
+        <tr><td>R5</td><td>N+1 rewrite changes metric numbers</td><td>Medium</td><td>Medium</td><td>Snapshot pre-rewrite values; reconcile new queries against snapshot</td></tr>
+        <tr><td>R6</td><td>Toast system adds visual noise</td><td>Low</td><td>Low</td><td>Limit toasts to mutation success/error; not navigation</td></tr>
+        <tr><td>R7</td><td>Destructive-action confirms slow expert users</td><td>Low</td><td>Low</td><td>Single-step confirms; typed item name only on irreversible deletes</td></tr>
+        <tr><td>R8</td><td>Pressure to enable receipt finalization early</td><td>Low</td><td>High</td><td>Keep flag off until accountant sign-off; documented in pilot checklist</td></tr>
+        <tr><td>R9</td><td>Role-targeted flags accidentally make features admin-only</td><td>Low</td><td>Medium</td><td>Add tests that flag-off behavior matches the pre-flag baseline</td></tr>
+        <tr><td>R10</td><td>Phasing slows a small team that wants to ship</td><td>Medium</td><td>Low</td><td>Use phasing taxonomy only for mutations, money, auth changes</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="section-h">Top three tradeoffs</h3>
+    <ul>
+      <li><strong>Migration discipline vs. velocity.</strong> Moving from
+        <code>db push</code> to <code>migrate dev</code> adds friction. The
+        rollout safety benefit is the largest single risk-reducer in this
+        plan.</li>
+      <li><strong>Notifications scope vs. pilot date.</strong> A full
+        notifications platform is multi-week work. The plan ships bell +
+        three triggers; preferences UI; nothing else.</li>
+      <li><strong>Analytics correctness vs. surface area.</strong> Phase 2
+        fixes the two wrong metrics and adds tooltips. Phase 2 does not
+        ship every spec metric. Aging buckets and burn-rate are in; some
+        deeper analytics (revenue per employee, MRR mix) wait for a
+        confirmed Payment-amount semantics review.</li>
+    </ul>
+  </section>
+
+  <!-- Slide 9: Definition of done -->
+  <section class="slide" id="s9">
+    <header>
+      <div>
+        <h2>Definition of done</h2>
+        <p class="sub">Per item and per phase. Used by reviewers and by the PM.</p>
+      </div>
+      <div class="num">09 / 10</div>
+    </header>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Per item</h3>
+        <ol>
+          <li>Code merged behind a feature flag (where the change class needs one).</li>
+          <li>Migration committed and applied to staging.</li>
+          <li>Unit or contract test added for the new logic.</li>
+          <li>Translations added to <code>en.json</code> and <code>he.json</code>.</li>
+          <li>Manual RTL pass passed for new screens.</li>
+          <li>Admin ring enabled for at least 48 hours without issue reports.</li>
+          <li>Full rollout flag turned on.</li>
+          <li>Flag marked <code>retired</code> after two weeks of full rollout.</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h3>Per phase</h3>
+        <p class="section-h">Phase 1 exit</p>
+        <ul>
+          <li>Baseline migration + Notification model in <code>prisma/migrations/</code>.</li>
+          <li>CI runs on every PR; lint, typecheck, unit green.</li>
+          <li>E2E green at HEAD.</li>
+          <li><code>/api/health</code> returns 503 on Postgres failure.</li>
+          <li>No bespoke modal remains; no <code>window.alert</code>.</li>
+          <li>Hebrew renders translated text on every page.</li>
+          <li>Two wrong metrics fixed or renamed.</li>
+        </ul>
+        <p class="section-h">Phase 2 exit</p>
+        <ul>
+          <li>Notification bell live; saved views available; aging buckets visible.</li>
+          <li>Burn-rate bar on client card; admin dashboard strips updated.</li>
+          <li><code>/statistics/me</code> live with metric tooltips.</li>
+          <li>Job detail tabs and reassign live.</li>
+          <li>Statistics page p95 under 1.5 s at 50 employees.</li>
+          <li>FTS indexes deployed; global search with scope chips.</li>
+        </ul>
+        <p class="section-h">Phase 3 exit</p>
+        <ul>
+          <li>SLA defaults editable; breaches notify.</li>
+          <li>Company details stored and editable.</li>
+          <li>Attachments live on jobs, posts, replies.</li>
+          <li>Receipts either enabled with accountant sign-off or formally deferred.</li>
+          <li>Recurring templates and knowledge articles live.</li>
+          <li>Client health snapshots available on client detail.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 10: Approval -->
+  <section class="slide" id="s10">
+    <header>
+      <div>
+        <h2>Approval checkpoint</h2>
+        <p class="sub">Implementation has not started. Awaiting approval.</p>
+      </div>
+      <div class="num">10 / 10</div>
+    </header>
+
+    <div class="strong-callout crit">
+      No code, schema, or runtime configuration has been changed in this
+      audit. Approval unlocks Phase 1 only.
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>What you are approving</h3>
+        <ul>
+          <li>The phase structure: <strong>2 weeks Phase 1</strong>,
+            <strong>3 weeks Phase 2</strong>,
+            <strong>4-6 weeks Phase 3</strong>.</li>
+          <li>The Phase 1 scope as listed in
+            <code>implementation_plan.md</code> Section 3.</li>
+          <li>The preservation rule: the MVP skeleton stays. Improvements
+            rearrange, simplify, or extend.</li>
+          <li>The working principles in
+            <code>implementation_plan.md</code> Section 2.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>What is re-decided later</h3>
+        <ul>
+          <li>Phase 2 scope at the Phase 1 exit.</li>
+          <li>Phase 3 scope after pilot feedback.</li>
+          <li>Receipt finalization timing (accountant-dependent).</li>
+          <li>Storage choice for file attachments.</li>
+          <li>Logging sink (optional, self-host friendly).</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 class="section-h">How to approve</h3>
+    <ol>
+      <li>Read <code>audit_overview.md</code> for the consolidated findings.</li>
+      <li>Read <code>implementation_plan.md</code> Sections 1, 2, 3.</li>
+      <li>Reply <em>approved</em>, <em>approved with changes</em>, or
+        <em>not yet</em> in your next message.</li>
+      <li>On <em>approved with changes</em>, list the items to add, cut,
+        or re-phase.</li>
+    </ol>
+
+    <h3 class="section-h">Audit artifacts (all in <code>docs/audit-2026-05/</code>)</h3>
+    <table>
+      <thead>
+        <tr><th>File</th><th>Owner</th><th>Purpose</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>audit_overview.md</code></td><td>PM</td><td>Consolidated findings and decisions</td></tr>
+        <tr><td><code>implementation_plan.md</code></td><td>PM</td><td>Phased plan with sizes and exit checklists</td></tr>
+        <tr><td><code>backend_audit.md</code></td><td>Architect</td><td>Architecture, API, scalability, ops</td></tr>
+        <tr><td><code>frontend_ux_audit.md</code></td><td>Engineering Lead</td><td>Frontend, UX, components</td></tr>
+        <tr><td><code>unfinished_tasks_audit.md</code></td><td>Engineering Lead</td><td>Unfinished work in code and docs</td></tr>
+        <tr><td><code>database_audit.md</code></td><td>Data Engineer</td><td>Schema, migrations, query patterns</td></tr>
+        <tr><td><code>analytics_audit.md</code></td><td>Data Scientist</td><td>Metrics, dashboards, definitions</td></tr>
+        <tr><td><code>testing_qa_audit.md</code></td><td>Evaluation Engineer</td><td>Tests, CI, launch readiness</td></tr>
+        <tr><td><code>experimentation_phasing.md</code></td><td>Experiment Designer</td><td>Flags, rollout patterns, rollback</td></tr>
+        <tr><td><code>improvement_plan_presentation.html</code></td><td>PM</td><td>This deck</td></tr>
+      </tbody>
+    </table>
+
+    <div class="strong-callout ok">
+      Awaiting your call. The audit team stands down. The build team
+      starts on Phase 1 the moment you approve.
+    </div>
+  </section>
+
+  <div class="footer">
+    Skyware Internal Management Portal. Audit and Improvement Plan, 2026-05-24.
+    Single-file HTML deck for screen and print. No tracking, no external assets.
+  </div>
+
+</div>
+
+<script>
+  (function () {
+    var slides = Array.prototype.slice.call(document.querySelectorAll('section.slide'));
+    var navList = document.getElementById('navList');
+    var toggleBtn = document.getElementById('toggleNav');
+    toggleBtn.addEventListener('click', function () {
+      var isHidden = navList.hasAttribute('hidden');
+      if (isHidden) {
+        navList.removeAttribute('hidden');
+        navList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        navList.setAttribute('hidden', '');
+      }
+    });
+
+    function currentIndex() {
+      var y = window.scrollY + 100;
+      for (var i = slides.length - 1; i >= 0; i -= 1) {
+        if (slides[i].offsetTop <= y) return i;
+      }
+      return 0;
+    }
+    function scrollToSlide(i) {
+      if (i < 0 || i >= slides.length) return;
+      slides[i].scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    document.addEventListener('keydown', function (e) {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+      var i = currentIndex();
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+        e.preventDefault();
+        scrollToSlide(i + 1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        scrollToSlide(i - 1);
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        scrollToSlide(0);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        scrollToSlide(slides.length - 1);
+      }
+    });
+  })();
+</script>
+</body>
+</html>

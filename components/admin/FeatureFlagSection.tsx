@@ -2,6 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { AlertTriangle } from "lucide-react";
 
 interface FlagRow {
@@ -97,39 +105,42 @@ export function FeatureFlagSection({ flags }: Props) {
         ))}
       </div>
 
-      {/* Confirmation dialog for receipt flag */}
-      {confirmKey === RECEIPT_FLAG && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-full max-w-sm rounded-xl border bg-background p-6 shadow-xl">
-            <div className="mb-4 flex items-start gap-3">
+      <Dialog
+        open={confirmKey === RECEIPT_FLAG}
+        onOpenChange={(o) => { if (!o) setConfirmKey(null); }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <div className="flex items-start gap-3">
               <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
-              <div>
-                <p className="font-semibold text-sm">Enable receipt finalization?</p>
-                <p className="mt-1 text-xs text-muted-foreground">
+              <div className="space-y-1.5">
+                <DialogTitle>Enable receipt finalization?</DialogTitle>
+                <DialogDescription>
                   This allows finalizing Israeli tax documents with real document numbers.
                   Only enable after your accountant has signed off on templates, VAT rate, and numbering.
                   This action will be audit logged.
-                </p>
+                </DialogDescription>
               </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => doToggle(RECEIPT_FLAG, true)}
-                className="flex-1 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100"
-                disabled={isPending}
-              >
-                Enable anyway
-              </button>
-              <button
-                onClick={() => setConfirmKey(null)}
-                className="flex-1 rounded-md border px-3 py-1.5 text-sm hover:bg-accent"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </DialogHeader>
+          <DialogFooter>
+            <button
+              onClick={() => setConfirmKey(null)}
+              className="rounded-md border px-3 py-1.5 text-sm hover:bg-accent"
+              disabled={isPending}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => doToggle(RECEIPT_FLAG, true)}
+              className="rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50"
+              disabled={isPending}
+            >
+              Enable anyway
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -7,13 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { BurnRateBar } from "./BurnRateBar";
 import { PaymentStatusChip } from "./PaymentStatusChip";
 import { MarkPaidSheet } from "./MarkPaidSheet";
 import type { MonthlyBillingStatus, HourlyBankStatus, PaymentStatus, Currency } from "@prisma/client";
 import { Plus, Pencil, Trash2, CreditCard, Clock, Zap } from "lucide-react";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface MonthlyItem {
   id: string;
@@ -88,8 +94,6 @@ interface Props {
   payments: PaymentRow[];
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function fmtDate(d: string | Date | null) {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
@@ -103,8 +107,6 @@ function fmtAmount(amount: number | null, currency: string) {
 const selectClass =
   "flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
-// ─── Monthly billing section ──────────────────────────────────────────────────
-
 function MonthlySection({ clientId, items, currency }: { clientId: string; items: MonthlyItem[]; currency: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -114,8 +116,15 @@ function MonthlySection({ clientId, items, currency }: { clientId: string; items
   const [price, setPrice] = useState("");
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [status, setStatus] = useState<MonthlyBillingStatus>("active");
+  const [deleteTarget, setDeleteTarget] = useState<MonthlyItem | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  function closeDialog() { setOpen(false); setError(null); setServiceName(""); setPrice(""); }
+  function resetForm() { setError(null); setServiceName(""); setPrice(""); }
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next);
+    if (!next) resetForm();
+  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -134,13 +143,24 @@ function MonthlySection({ clientId, items, currency }: { clientId: string; items
         }),
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})) as { error?: string }; setError(d.error ?? "Failed."); return; }
-      router.refresh(); closeDialog();
+      router.refresh();
+      setOpen(false);
+      resetForm();
     });
   }
 
-  function deleteItem(itemId: string) {
+  function confirmDelete() {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
+    setDeleteError(null);
     startTransition(async () => {
-      await fetch(`/api/clients/${clientId}/billing/monthly-items/${itemId}`, { method: "DELETE" });
+      const res = await fetch(`/api/clients/${clientId}/billing/monthly-items/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({})) as { error?: string };
+        setDeleteError(d.error ?? "Delete failed.");
+        return;
+      }
+      setDeleteTarget(null);
       router.refresh();
     });
   }
@@ -180,7 +200,12 @@ function MonthlySection({ clientId, items, currency }: { clientId: string; items
                 <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${statusBadge[item.status]}`}>
                   {item.status}
                 </span>
-                <button onClick={() => deleteItem(item.id)} disabled={isPending} className="rounded p-1 text-muted-foreground hover:text-destructive">
+                <button
+                  onClick={() => { setDeleteError(null); setDeleteTarget(item); }}
+                  disabled={isPending}
+                  className="rounded p-1 text-muted-foreground hover:text-destructive"
+                  aria-label={`Delete ${item.serviceName}`}
+                >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -189,47 +214,60 @@ function MonthlySection({ clientId, items, currency }: { clientId: string; items
         </div>
       )}
 
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-full max-w-sm rounded-xl border bg-background p-6 shadow-xl">
-            <h3 className="mb-4 text-sm font-semibold">Add monthly billing item</h3>
-            <form onSubmit={submit} className="space-y-3">
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Add monthly billing item</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={submit} className="space-y-3">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Service name *</label>
+              <Input value={serviceName} onChange={(e) => setServiceName(e.target.value)} placeholder="e.g. Web hosting, IT support" disabled={isPending} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="text-sm font-medium">Service name *</label>
-                <Input value={serviceName} onChange={(e) => setServiceName(e.target.value)} placeholder="e.g. Web hosting, IT support" disabled={isPending} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Amount (placeholder)</label>
-                  <Input type="number" min="0" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0" disabled={isPending} />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Start date</label>
-                  <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={isPending} />
-                </div>
+                <label className="text-sm font-medium">Amount (placeholder)</label>
+                <Input type="number" min="0" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0" disabled={isPending} />
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium">Status</label>
-                <select value={status} onChange={(e) => setStatus(e.target.value as MonthlyBillingStatus)} disabled={isPending} className={selectClass}>
-                  <option value="active">Active</option>
-                  <option value="paused">Paused</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
+                <label className="text-sm font-medium">Start date</label>
+                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={isPending} />
               </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              <div className="flex gap-2 pt-1">
-                <Button type="submit" disabled={isPending} className="flex-1">{isPending ? "Saving..." : "Add"}</Button>
-                <Button type="button" variant="outline" onClick={closeDialog} disabled={isPending}>Cancel</Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Status</label>
+              <select value={status} onChange={(e) => setStatus(e.target.value as MonthlyBillingStatus)} disabled={isPending} className={selectClass}>
+                <option value="active">Active</option>
+                <option value="paused">Paused</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <div className="flex gap-2 pt-1">
+              <Button type="submit" disabled={isPending} className="flex-1">{isPending ? "Saving..." : "Add"}</Button>
+              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={isPending}>Cancel</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(o) => { if (!o) { setDeleteTarget(null); setDeleteError(null); } }}
+        title="Delete monthly item"
+        description={deleteTarget ? (
+          <>
+            Delete <span className="font-medium text-foreground">{deleteTarget.serviceName}</span>?
+            This cannot be undone.
+          </>
+        ) : ""}
+        pending={isPending}
+        errorMessage={deleteError}
+        onConfirm={confirmDelete}
+      />
     </section>
   );
 }
-
-// ─── Hourly banks section ─────────────────────────────────────────────────────
 
 function HourlyBanksSection({ clientId, banks, currency }: { clientId: string; banks: HourlyBank[]; currency: string }) {
   const router = useRouter();
@@ -238,18 +276,28 @@ function HourlyBanksSection({ clientId, banks, currency }: { clientId: string; b
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  // Add-bank form state
   const [totalHours, setTotalHours] = useState("");
   const [pricePerHour, setPricePerHour] = useState("");
   const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().slice(0, 10));
 
-  // Log-usage form state
   const [usageJobId, setUsageJobId] = useState("");
   const [usageHours, setUsageHours] = useState("");
   const [usageNote, setUsageNote] = useState("");
 
-  function closeAddDialog() { setOpen(false); setError(null); setTotalHours(""); setPricePerHour(""); }
-  function closeUsageDialog() { setLogUsageBankId(null); setError(null); setUsageJobId(""); setUsageHours(""); setUsageNote(""); }
+  const [deleteTarget, setDeleteTarget] = useState<HourlyBank | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  function resetAddForm() { setError(null); setTotalHours(""); setPricePerHour(""); }
+  function resetUsageForm() { setError(null); setUsageJobId(""); setUsageHours(""); setUsageNote(""); }
+
+  function handleAddOpenChange(next: boolean) {
+    setOpen(next);
+    if (!next) resetAddForm();
+  }
+
+  function handleUsageOpenChange(next: boolean) {
+    if (!next) { setLogUsageBankId(null); resetUsageForm(); }
+  }
 
   function submitAddBank(e: React.FormEvent) {
     e.preventDefault();
@@ -266,7 +314,9 @@ function HourlyBanksSection({ clientId, banks, currency }: { clientId: string; b
         }),
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})) as { error?: string }; setError(d.error ?? "Failed."); return; }
-      router.refresh(); closeAddDialog();
+      router.refresh();
+      setOpen(false);
+      resetAddForm();
     });
   }
 
@@ -287,13 +337,24 @@ function HourlyBanksSection({ clientId, banks, currency }: { clientId: string; b
         }),
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})) as { error?: string }; setError(d.error ?? "Failed."); return; }
-      router.refresh(); closeUsageDialog();
+      router.refresh();
+      setLogUsageBankId(null);
+      resetUsageForm();
     });
   }
 
-  function deleteBank(bankId: string) {
+  function confirmDeleteBank() {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
+    setDeleteError(null);
     startTransition(async () => {
-      await fetch(`/api/clients/${clientId}/billing/hourly-banks/${bankId}`, { method: "DELETE" });
+      const res = await fetch(`/api/clients/${clientId}/billing/hourly-banks/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({})) as { error?: string };
+        setDeleteError(d.error ?? "Delete failed.");
+        return;
+      }
+      setDeleteTarget(null);
       router.refresh();
     });
   }
@@ -334,7 +395,12 @@ function HourlyBanksSection({ clientId, banks, currency }: { clientId: string; b
                     >
                       <Plus className="me-1 h-3 w-3" /> Log usage
                     </Button>
-                    <button onClick={() => deleteBank(bank.id)} disabled={isPending} className="rounded p-1 text-muted-foreground hover:text-destructive">
+                    <button
+                      onClick={() => { setDeleteError(null); setDeleteTarget(bank); }}
+                      disabled={isPending}
+                      className="rounded p-1 text-muted-foreground hover:text-destructive"
+                      aria-label="Delete hourly bank"
+                    >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
@@ -360,88 +426,99 @@ function HourlyBanksSection({ clientId, banks, currency }: { clientId: string; b
         </div>
       )}
 
-      {/* Add bank dialog */}
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-full max-w-sm rounded-xl border bg-background p-6 shadow-xl">
-            <h3 className="mb-4 text-sm font-semibold">Add hourly bank</h3>
-            <form onSubmit={submitAddBank} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Total hours</label>
-                  <Input type="number" min="1" value={totalHours} onChange={(e) => setTotalHours(e.target.value)} placeholder="e.g. 20" disabled={isPending} />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Price/hour (placeholder)</label>
-                  <Input type="number" min="0" value={pricePerHour} onChange={(e) => setPricePerHour(e.target.value)} placeholder="0" disabled={isPending} />
-                </div>
+      <Dialog open={open} onOpenChange={handleAddOpenChange}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Add hourly bank</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={submitAddBank} className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Total hours</label>
+                <Input type="number" min="1" value={totalHours} onChange={(e) => setTotalHours(e.target.value)} placeholder="e.g. 20" disabled={isPending} />
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium">Purchase date</label>
-                <Input type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} disabled={isPending} />
+                <label className="text-sm font-medium">Price/hour (placeholder)</label>
+                <Input type="number" min="0" value={pricePerHour} onChange={(e) => setPricePerHour(e.target.value)} placeholder="0" disabled={isPending} />
               </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              <div className="flex gap-2 pt-1">
-                <Button type="submit" disabled={isPending} className="flex-1">{isPending ? "Saving..." : "Add"}</Button>
-                <Button type="button" variant="outline" onClick={closeAddDialog} disabled={isPending}>Cancel</Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Purchase date</label>
+              <Input type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} disabled={isPending} />
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <div className="flex gap-2 pt-1">
+              <Button type="submit" disabled={isPending} className="flex-1">{isPending ? "Saving..." : "Add"}</Button>
+              <Button type="button" variant="outline" onClick={() => handleAddOpenChange(false)} disabled={isPending}>Cancel</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-      {/* Log usage dialog */}
-      {logUsageBankId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-full max-w-sm rounded-xl border bg-background p-6 shadow-xl">
-            <h3 className="mb-1 text-sm font-semibold">Log hourly usage</h3>
-            <p className="mb-4 text-xs text-muted-foreground">Paste the Job ID from the job detail URL.</p>
-            <form onSubmit={submitLogUsage} className="space-y-3">
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Job ID *</label>
-                <Input
-                  value={usageJobId}
-                  onChange={(e) => setUsageJobId(e.target.value)}
-                  placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                  disabled={isPending}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Hours used *</label>
-                <Input
-                  type="number"
-                  min="0.1"
-                  step="0.1"
-                  value={usageHours}
-                  onChange={(e) => setUsageHours(e.target.value)}
-                  placeholder="e.g. 1.5"
-                  disabled={isPending}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Note (optional)</label>
-                <Textarea
-                  rows={2}
-                  value={usageNote}
-                  onChange={(e) => setUsageNote(e.target.value)}
-                  placeholder="What was worked on..."
-                  disabled={isPending}
-                />
-              </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              <div className="flex gap-2 pt-1">
-                <Button type="submit" disabled={isPending} className="flex-1">{isPending ? "Saving..." : "Log usage"}</Button>
-                <Button type="button" variant="outline" onClick={closeUsageDialog} disabled={isPending}>Cancel</Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <Dialog open={logUsageBankId !== null} onOpenChange={handleUsageOpenChange}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Log hourly usage</DialogTitle>
+            <DialogDescription>Paste the Job ID from the job detail URL.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={submitLogUsage} className="space-y-3">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Job ID *</label>
+              <Input
+                value={usageJobId}
+                onChange={(e) => setUsageJobId(e.target.value)}
+                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                disabled={isPending}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Hours used *</label>
+              <Input
+                type="number"
+                min="0.1"
+                step="0.1"
+                value={usageHours}
+                onChange={(e) => setUsageHours(e.target.value)}
+                placeholder="e.g. 1.5"
+                disabled={isPending}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Note (optional)</label>
+              <Textarea
+                rows={2}
+                value={usageNote}
+                onChange={(e) => setUsageNote(e.target.value)}
+                placeholder="What was worked on..."
+                disabled={isPending}
+              />
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <div className="flex gap-2 pt-1">
+              <Button type="submit" disabled={isPending} className="flex-1">{isPending ? "Saving..." : "Log usage"}</Button>
+              <Button type="button" variant="outline" onClick={() => handleUsageOpenChange(false)} disabled={isPending}>Cancel</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(o) => { if (!o) { setDeleteTarget(null); setDeleteError(null); } }}
+        title="Delete hourly bank"
+        description={deleteTarget ? (
+          <>
+            Delete the bank purchased on {fmtDate(deleteTarget.purchaseDate)}?
+            All logged usage will be removed. This cannot be undone.
+          </>
+        ) : ""}
+        pending={isPending}
+        errorMessage={deleteError}
+        onConfirm={confirmDeleteBank}
+      />
     </section>
   );
 }
-
-// ─── One-time charges section ─────────────────────────────────────────────────
 
 function OneTimeSection({ clientId, charges }: { clientId: string; charges: OneTimeCharge[] }) {
   const router = useRouter();
@@ -450,8 +527,15 @@ function OneTimeSection({ clientId, charges }: { clientId: string; charges: OneT
   const [error, setError] = useState<string | null>(null);
   const [jobIdInput, setJobIdInput] = useState("");
   const [price, setPrice] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<OneTimeCharge | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  function closeDialog() { setOpen(false); setError(null); setJobIdInput(""); setPrice(""); }
+  function resetForm() { setError(null); setJobIdInput(""); setPrice(""); }
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next);
+    if (!next) resetForm();
+  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -467,13 +551,24 @@ function OneTimeSection({ clientId, charges }: { clientId: string; charges: OneT
         }),
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})) as { error?: string }; setError(d.error ?? "Failed."); return; }
-      router.refresh(); closeDialog();
+      router.refresh();
+      setOpen(false);
+      resetForm();
     });
   }
 
-  function deleteCharge(chargeId: string) {
+  function confirmDelete() {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
+    setDeleteError(null);
     startTransition(async () => {
-      await fetch(`/api/clients/${clientId}/billing/one-time-charges/${chargeId}`, { method: "DELETE" });
+      const res = await fetch(`/api/clients/${clientId}/billing/one-time-charges/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({})) as { error?: string };
+        setDeleteError(d.error ?? "Delete failed.");
+        return;
+      }
+      setDeleteTarget(null);
       router.refresh();
     });
   }
@@ -505,7 +600,12 @@ function OneTimeSection({ clientId, charges }: { clientId: string; charges: OneT
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 {c.payment && <PaymentStatusChip status={c.payment.status} />}
-                <button onClick={() => deleteCharge(c.id)} disabled={isPending} className="rounded p-1 text-muted-foreground hover:text-destructive">
+                <button
+                  onClick={() => { setDeleteError(null); setDeleteTarget(c); }}
+                  disabled={isPending}
+                  className="rounded p-1 text-muted-foreground hover:text-destructive"
+                  aria-label={`Delete charge for ${c.jobNameSnapshot}`}
+                >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -514,34 +614,47 @@ function OneTimeSection({ clientId, charges }: { clientId: string; charges: OneT
         </div>
       )}
 
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-full max-w-sm rounded-xl border bg-background p-6 shadow-xl">
-            <h3 className="mb-4 text-sm font-semibold">Add one-time charge</h3>
-            <p className="mb-3 text-xs text-muted-foreground">Paste the Job ID (UUID) from the job detail URL.</p>
-            <form onSubmit={submit} className="space-y-3">
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Job ID *</label>
-                <Input value={jobIdInput} onChange={(e) => setJobIdInput(e.target.value)} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" disabled={isPending} />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Amount (placeholder)</label>
-                <Input type="number" min="0" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0" disabled={isPending} />
-              </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              <div className="flex gap-2 pt-1">
-                <Button type="submit" disabled={isPending} className="flex-1">{isPending ? "Saving..." : "Add"}</Button>
-                <Button type="button" variant="outline" onClick={closeDialog} disabled={isPending}>Cancel</Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Add one-time charge</DialogTitle>
+            <DialogDescription>Paste the Job ID (UUID) from the job detail URL.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={submit} className="space-y-3">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Job ID *</label>
+              <Input value={jobIdInput} onChange={(e) => setJobIdInput(e.target.value)} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" disabled={isPending} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Amount (placeholder)</label>
+              <Input type="number" min="0" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0" disabled={isPending} />
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <div className="flex gap-2 pt-1">
+              <Button type="submit" disabled={isPending} className="flex-1">{isPending ? "Saving..." : "Add"}</Button>
+              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={isPending}>Cancel</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(o) => { if (!o) { setDeleteTarget(null); setDeleteError(null); } }}
+        title="Delete one-time charge"
+        description={deleteTarget ? (
+          <>
+            Delete charge <span className="font-medium text-foreground">{deleteTarget.job.publicNumber} · {deleteTarget.jobNameSnapshot}</span>?
+            This cannot be undone.
+          </>
+        ) : ""}
+        pending={isPending}
+        errorMessage={deleteError}
+        onConfirm={confirmDelete}
+      />
     </section>
   );
 }
-
-// ─── Payments section ─────────────────────────────────────────────────────────
 
 function PaymentsSection({
   clientId,
@@ -562,7 +675,6 @@ function PaymentsSection({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  // Create payment form state
   const [sourceType, setSourceType] = useState<"monthly" | "hourly_bank" | "one_time">("monthly");
   const [sourceId, setSourceId] = useState("");
   const [amount, setAmount] = useState("");
@@ -571,9 +683,14 @@ function PaymentsSection({
   const [dueDate, setDueDate] = useState("");
   const [createNotes, setCreateNotes] = useState("");
 
-  function closeCreateDialog() {
-    setCreateOpen(false); setError(null);
+  function resetCreateForm() {
+    setError(null);
     setSourceType("monthly"); setSourceId(""); setAmount(""); setDueDate(""); setCreateNotes("");
+  }
+
+  function handleCreateOpenChange(next: boolean) {
+    setCreateOpen(next);
+    if (!next) resetCreateForm();
   }
 
   function submitCreate(e: React.FormEvent) {
@@ -599,7 +716,9 @@ function PaymentsSection({
         body: JSON.stringify(body),
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})) as { error?: string }; setError(d.error ?? "Failed."); return; }
-      router.refresh(); closeCreateDialog();
+      router.refresh();
+      setCreateOpen(false);
+      resetCreateForm();
     });
   }
 
@@ -642,92 +761,91 @@ function PaymentsSection({
         </div>
       )}
 
-      {/* Create payment dialog */}
-      {createOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-full max-w-md rounded-xl border bg-background p-6 shadow-xl">
-            <h3 className="mb-4 text-sm font-semibold">Create payment draft</h3>
-            <form onSubmit={submitCreate} className="space-y-3">
+      <Dialog open={createOpen} onOpenChange={handleCreateOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create payment draft</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={submitCreate} className="space-y-3">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Source type *</label>
+              <select
+                value={sourceType}
+                onChange={(e) => { setSourceType(e.target.value as "monthly" | "hourly_bank" | "one_time"); setSourceId(""); }}
+                disabled={isPending}
+                className={selectClass}
+              >
+                <option value="monthly">Monthly billing</option>
+                <option value="hourly_bank">Hourly bank</option>
+                <option value="one_time">One-time charge</option>
+              </select>
+            </div>
+
+            {sourceType === "monthly" && monthlyItems.length > 0 && (
               <div className="space-y-1.5">
-                <label className="text-sm font-medium">Source type *</label>
-                <select
-                  value={sourceType}
-                  onChange={(e) => { setSourceType(e.target.value as "monthly" | "hourly_bank" | "one_time"); setSourceId(""); }}
-                  disabled={isPending}
-                  className={selectClass}
-                >
-                  <option value="monthly">Monthly billing</option>
-                  <option value="hourly_bank">Hourly bank</option>
-                  <option value="one_time">One-time charge</option>
+                <label className="text-sm font-medium">Monthly item (optional)</label>
+                <select value={sourceId} onChange={(e) => setSourceId(e.target.value)} disabled={isPending} className={selectClass}>
+                  <option value="">Not linked</option>
+                  {monthlyItems.map((m) => (
+                    <option key={m.id} value={m.id}>{m.serviceName}</option>
+                  ))}
                 </select>
               </div>
+            )}
 
-              {sourceType === "monthly" && monthlyItems.length > 0 && (
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Monthly item (optional)</label>
-                  <select value={sourceId} onChange={(e) => setSourceId(e.target.value)} disabled={isPending} className={selectClass}>
-                    <option value="">Not linked</option>
-                    {monthlyItems.map((m) => (
-                      <option key={m.id} value={m.id}>{m.serviceName}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {sourceType === "hourly_bank" && hourlyBanks.length > 0 && (
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Hourly bank (optional)</label>
-                  <select value={sourceId} onChange={(e) => setSourceId(e.target.value)} disabled={isPending} className={selectClass}>
-                    <option value="">Not linked</option>
-                    {hourlyBanks.map((b) => (
-                      <option key={b.id} value={b.id}>Purchased {fmtDate(b.purchaseDate)}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Amount (placeholder)</label>
-                  <Input type="number" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" disabled={isPending} />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Currency</label>
-                  <select value={currency} onChange={(e) => setCurrency(e.target.value)} disabled={isPending} className={selectClass}>
-                    <option value="ILS">ILS</option>
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Issued date *</label>
-                  <Input type="date" value={issuedDate} onChange={(e) => setIssuedDate(e.target.value)} disabled={isPending} />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Due date</label>
-                  <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} disabled={isPending} />
-                </div>
-              </div>
-
+            {sourceType === "hourly_bank" && hourlyBanks.length > 0 && (
               <div className="space-y-1.5">
-                <label className="text-sm font-medium">Notes (optional)</label>
-                <Textarea rows={2} value={createNotes} onChange={(e) => setCreateNotes(e.target.value)} disabled={isPending} />
+                <label className="text-sm font-medium">Hourly bank (optional)</label>
+                <select value={sourceId} onChange={(e) => setSourceId(e.target.value)} disabled={isPending} className={selectClass}>
+                  <option value="">Not linked</option>
+                  {hourlyBanks.map((b) => (
+                    <option key={b.id} value={b.id}>Purchased {fmtDate(b.purchaseDate)}</option>
+                  ))}
+                </select>
               </div>
+            )}
 
-              <p className="text-[11px] text-muted-foreground">Payment will be created as a draft. Use &ldquo;Update&rdquo; to advance its status.</p>
-
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              <div className="flex gap-2 pt-1">
-                <Button type="submit" disabled={isPending} className="flex-1">{isPending ? "Creating..." : "Create draft"}</Button>
-                <Button type="button" variant="outline" onClick={closeCreateDialog} disabled={isPending}>Cancel</Button>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Amount (placeholder)</label>
+                <Input type="number" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" disabled={isPending} />
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Currency</label>
+                <select value={currency} onChange={(e) => setCurrency(e.target.value)} disabled={isPending} className={selectClass}>
+                  <option value="ILS">ILS</option>
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Issued date *</label>
+                <Input type="date" value={issuedDate} onChange={(e) => setIssuedDate(e.target.value)} disabled={isPending} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Due date</label>
+                <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} disabled={isPending} />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Notes (optional)</label>
+              <Textarea rows={2} value={createNotes} onChange={(e) => setCreateNotes(e.target.value)} disabled={isPending} />
+            </div>
+
+            <p className="text-[11px] text-muted-foreground">Payment will be created as a draft. Use &ldquo;Update&rdquo; to advance its status.</p>
+
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <div className="flex gap-2 pt-1">
+              <Button type="submit" disabled={isPending} className="flex-1">{isPending ? "Creating..." : "Create draft"}</Button>
+              <Button type="button" variant="outline" onClick={() => handleCreateOpenChange(false)} disabled={isPending}>Cancel</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {activePayment && (
         <MarkPaidSheet
@@ -738,8 +856,6 @@ function PaymentsSection({
     </section>
   );
 }
-
-// ─── Main export ──────────────────────────────────────────────────────────────
 
 export function ClientBillingTab({ clientId, clientName, billingAccount, payments }: Props) {
   if (!billingAccount) {

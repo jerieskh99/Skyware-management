@@ -1,5 +1,8 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import type { JobSeverity } from "@prisma/client";
+import { useT } from "@/lib/i18n/client";
 
 const STYLES: Record<JobSeverity, string> = {
   minor: "bg-slate-50 text-slate-600 border-slate-200",
@@ -8,16 +11,10 @@ const STYLES: Record<JobSeverity, string> = {
   critical: "bg-red-100 text-red-800 border-red-300",
 };
 
-const LABELS: Record<JobSeverity, string> = {
-  minor: "Minor",
-  moderate: "Moderate",
-  major: "Major",
-  critical: "Critical",
-};
-
 interface Props { severity: JobSeverity; className?: string }
 
 export function JobSeverityChip({ severity, className }: Props) {
+  const { t } = useT();
   return (
     <span
       className={cn(
@@ -26,7 +23,7 @@ export function JobSeverityChip({ severity, className }: Props) {
         className
       )}
     >
-      {LABELS[severity]}
+      {t(`job.severity.${severity}`)}
     </span>
   );
 }

@@ -14,6 +14,7 @@ import { JobPriorityChip } from "@/components/jobs/JobPriorityChip";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { KpiCard } from "@/components/shared/KpiCard";
 import { SectionCard } from "@/components/shared/SectionCard";
+import { getT } from "@/lib/i18n/server";
 import {
   Briefcase,
   AlertTriangle,
@@ -31,20 +32,21 @@ export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
   const user = session.user as SessionUser;
+  const { t } = await getT();
 
   if (isAdmin(user)) {
     const [kpis, lists] = await Promise.all([
       getAdminKpis(),
       getAdminDashboardLists(),
     ]);
-    return <AdminDashboard user={user} kpis={kpis} lists={lists} />;
+    return <AdminDashboard user={user} kpis={kpis} lists={lists} t={t} />;
   }
 
   const [kpis, lists] = await Promise.all([
     getEmployeeKpis(user.id),
     getEmployeeDashboardLists(user.id),
   ]);
-  return <EmployeeDashboard user={user} kpis={kpis} lists={lists} />;
+  return <EmployeeDashboard user={user} kpis={kpis} lists={lists} t={t} />;
 }
 
 // ── Quick actions strip ─────────────────────────────────────────────────────
@@ -82,54 +84,57 @@ function QuickActions({ actions }: { actions: QuickAction[] }) {
 
 type AdminKpis = Awaited<ReturnType<typeof getAdminKpis>>;
 type AdminLists = Awaited<ReturnType<typeof getAdminDashboardLists>>;
+type T = (key: string) => string;
 
 function AdminDashboard({
   user,
   kpis,
   lists,
+  t,
 }: {
   user: SessionUser;
   kpis: AdminKpis;
   lists: AdminLists;
+  t: T;
 }) {
-  const greet = greeting();
+  const greet = greeting(t);
 
   return (
     <div className="space-y-8">
       <PageHeader
         title={`${greet}, ${user.username}.`}
-        description="Here's what needs your attention across the team today."
+        description={t("dashboard.adminDescription")}
       />
 
       {/* KPI strip */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
-          label="Active jobs"
+          label={t("dashboard.kpiActive")}
           value={kpis.activeCount}
           icon={Briefcase}
           tone="brand"
           href="/my-jobs"
         />
         <KpiCard
-          label="Delayed"
+          label={t("dashboard.kpiDelayed")}
           value={kpis.delayedCount}
           icon={Hourglass}
           tone={kpis.delayedCount > 0 ? "warn" : "default"}
           href="/my-jobs"
         />
         <KpiCard
-          label="Needs review"
+          label={t("dashboard.kpiNeedsReview")}
           value={kpis.reviewsCount}
           icon={ClipboardCheck}
           tone={kpis.reviewsCount > 0 ? "warn" : "default"}
           href="/my-jobs"
         />
         <KpiCard
-          label="Unpaid"
+          label={t("dashboard.kpiUnpaid")}
           value={kpis.unpaidCount}
           icon={CreditCard}
           tone={kpis.overdueCount > 0 ? "danger" : "default"}
-          note={kpis.overdueCount > 0 ? `${kpis.overdueCount} overdue` : undefined}
+          note={kpis.overdueCount > 0 ? `${kpis.overdueCount} ${t("dashboard.noteOverdue")}` : undefined}
           href="/billing"
         />
       </div>
@@ -137,22 +142,23 @@ function AdminDashboard({
       {/* Quick actions */}
       <QuickActions
         actions={[
-          { href: "/hub", label: "Task Hub", icon: Inbox, hint: "Available tasks to take" },
-          { href: "/my-jobs", label: "Review jobs", icon: ClipboardCheck, hint: "Mark as reviewed" },
-          { href: "/billing", label: "Open billing", icon: CreditCard, hint: "Aging payments" },
-          { href: "/clients", label: "Clients", icon: Building2 },
+          { href: "/hub", label: t("dashboard.actionTaskHub"), icon: Inbox, hint: t("dashboard.quickHubHint") },
+          { href: "/my-jobs", label: t("dashboard.actionReviewJobs"), icon: ClipboardCheck, hint: t("dashboard.quickReviewHint") },
+          { href: "/billing", label: t("dashboard.actionOpenBilling"), icon: CreditCard, hint: t("dashboard.quickBillingHint") },
+          { href: "/clients", label: t("dashboard.actionClients"), icon: Building2 },
         ]}
       />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <SectionCard
-          title="Needs review"
+          title={t("dashboard.sectionNeedsReview")}
           icon={ClipboardCheck}
           count={lists.reviewsPending.length}
           seeAllHref="/my-jobs"
+          seeAllLabel={t("common.viewAll")}
         >
           {lists.reviewsPending.length === 0 ? (
-            <EmptySectionInline>No jobs waiting for review.</EmptySectionInline>
+            <EmptySectionInline>{t("dashboard.emptyReviews")}</EmptySectionInline>
           ) : (
             <div className="space-y-1">
               {lists.reviewsPending.map((j) => (
@@ -172,13 +178,14 @@ function AdminDashboard({
         </SectionCard>
 
         <SectionCard
-          title="Waiting for you"
+          title={t("dashboard.sectionWaitingForYou")}
           icon={Inbox}
           count={lists.waitingForAdmin.length}
           seeAllHref="/my-jobs?status=waiting_for_admin"
+          seeAllLabel={t("common.viewAll")}
         >
           {lists.waitingForAdmin.length === 0 ? (
-            <EmptySectionInline>No jobs waiting for admin.</EmptySectionInline>
+            <EmptySectionInline>{t("dashboard.emptyWaitingAdmin")}</EmptySectionInline>
           ) : (
             <div className="space-y-1">
               {lists.waitingForAdmin.map((j) => (
@@ -199,10 +206,11 @@ function AdminDashboard({
 
         {lists.delayed.length > 0 && (
           <SectionCard
-            title="Past SLA"
+            title={t("dashboard.sectionPastSla")}
             icon={AlertTriangle}
             count={lists.delayed.length}
             seeAllHref="/my-jobs"
+            seeAllLabel={t("common.viewAll")}
             className="border-warn/30 bg-warn-soft/30 lg:col-span-2"
           >
             <div className="space-y-1">
@@ -234,37 +242,39 @@ function EmployeeDashboard({
   user,
   kpis,
   lists,
+  t,
 }: {
   user: SessionUser;
   kpis: EmployeeKpis;
   lists: EmployeeLists;
+  t: T;
 }) {
-  const greet = greeting();
+  const greet = greeting(t);
 
   return (
     <div className="space-y-8">
       <PageHeader
         title={`${greet}, ${user.username}.`}
-        description="Your jobs for today and the week."
+        description={t("dashboard.employeeDescription")}
       />
 
       <div className="grid gap-3 sm:grid-cols-3">
         <KpiCard
-          label="Active jobs"
+          label={t("dashboard.kpiActive")}
           value={kpis.activeCount}
           icon={Briefcase}
           tone="brand"
           href="/my-jobs"
         />
         <KpiCard
-          label="Delayed"
+          label={t("dashboard.kpiDelayed")}
           value={kpis.delayedCount}
           icon={Hourglass}
           tone={kpis.delayedCount > 0 ? "warn" : "default"}
           href="/my-jobs"
         />
         <KpiCard
-          label="Hours this week"
+          label={t("dashboard.kpiHoursThisWeek")}
           value={`${kpis.hoursThisWeek}h`}
           icon={Timer}
         />
@@ -272,22 +282,23 @@ function EmployeeDashboard({
 
       <QuickActions
         actions={[
-          { href: "/my-jobs", label: "My jobs", icon: Briefcase },
-          { href: "/hub", label: "Task Hub", icon: Inbox, hint: "Take a task" },
-          { href: "/communication", label: "Channels", icon: MessageSquare },
-          { href: "/department-jobs", label: "Department", icon: CalendarClock },
+          { href: "/my-jobs", label: t("dashboard.actionMyJobs"), icon: Briefcase },
+          { href: "/hub", label: t("dashboard.actionTaskHub"), icon: Inbox, hint: t("dashboard.quickHubEmployeeHint") },
+          { href: "/communication", label: t("dashboard.actionChannels"), icon: MessageSquare },
+          { href: "/department-jobs", label: t("dashboard.actionDepartment"), icon: CalendarClock },
         ]}
       />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <SectionCard
-          title="Working on it"
+          title={t("dashboard.sectionWorkingOnIt")}
           icon={Timer}
           count={lists.working.length}
           seeAllHref="/my-jobs"
+          seeAllLabel={t("common.viewAll")}
         >
           {lists.working.length === 0 ? (
-            <EmptySectionInline>No active jobs.</EmptySectionInline>
+            <EmptySectionInline>{t("dashboard.emptyWorking")}</EmptySectionInline>
           ) : (
             <div className="space-y-1">
               {lists.working.map((j) => (
@@ -306,13 +317,14 @@ function EmployeeDashboard({
         </SectionCard>
 
         <SectionCard
-          title="Assigned, not started"
+          title={t("dashboard.sectionAssignedNotStarted")}
           icon={Inbox}
           count={lists.assigned.length}
           seeAllHref="/my-jobs"
+          seeAllLabel={t("common.viewAll")}
         >
           {lists.assigned.length === 0 ? (
-            <EmptySectionInline>Nothing waiting to start.</EmptySectionInline>
+            <EmptySectionInline>{t("dashboard.emptyAssigned")}</EmptySectionInline>
           ) : (
             <div className="space-y-1">
               {lists.assigned.map((j) => (
@@ -336,12 +348,12 @@ function EmployeeDashboard({
 
 // ── Shared ──────────────────────────────────────────────────────────────────
 
-function greeting(): string {
+function greeting(t: T): string {
   const h = new Date().getHours();
-  if (h < 5) return "Working late";
-  if (h < 12) return "Good morning";
-  if (h < 18) return "Good afternoon";
-  return "Good evening";
+  if (h < 5) return t("dashboard.greetingLate");
+  if (h < 12) return t("dashboard.greetingMorning");
+  if (h < 18) return t("dashboard.greetingAfternoon");
+  return t("dashboard.greetingEvening");
 }
 
 function EmptySectionInline({ children }: { children: React.ReactNode }) {

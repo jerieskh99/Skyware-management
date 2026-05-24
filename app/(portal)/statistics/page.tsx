@@ -9,6 +9,7 @@ import {
   getDepartmentStats,
   getClientStats,
 } from "@/lib/statistics/queries";
+import { getT } from "@/lib/i18n/server";
 import {
   BarChart2,
   Mail,
@@ -20,12 +21,6 @@ import {
   RefreshCw,
   Briefcase,
 } from "lucide-react";
-
-const RANGE_OPTIONS = [
-  { value: "7", label: "Last 7 days" },
-  { value: "30", label: "Last 30 days" },
-  { value: "90", label: "Last 90 days" },
-];
 
 interface Props {
   searchParams: Promise<Record<string, string>>;
@@ -48,17 +43,25 @@ export default async function StatisticsPage({ searchParams }: Props) {
     getClientStats(rangeDays),
   ]);
 
+  const { t } = await getT();
+
+  const RANGE_OPTIONS = [
+    { value: "7", label: t("statistics.range7") },
+    { value: "30", label: t("statistics.range30") },
+    { value: "90", label: t("statistics.range90") },
+  ];
+
   const rangeLabel =
-    RANGE_OPTIONS.find((o) => o.value === range)?.label ?? "Last 30 days";
+    RANGE_OPTIONS.find((o) => o.value === range)?.label ?? t("statistics.range30");
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Statistics</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("statistics.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            Operational visibility into workload, delivery times, and team activity.
+            {t("statistics.description")}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -80,7 +83,7 @@ export default async function StatisticsPage({ searchParams }: Props) {
             className="inline-flex items-center gap-1.5 rounded-md border border-dashed px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent"
           >
             <Mail className="h-3.5 w-3.5" />
-            Email → Job
+            {t("statistics.emailToJob")}
           </Link>
         </div>
       </div>
@@ -88,59 +91,64 @@ export default async function StatisticsPage({ searchParams }: Props) {
       {/* Overview KPI cards */}
       <section>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Overview — {rangeLabel}
+          {t("statistics.overview")} — {rangeLabel}
         </h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <KpiCard
             icon={Briefcase}
-            label="Active jobs"
+            label={t("statistics.kpiActive")}
             value={overview.activeJobs}
             colorClass="text-blue-600"
           />
           <KpiCard
             icon={CheckCircle2}
-            label="Completed"
+            label={t("statistics.kpiCompleted")}
             value={overview.completedCount}
             colorClass="text-green-600"
           />
           <KpiCard
             icon={AlertTriangle}
-            label="Delayed"
+            label={t("statistics.kpiDelayed")}
             value={overview.delayedCount}
             colorClass={overview.delayedCount > 0 ? "text-amber-600" : "text-muted-foreground"}
           />
           <KpiCard
             icon={RefreshCw}
-            label="Reopened"
-            value={overview.reopenedCount}
-            colorClass={overview.reopenedCount > 0 ? "text-orange-600" : "text-muted-foreground"}
+            label={t("statistics.kpiReopenEvents")}
+            value={overview.reopenedEventsCount}
+            colorClass={overview.reopenedEventsCount > 0 ? "text-orange-600" : "text-muted-foreground"}
+            note={t("statistics.kpiReopenNote")}
           />
         </div>
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <KpiCard
             icon={CheckCircle2}
-            label="Reviewed"
+            label={t("statistics.kpiReviewed")}
             value={overview.reviewedCount}
             colorClass="text-emerald-600"
           />
           <KpiCard
             icon={Clock}
-            label="Hours reported"
+            label={t("statistics.kpiHoursReported")}
             value={overview.totalHoursReported}
             suffix="h"
             colorClass="text-indigo-600"
           />
           <KpiCard
             icon={Clock}
-            label="Avg. completion"
-            value={overview.avgCompletionHours ?? "—"}
+            label={t("statistics.kpiAvgCompletion")}
+            value={overview.avgCompletionHours ?? "-"}
             suffix={overview.avgCompletionHours !== null ? "h" : ""}
             colorClass="text-slate-600"
-            note="assigned → done"
+            note={
+              overview.completionSampleSize > 0
+                ? `${t("statistics.kpiCompletionNote")}. median ${overview.medianCompletionHours ?? "-"}h. p90 ${overview.p90CompletionHours ?? "-"}h. n=${overview.completionSampleSize}`
+                : t("statistics.kpiCompletionNote")
+            }
           />
           <KpiCard
             icon={Briefcase}
-            label="Cancelled"
+            label={t("statistics.kpiCancelled")}
             value={overview.cancelledCount}
             colorClass="text-red-500"
           />
@@ -152,21 +160,21 @@ export default async function StatisticsPage({ searchParams }: Props) {
         <div className="mb-3 flex items-center gap-2">
           <Users className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Employee activity — {rangeLabel}
+            {t("statistics.employeeActivity")} — {rangeLabel}
           </h2>
         </div>
         {employees.length === 0 ? (
-          <EmptyState message="No employees found." />
+          <EmptyState message={t("statistics.noEmployees")} />
         ) : (
           <div className="overflow-auto rounded-lg border">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/30 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  <Th>Employee</Th>
-                  <Th>Department</Th>
-                  <Th align="right">Active jobs</Th>
-                  <Th align="right">Completed</Th>
-                  <Th align="right">Hours logged</Th>
+                  <Th>{t("statistics.colEmployee")}</Th>
+                  <Th>{t("statistics.colDepartment")}</Th>
+                  <Th align="right">{t("statistics.colActive")}</Th>
+                  <Th align="right">{t("statistics.colCompleted")}</Th>
+                  <Th align="right">{t("statistics.colHours")}</Th>
                 </tr>
               </thead>
               <tbody>
@@ -196,20 +204,20 @@ export default async function StatisticsPage({ searchParams }: Props) {
         <div className="mb-3 flex items-center gap-2">
           <BarChart2 className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Department activity
+            {t("statistics.departmentActivity")}
           </h2>
         </div>
         {departments.length === 0 ? (
-          <EmptyState message="No departments found." />
+          <EmptyState message={t("statistics.noDepartments")} />
         ) : (
           <div className="overflow-auto rounded-lg border">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/30 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  <Th>Department</Th>
-                  <Th align="right">Active</Th>
-                  <Th align="right">Completed</Th>
-                  <Th align="right">Delayed</Th>
+                  <Th>{t("statistics.colDept")}</Th>
+                  <Th align="right">{t("statistics.colActiveShort")}</Th>
+                  <Th align="right">{t("statistics.colCompleted")}</Th>
+                  <Th align="right">{t("statistics.colDelayed")}</Th>
                 </tr>
               </thead>
               <tbody>
@@ -237,20 +245,20 @@ export default async function StatisticsPage({ searchParams }: Props) {
         <div className="mb-3 flex items-center gap-2">
           <Building2 className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Client workload — {rangeLabel}
+            {t("statistics.clientWorkload")} — {rangeLabel}
           </h2>
         </div>
         {clients.length === 0 ? (
-          <EmptyState message="No clients with jobs yet." />
+          <EmptyState message={t("statistics.noClients")} />
         ) : (
           <div className="overflow-auto rounded-lg border">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/30 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  <Th>Client</Th>
-                  <Th align="right">Total jobs</Th>
-                  <Th align="right">Active</Th>
-                  <Th align="right">Completed</Th>
+                  <Th>{t("statistics.colClient")}</Th>
+                  <Th align="right">{t("statistics.colTotal")}</Th>
+                  <Th align="right">{t("statistics.colActiveShort")}</Th>
+                  <Th align="right">{t("statistics.colCompleted")}</Th>
                 </tr>
               </thead>
               <tbody>
@@ -280,7 +288,7 @@ export default async function StatisticsPage({ searchParams }: Props) {
 
       {/* Footer note */}
       <p className="text-[11px] text-muted-foreground">
-        Statistics reflect operational activity, not employee surveillance. All metrics are based on job lifecycle data.
+        {t("statistics.footerNote")}
       </p>
     </div>
   );

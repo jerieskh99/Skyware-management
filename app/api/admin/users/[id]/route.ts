@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, forbidden, badRequest, notFound } from "@/lib/api-utils";
+import { requireAuth, forbidden, badRequest, notFound, unprocessable } from "@/lib/api-utils";
 import { isAdmin } from "@/lib/permissions";
 import { writeAudit } from "@/lib/audit";
 
@@ -37,12 +37,13 @@ export async function PATCH(req: Request, { params }: Params) {
   const d = parsed.data;
 
   // Guard: admin cannot deactivate their own account or downgrade their own role.
+  // 422 (not 400): the request is well-formed; it just violates a state invariant.
   if (id === auth.user.id) {
     if (d.isActive === false) {
-      return badRequest([{ message: "You cannot deactivate your own account." }]);
+      return unprocessable("You cannot deactivate your own account.");
     }
     if (d.roleKey !== undefined && d.roleKey !== existing.role.key) {
-      return badRequest([{ message: "You cannot change your own role." }]);
+      return unprocessable("You cannot change your own role.");
     }
   }
 

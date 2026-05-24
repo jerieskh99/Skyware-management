@@ -8,6 +8,7 @@ import { JobRow } from "@/components/jobs/JobRow";
 import { JobsPageHeader } from "@/components/jobs/JobsPageHeader";
 import { JobFiltersBar } from "@/components/jobs/JobFiltersBar";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { getT } from "@/lib/i18n/server";
 import { Briefcase } from "lucide-react";
 
 interface Props {
@@ -31,16 +32,19 @@ export default async function MyJobsPage({ searchParams }: Props) {
     showClosed,
   });
 
+  const { t } = await getT();
+  const admin = isAdmin(user);
+
   return (
     <div className="space-y-4">
       <JobsPageHeader
-        title="My Jobs"
+        title={t("jobs.myJobsTitle")}
         description={
-          isAdmin(user)
-            ? "All jobs you can see across the team."
-            : "Jobs currently assigned to you."
+          admin
+            ? t("jobs.myJobsDescriptionAdmin")
+            : t("jobs.myJobsDescriptionEmployee")
         }
-        isAdmin={isAdmin(user)}
+        isAdmin={admin}
       />
       <JobFiltersBar
         initialSearch={search}
@@ -52,14 +56,14 @@ export default async function MyJobsPage({ searchParams }: Props) {
           icon={Briefcase}
           title={
             search || priority
-              ? "No jobs match your filters."
+              ? t("jobs.noJobsMatch")
               : showClosed
-              ? "No closed jobs."
-              : "No active jobs assigned to you."
+              ? t("jobs.noClosedJobs")
+              : t("jobs.noActiveAssigned")
           }
           description={
             !search && !priority && !showClosed
-              ? "Check the Task Hub for available tasks."
+              ? t("jobs.noActiveAssignedHint")
               : undefined
           }
         />

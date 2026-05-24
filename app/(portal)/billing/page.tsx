@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { KpiCard } from "@/components/shared/KpiCard";
 import { SectionCard } from "@/components/shared/SectionCard";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { getT } from "@/lib/i18n/server";
 
 const VALID_STATUSES = new Set<string>([
   "draft", "sent_to_client", "waiting_for_payment",
@@ -48,12 +49,14 @@ export default async function BillingPage({ searchParams }: Props) {
     getAgingPayments(),
   ]);
 
+  const { t } = await getT();
+
   return (
     <div className="space-y-8">
       <PageHeader
         icon={CreditCard}
-        title="Billing"
-        description="Payments, monthly plans, hourly banks, and one-time charges across all clients."
+        title={t("billing.title")}
+        description={t("billing.description")}
       />
 
       {/* KPI strip */}
@@ -61,21 +64,21 @@ export default async function BillingPage({ searchParams }: Props) {
         <KpiCard
           icon={CreditCard}
           tone={kpis.unpaidCount > 0 ? "warn" : "default"}
-          label="Unpaid"
+          label={t("billing.kpiUnpaid")}
           value={kpis.unpaidCount}
           href="?status=waiting_for_payment"
         />
         <KpiCard
           icon={AlertTriangle}
           tone={kpis.overdueCount > 0 ? "danger" : "default"}
-          label="Overdue"
+          label={t("billing.kpiOverdue")}
           value={kpis.overdueCount}
           href="?status=overdue"
         />
         <KpiCard
           icon={CheckCircle2}
           tone="success"
-          label="Paid this month"
+          label={t("billing.kpiPaidThisMonth")}
           value={kpis.paidThisMonth}
           href="?status=paid"
         />
@@ -85,8 +88,8 @@ export default async function BillingPage({ searchParams }: Props) {
       {aging.length > 0 && (
         <SectionCard
           icon={Clock}
-          title="Needs attention"
-          description="Aging or overdue payments — review these first."
+          title={t("billing.needsAttention")}
+          description={t("billing.needsAttentionDescription")}
           count={aging.length}
           bodyClassName="p-0"
         >
@@ -103,7 +106,7 @@ export default async function BillingPage({ searchParams }: Props) {
                   <p className="text-xs text-muted-foreground">
                     {p.sourceMonthly?.serviceName ?? p.sourceType.replace(/_/g, " ")} ·{" "}
                     {fmtAmount(p.amountPlaceholder, p.currency)}
-                    {p.dueDate && ` · Due ${fmtDate(p.dueDate)}`}
+                    {p.dueDate && ` · ${t("billing.due")} ${fmtDate(p.dueDate)}`}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -119,15 +122,15 @@ export default async function BillingPage({ searchParams }: Props) {
       {/* All payments */}
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold">All payments</h2>
+          <h2 className="text-sm font-semibold">{t("billing.allPayments")}</h2>
           <StatusFilterLinks active={rawStatuses[0]} />
         </div>
 
         {payments.length === 0 ? (
           <EmptyState
             icon={CreditCard}
-            title="No payments found."
-            description="Payments are created from the client billing tab."
+            title={t("billing.noPayments")}
+            description={t("billing.noPaymentsDescription")}
           />
         ) : (
           <div className="rounded-lg border">
@@ -135,13 +138,13 @@ export default async function BillingPage({ searchParams }: Props) {
               <table className="w-full text-sm">
                 <thead className="border-b bg-muted/30">
                   <tr>
-                    <th className="px-4 py-2.5 text-start text-xs font-medium text-muted-foreground">Client</th>
-                    <th className="px-4 py-2.5 text-start text-xs font-medium text-muted-foreground">Source</th>
-                    <th className="px-4 py-2.5 text-start text-xs font-medium text-muted-foreground">Amount</th>
-                    <th className="px-4 py-2.5 text-start text-xs font-medium text-muted-foreground hidden sm:table-cell">Issued</th>
-                    <th className="px-4 py-2.5 text-start text-xs font-medium text-muted-foreground hidden sm:table-cell">Due</th>
-                    <th className="px-4 py-2.5 text-start text-xs font-medium text-muted-foreground">Status</th>
-                    <th className="px-4 py-2.5 text-start text-xs font-medium text-muted-foreground">Actions</th>
+                    <th className="px-4 py-2.5 text-start text-xs font-medium text-muted-foreground">{t("billing.colClient")}</th>
+                    <th className="px-4 py-2.5 text-start text-xs font-medium text-muted-foreground">{t("billing.colSource")}</th>
+                    <th className="px-4 py-2.5 text-start text-xs font-medium text-muted-foreground">{t("billing.colAmount")}</th>
+                    <th className="px-4 py-2.5 text-start text-xs font-medium text-muted-foreground hidden sm:table-cell">{t("billing.colIssued")}</th>
+                    <th className="px-4 py-2.5 text-start text-xs font-medium text-muted-foreground hidden sm:table-cell">{t("billing.colDue")}</th>
+                    <th className="px-4 py-2.5 text-start text-xs font-medium text-muted-foreground">{t("billing.colStatus")}</th>
+                    <th className="px-4 py-2.5 text-start text-xs font-medium text-muted-foreground">{t("billing.colActions")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -184,16 +187,17 @@ export default async function BillingPage({ searchParams }: Props) {
 
 // ─── Status filter chips ──────────────────────────────────────────────────────
 
-const FILTER_OPTIONS: { label: string; value: PaymentStatus | "" }[] = [
-  { label: "All", value: "" },
-  { label: "Awaiting", value: "waiting_for_payment" },
-  { label: "Partial", value: "partially_paid" },
-  { label: "Overdue", value: "overdue" },
-  { label: "Paid", value: "paid" },
-  { label: "Draft", value: "draft" },
-];
+async function StatusFilterLinks({ active }: { active?: string }) {
+  const { t } = await getT();
+  const FILTER_OPTIONS: { label: string; value: PaymentStatus | "" }[] = [
+    { label: t("billing.filterAll"), value: "" },
+    { label: t("billing.filterAwaiting"), value: "waiting_for_payment" },
+    { label: t("billing.filterPartial"), value: "partially_paid" },
+    { label: t("billing.filterOverdue"), value: "overdue" },
+    { label: t("billing.filterPaid"), value: "paid" },
+    { label: t("billing.filterDraft"), value: "draft" },
+  ];
 
-function StatusFilterLinks({ active }: { active?: string }) {
   return (
     <div className="flex flex-wrap gap-1.5">
       {FILTER_OPTIONS.map(({ label, value }) => {

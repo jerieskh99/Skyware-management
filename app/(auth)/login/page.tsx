@@ -4,16 +4,18 @@ import { useState, useTransition } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
+import { useT } from "@/lib/i18n/client";
 
 const schema = z.object({
-  username: z.string().min(1, "Required"),
-  password: z.string().min(1, "Required"),
+  username: z.string().min(1, "required"),
+  password: z.string().min(1, "required"),
 });
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
+  const { t } = useT();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -26,7 +28,7 @@ export default function LoginPage() {
 
     const result = schema.safeParse({ username, password });
     if (!result.success) {
-      setError(result.error.errors[0]?.message ?? "Invalid input.");
+      setError(t("auth.invalidInput"));
       return;
     }
 
@@ -38,7 +40,7 @@ export default function LoginPage() {
       });
 
       if (res?.error) {
-        setError("Invalid username or password.");
+        setError(t("auth.invalidCredentials"));
         return;
       }
 
@@ -52,13 +54,13 @@ export default function LoginPage() {
       {/* Header */}
       <div className="space-y-2 text-center">
         <p className="text-xs font-medium tracking-widest text-muted-foreground">
-          SKYWARE IT
+          {t("auth.brandPrefix")}
         </p>
         <h1 className="text-2xl font-semibold tracking-tight">
-          Internal Portal
+          {t("auth.welcome")}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Sign in with your employee credentials.
+          {t("auth.loginSubtitle")}
         </p>
       </div>
 
@@ -69,7 +71,7 @@ export default function LoginPage() {
             htmlFor="username"
             className="text-sm font-medium leading-none"
           >
-            Username
+            {t("auth.username")}
           </label>
           <input
             id="username"
@@ -81,7 +83,7 @@ export default function LoginPage() {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            placeholder="your.username"
+            placeholder={t("auth.usernamePlaceholder")}
           />
         </div>
 
@@ -90,7 +92,7 @@ export default function LoginPage() {
             htmlFor="password"
             className="text-sm font-medium leading-none"
           >
-            Password
+            {t("auth.password")}
           </label>
           <input
             id="password"
@@ -114,7 +116,7 @@ export default function LoginPage() {
           disabled={isPending}
           className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground ring-offset-background transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
         >
-          {isPending ? "Signing in..." : "Sign in"}
+          {isPending ? t("auth.loggingIn") : t("auth.loginButton")}
         </button>
       </form>
     </div>

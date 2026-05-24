@@ -1,5 +1,8 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import type { JobPriority } from "@prisma/client";
+import { useT } from "@/lib/i18n/client";
 
 const STYLES: Record<JobPriority, string> = {
   low: "bg-slate-50 text-slate-600 border-slate-200",
@@ -15,19 +18,13 @@ const DOTS: Record<JobPriority, string> = {
   urgent: "bg-red-500",
 };
 
-const LABELS: Record<JobPriority, string> = {
-  low: "Low",
-  normal: "Normal",
-  high: "High",
-  urgent: "Urgent",
-};
-
 interface Props {
   priority: JobPriority;
   className?: string;
 }
 
 export function JobPriorityChip({ priority, className }: Props) {
+  const { t } = useT();
   return (
     <span
       className={cn(
@@ -37,7 +34,7 @@ export function JobPriorityChip({ priority, className }: Props) {
       )}
     >
       <span aria-hidden className={cn("h-1.5 w-1.5 rounded-full", DOTS[priority])} />
-      {LABELS[priority]}
+      {t(`job.priority.${priority}`)}
     </span>
   );
 }

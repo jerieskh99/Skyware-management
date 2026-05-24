@@ -1,5 +1,8 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import type { JobStatus } from "@prisma/client";
+import { useT } from "@/lib/i18n/client";
 
 const STATUS_STYLES: Record<JobStatus, string> = {
   new: "bg-slate-100 text-slate-700 border-slate-200",
@@ -14,25 +17,13 @@ const STATUS_STYLES: Record<JobStatus, string> = {
   cancelled: "bg-red-50 text-red-600 border-red-200",
 };
 
-const STATUS_LABELS: Record<JobStatus, string> = {
-  new: "New",
-  assigned: "Assigned",
-  available: "Available",
-  taken: "Taken",
-  working_on_it: "Working on it",
-  waiting_for_client: "Waiting for client",
-  waiting_for_admin: "Waiting for admin",
-  done: "Done",
-  reviewed: "Reviewed",
-  cancelled: "Cancelled",
-};
-
 interface Props {
   status: JobStatus;
   className?: string;
 }
 
 export function JobStatusChip({ status, className }: Props) {
+  const { t } = useT();
   return (
     <span
       className={cn(
@@ -41,7 +32,7 @@ export function JobStatusChip({ status, className }: Props) {
         className
       )}
     >
-      {STATUS_LABELS[status]}
+      {t(`job.status.${status}`)}
     </span>
   );
 }

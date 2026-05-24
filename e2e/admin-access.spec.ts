@@ -5,9 +5,9 @@
  * Run with: pnpm test:e2e
  * Start server first: pnpm db:fresh && pnpm dev
  *
- * Demo credentials (placeholders — change before production):
+ * Demo credentials (placeholders, change before production):
  *   Admin:    admin.ceo / changeme123
- *   Employee: emp.helpdesk.1 / changeme123  (adjust to actual seeded username)
+ *   Employee: helpdesk.demo / changeme123
  */
 
 import { test, expect } from "@playwright/test";
@@ -24,8 +24,8 @@ async function loginAs(page: Parameters<typeof test.use>[0] extends never ? neve
 
 const ADMIN = { username: "admin.ceo", password: "changeme123" };
 
-// Use a seeded employee from prisma/seed.ts. Update if seed changes.
-const EMPLOYEE = { username: "emp.helpdesk.1", password: "changeme123" };
+// Seeded employee from prisma/seed.ts. Keep in sync with seed.
+const EMPLOYEE = { username: "helpdesk.demo", password: "changeme123" };
 
 // ─── Admin access ───────────────────────────────────────────────────────────
 

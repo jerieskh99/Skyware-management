@@ -9,16 +9,17 @@ import { TagManagementSection } from "@/components/admin/TagManagementSection";
 import { FeatureFlagSection } from "@/components/admin/FeatureFlagSection";
 import { Shield, Users, Tag, Flag, BookOpen, SlidersHorizontal, Building2, Network } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { getT } from "@/lib/i18n/server";
 
-const TABS = [
-  { key: "users",   label: "Users",            icon: Users },
-  { key: "tags",    label: "Tags",              icon: Tag },
-  { key: "flags",   label: "Feature Flags",     icon: Flag },
-  { key: "audit",   label: "Audit Log",         icon: BookOpen },
-  { key: "org",     label: "Roles & Depts",     icon: Network },
-  { key: "sla",     label: "SLA Defaults",      icon: SlidersHorizontal },
-  { key: "company", label: "Company Details",   icon: Building2 },
-];
+const TAB_KEYS = [
+  { key: "users",   icon: Users },
+  { key: "tags",    icon: Tag },
+  { key: "flags",   icon: Flag },
+  { key: "audit",   icon: BookOpen },
+  { key: "org",     icon: Network },
+  { key: "sla",     icon: SlidersHorizontal },
+  { key: "company", icon: Building2 },
+] as const;
 
 const PAGE_SIZE = 25;
 
@@ -33,7 +34,8 @@ export default async function AdminPage({ searchParams }: Props) {
   if (!isAdmin(user)) redirect("/dashboard");
 
   const sp = await searchParams;
-  const tab = TABS.some((t) => t.key === sp["tab"]) ? sp["tab"] : "users";
+  const tab = TAB_KEYS.some((t) => t.key === sp["tab"]) ? sp["tab"] : "users";
+  const { t } = await getT();
   const page = Math.max(1, parseInt(sp["page"] ?? "1", 10));
   const auditAction = sp["action"]?.trim() || undefined;
   const auditEntityType = sp["entityType"]?.trim() || undefined;
@@ -73,13 +75,13 @@ export default async function AdminPage({ searchParams }: Props) {
     <div className="space-y-6">
       <PageHeader
         icon={Shield}
-        title="Admin Panel"
-        description="User management, tags, feature flags, audit log, and configuration."
+        title={t("admin.title")}
+        description={t("admin.description")}
       />
 
       {/* Tab nav */}
       <div className="flex flex-wrap gap-1 overflow-x-auto border-b">
-        {TABS.map(({ key, label, icon: Icon }) => {
+        {TAB_KEYS.map(({ key, icon: Icon }) => {
           const isActive = tab === key;
           return (
             <Link
@@ -92,7 +94,7 @@ export default async function AdminPage({ searchParams }: Props) {
               }`}
             >
               <Icon className={`h-3.5 w-3.5 ${isActive ? "text-brand" : ""}`} />
-              {label}
+              {t(`admin.tabs.${key}`)}
             </Link>
           );
         })}

@@ -23,8 +23,15 @@ export default auth(function middleware(req) {
   }
 
   if (!isLoggedIn && !isAuthRoute) {
+    // API callers get JSON 401 so client code can branch on it
+    // rather than parsing an HTML login redirect.
+    if (nextUrl.pathname.startsWith("/api/")) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
     const loginUrl = new URL("/login", nextUrl);
-    // Preserve the intended path so the user lands there after login.
     if (nextUrl.pathname !== "/") {
       loginUrl.searchParams.set("callbackUrl", nextUrl.pathname);
     }

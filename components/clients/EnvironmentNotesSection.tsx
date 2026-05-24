@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Pencil, Check, X, Trash2 } from "lucide-react";
 
 type Section =
@@ -92,6 +93,8 @@ export function EnvironmentNotesSection({ clientId, initialNotes }: Props) {
   const [draftContent, setDraftContent] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isPending, startTransition] = useTransition();
+  const [clearTarget, setClearTarget] = useState<Section | null>(null);
+  const [clearError, setClearError] = useState<string | null>(null);
 
   function startEdit(section: Section) {
     setEditingSection(section);
@@ -135,10 +138,17 @@ export function EnvironmentNotesSection({ clientId, initialNotes }: Props) {
     });
   }
 
-  function clearSection(section: Section) {
+  function requestClear(section: Section) {
+    setClearError(null);
+    setClearTarget(section);
+  }
+
+  function confirmClear() {
+    const section = clearTarget;
+    if (!section) return;
     const noteId = noteIds[section];
-    if (!noteId) return;
-    setErrors((prev) => ({ ...prev, [section]: "" }));
+    if (!noteId) { setClearTarget(null); return; }
+    setClearError(null);
 
     startTransition(async () => {
       const res = await fetch(
@@ -148,13 +158,14 @@ export function EnvironmentNotesSection({ clientId, initialNotes }: Props) {
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({})) as { error?: string };
-        setErrors((prev) => ({ ...prev, [section]: body.error ?? "Clear failed." }));
+        setClearError(body.error ?? "Clear failed.");
         return;
       }
 
       setNotes((prev) => ({ ...prev, [section]: "" }));
       setNoteIds((prev) => ({ ...prev, [section]: null }));
       setMetaMap((prev) => ({ ...prev, [section]: null }));
+      setClearTarget(null);
       router.refresh();
     });
   }
@@ -177,7 +188,7 @@ export function EnvironmentNotesSection({ clientId, initialNotes }: Props) {
                 <div className="flex items-center gap-1">
                   {noteIds[section] && (
                     <button
-                      onClick={() => clearSection(section)}
+                      onClick={() => requestClear(section)}
                       className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                       disabled={isPending}
                       title="Clear this section"
@@ -255,6 +266,22 @@ export function EnvironmentNotesSection({ clientId, initialNotes }: Props) {
           </div>
         );
       })}
+
+      <ConfirmDialog
+        open={clearTarget !== null}
+        onOpenChange={(o) => { if (!o) { setClearTarget(null); setClearError(null); } }}
+        title="Clear environment note"
+        description={clearTarget ? (
+          <>
+            Clear the <span className="font-medium text-foreground">{SECTION_LABELS[clearTarget]}</span> note?
+            This cannot be undone.
+          </>
+        ) : ""}
+        confirmLabel="Clear"
+        pending={isPending}
+        errorMessage={clearError}
+        onConfirm={confirmClear}
+      />
     </div>
   );
 }

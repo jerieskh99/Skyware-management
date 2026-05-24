@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { SessionUser } from "@/lib/permissions";
 import { listVisibleChannels } from "@/lib/communication/queries";
+import { getT } from "@/lib/i18n/server";
 import { MessageSquare, Globe, Layers } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -20,20 +21,21 @@ export default async function CommunicationPage() {
   const user = session.user as SessionUser;
 
   const channels = await listVisibleChannels(user);
+  const { t } = await getT();
 
   return (
     <div className="space-y-6">
       <PageHeader
         icon={MessageSquare}
-        title="Communication"
-        description="Team channels for discussions, updates, and coordination."
+        title={t("communication.title")}
+        description={t("communication.description")}
       />
 
       {channels.length === 0 ? (
         <EmptyState
           icon={MessageSquare}
-          title="No channels available."
-          description="You don't have access to any communication channels yet."
+          title={t("communication.noChannels")}
+          description={t("communication.noChannelsHint")}
         />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
@@ -61,7 +63,9 @@ export default async function CommunicationPage() {
                     </p>
                   )}
                   <p className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground/80">
-                    {ch._count.posts === 1 ? "1 post" : `${ch._count.posts} posts`}
+                    {ch._count.posts === 1
+                      ? t("communication.postsOne")
+                      : `${ch._count.posts} ${t("communication.postsMany")}`}
                   </p>
                 </div>
               </Link>

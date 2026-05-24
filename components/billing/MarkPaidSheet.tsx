@@ -5,9 +5,16 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { PaymentStatusChip } from "./PaymentStatusChip";
 import type { PaymentStatus } from "@prisma/client";
 import { Receipt } from "lucide-react";
+import { useT } from "@/lib/i18n/client";
 
 interface Payment {
   id: string;
@@ -26,14 +33,14 @@ interface Props {
   onClose: () => void;
 }
 
-const METHOD_LABELS: Record<string, string> = {
-  bank_transfer: "Bank transfer",
-  bit: "Bit",
-  cheque: "Cheque",
-  cash: "Cash",
-  credit_card: "Credit card",
-  other: "Other",
-};
+const METHOD_KEYS = [
+  "bank_transfer",
+  "bit",
+  "cheque",
+  "cash",
+  "credit_card",
+  "other",
+] as const;
 
 const NEXT_STATUSES: Partial<Record<PaymentStatus, string[]>> = {
   draft:               ["sent_to_client", "cancelled"],
@@ -45,6 +52,7 @@ const NEXT_STATUSES: Partial<Record<PaymentStatus, string[]>> = {
 
 export function MarkPaidSheet({ payment, onClose }: Props) {
   const router = useRouter();
+  const { t } = useT();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [paidDate, setPaidDate] = useState(new Date().toISOString().slice(0, 10));
@@ -58,8 +66,8 @@ export function MarkPaidSheet({ payment, onClose }: Props) {
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (markingPaid && !paidDate) { setError("Paid date is required."); return; }
-    if (markingPaid && !method) { setError("Payment method is required."); return; }
+    if (markingPaid && !paidDate) { setError(t("billing.paidDateRequired")); return; }
+    if (markingPaid && !method) { setError(t("billing.methodRequired")); return; }
     setError(null);
 
     startTransition(async () => {
@@ -79,7 +87,7 @@ export function MarkPaidSheet({ payment, onClose }: Props) {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({})) as { error?: string };
-        setError(data.error ?? "Update failed.");
+        setError(data.error ?? t("billing.updateFailed"));
         return;
       }
 
@@ -92,14 +100,16 @@ export function MarkPaidSheet({ payment, onClose }: Props) {
     "flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
-      <div className="w-full max-w-md rounded-t-xl border bg-background p-6 shadow-xl sm:rounded-xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold">Update payment status</h2>
-          <PaymentStatusChip status={payment.status} />
-        </div>
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <div className="flex items-center justify-between gap-3">
+            <DialogTitle>{t("billing.updatePaymentStatus")}</DialogTitle>
+            <PaymentStatusChip status={payment.status} />
+          </div>
+        </DialogHeader>
 
-        <div className="mb-4 space-y-1 rounded-lg border bg-muted/30 px-4 py-3 text-sm">
+        <div className="space-y-1 rounded-lg border bg-muted/30 px-4 py-3 text-sm">
           <p className="font-medium">{payment.client.companyName}</p>
           <p className="text-muted-foreground">
             {payment.sourceMonthly?.serviceName ?? payment.sourceType.replace("_", " ")}
@@ -109,13 +119,16 @@ export function MarkPaidSheet({ payment, onClose }: Props) {
         </div>
 
         {allowedStatuses.length === 0 ? (
-          <p className="mb-4 text-sm text-muted-foreground">
-            This payment is in a terminal state and cannot be updated.
-          </p>
+          <>
+            <p className="text-sm text-muted-foreground">
+              {t("billing.terminalState")}
+            </p>
+            <Button variant="outline" onClick={onClose} className="w-full">{t("common.close")}</Button>
+          </>
         ) : (
           <form onSubmit={submit} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Move to status</label>
+              <label className="text-sm font-medium">{t("billing.moveToStatus")}</label>
               <select
                 value={nextStatus}
                 onChange={(e) => setNextStatus(e.target.value)}
@@ -124,7 +137,7 @@ export function MarkPaidSheet({ payment, onClose }: Props) {
               >
                 {allowedStatuses.map((s) => (
                   <option key={s} value={s}>
-                    {s.replace(/_/g, " ")}
+                    {t(`payment.status.${s}`)}
                   </option>
                 ))}
               </select>
@@ -134,36 +147,32 @@ export function MarkPaidSheet({ payment, onClose }: Props) {
               <>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium">Paid date *</label>
+                    <label className="text-sm font-medium">{t("billing.paidDate")} *</label>
                     <Input type="date" value={paidDate} onChange={(e) => setPaidDate(e.target.value)} disabled={isPending} />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium">Method *</label>
+                    <label className="text-sm font-medium">{t("billing.method")} *</label>
                     <select value={method} onChange={(e) => setMethod(e.target.value)} disabled={isPending} className={selectClass}>
-                      {Object.entries(METHOD_LABELS).map(([k, v]) => (
-                        <option key={k} value={k}>{v}</option>
+                      {METHOD_KEYS.map((k) => (
+                        <option key={k} value={k}>{t(`billing.method_${k}`)}</option>
                       ))}
                     </select>
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Reference / asmachta</label>
-                  <Input placeholder="Bank ref, cheque number, etc." value={reference} onChange={(e) => setReference(e.target.value)} disabled={isPending} />
+                  <label className="text-sm font-medium">{t("billing.reference")}</label>
+                  <Input placeholder={t("billing.referencePlaceholder")} value={reference} onChange={(e) => setReference(e.target.value)} disabled={isPending} />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Notes (optional)</label>
+                  <label className="text-sm font-medium">{t("billing.notesOptional")}</label>
                   <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} disabled={isPending} />
                 </div>
 
-                {/* Phase 7 receipt handoff placeholder */}
                 <div className="flex items-start gap-3 rounded-lg border border-dashed bg-muted/20 p-3">
                   <Receipt className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                   <div className="text-xs text-muted-foreground">
-                    <p className="font-medium text-foreground">Receipt / tax document</p>
-                    <p>
-                      After saving, you can create a receipt or tax invoice for this payment in Phase 7.
-                      Receipt generation is not yet enabled.
-                    </p>
+                    <p className="font-medium text-foreground">{t("billing.receiptDocument")}</p>
+                    <p>{t("billing.receiptDocumentBody")}</p>
                   </div>
                 </div>
               </>
@@ -173,17 +182,13 @@ export function MarkPaidSheet({ payment, onClose }: Props) {
 
             <div className="flex gap-2 pt-1">
               <Button type="submit" disabled={isPending} className="flex-1">
-                {isPending ? "Saving..." : markingPaid ? "Mark paid" : "Update status"}
+                {isPending ? t("common.saving") : markingPaid ? t("billing.markPaid") : t("billing.updateStatus")}
               </Button>
-              <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>{t("common.cancel")}</Button>
             </div>
           </form>
         )}
-
-        {allowedStatuses.length === 0 && (
-          <Button variant="outline" onClick={onClose} className="w-full">Close</Button>
-        )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

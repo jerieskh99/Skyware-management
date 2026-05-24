@@ -3,6 +3,7 @@
 import { signOut } from "next-auth/react";
 import { LogOut } from "lucide-react";
 import type { SessionUser } from "@/lib/permissions";
+import { useT } from "@/lib/i18n/client";
 
 interface Props {
   user: SessionUser;
@@ -15,6 +16,8 @@ function initialsOf(user: SessionUser) {
 }
 
 export function UserMenu({ user }: Props) {
+  const { t } = useT();
+  const logoutLabel = t("nav.logout");
   return (
     <div className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent">
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand text-xs font-semibold">
@@ -30,8 +33,8 @@ export function UserMenu({ user }: Props) {
       </div>
       <button
         onClick={() => signOut({ callbackUrl: "/login" })}
-        title="Log out"
-        aria-label="Log out"
+        title={logoutLabel}
+        aria-label={logoutLabel}
         className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
       >
         <LogOut className="h-3.5 w-3.5" />

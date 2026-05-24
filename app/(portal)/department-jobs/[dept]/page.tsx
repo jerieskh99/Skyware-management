@@ -8,17 +8,11 @@ import { JobRow } from "@/components/jobs/JobRow";
 import { JobsPageHeader } from "@/components/jobs/JobsPageHeader";
 import { JobFiltersBar } from "@/components/jobs/JobFiltersBar";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { getT } from "@/lib/i18n/server";
 import { Layers } from "lucide-react";
 
 const VALID = ["helpdesk", "it", "rnd", "global"] as const;
 type Dept = (typeof VALID)[number];
-
-const LABELS: Record<string, string> = {
-  helpdesk: "Helpdesk",
-  it: "IT",
-  rnd: "R&D",
-  global: "Global",
-};
 
 interface Props {
   params: Promise<{ dept: string }>;
@@ -47,11 +41,12 @@ export default async function DeptPage({ params, searchParams }: Props) {
   });
 
   const admin = isAdmin(user);
-  const label = LABELS[dept] ?? dept;
+  const { t } = await getT();
+  const label = t(`department.${dept}`);
 
   return (
     <div className="space-y-4">
-      <JobsPageHeader title={`${label} Jobs`} isAdmin={admin} />
+      <JobsPageHeader title={`${label} ${t("jobs.departmentJobsTitleSuffix")}`} isAdmin={admin} />
       <JobFiltersBar
         initialSearch={search}
         initialPriority={priority ?? ""}
@@ -60,10 +55,10 @@ export default async function DeptPage({ params, searchParams }: Props) {
       {jobs.length === 0 ? (
         <EmptyState
           icon={Layers}
-          title={search || priority ? "No jobs match your filters." : `No active jobs in ${label}.`}
+          title={search || priority ? t("jobs.noJobsMatch") : t("jobs.noDepartmentYet")}
           description={
             !search && !priority && !showClosed
-              ? "Jobs assigned to this department will appear here."
+              ? t("jobs.departmentJobsDescription")
               : undefined
           }
         />

@@ -5,6 +5,13 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useT } from "@/lib/i18n/client";
 
 interface User {
   id: string;
@@ -22,6 +29,7 @@ interface Props { onClose: () => void }
 
 export function CreateJobDialog({ onClose }: Props) {
   const router = useRouter();
+  const { t } = useT();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<User[]>([]);
@@ -50,7 +58,7 @@ export function CreateJobDialog({ onClose }: Props) {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim()) { setError("Title is required."); return; }
+    if (!title.trim()) { setError(t("jobs.titleRequired")); return; }
     setError(null);
 
     startTransition(async () => {
@@ -71,7 +79,7 @@ export function CreateJobDialog({ onClose }: Props) {
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({})) as { error?: string };
-        setError(body.error ?? "Failed to create job.");
+        setError(body.error ?? t("jobs.createFailed"));
         return;
       }
 
@@ -88,65 +96,67 @@ export function CreateJobDialog({ onClose }: Props) {
     "flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-lg rounded-xl border bg-background p-6 shadow-xl">
-        <h2 className="mb-4 text-base font-semibold">Create new job</h2>
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{t("jobs.createTitle")}</DialogTitle>
+        </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Title *</label>
-            <Input placeholder="Short job title" value={title} onChange={(e) => setTitle(e.target.value)} disabled={isPending} />
+            <label className="text-sm font-medium">{t("jobs.fieldTitle")} *</label>
+            <Input placeholder={t("jobs.titlePlaceholder")} value={title} onChange={(e) => setTitle(e.target.value)} disabled={isPending} />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Description</label>
-            <Textarea placeholder="Details, context, reproduction steps..." rows={3} value={description} onChange={(e) => setDescription(e.target.value)} disabled={isPending} />
+            <label className="text-sm font-medium">{t("jobs.fieldDescription")}</label>
+            <Textarea placeholder={t("jobs.descriptionPlaceholder")} rows={3} value={description} onChange={(e) => setDescription(e.target.value)} disabled={isPending} />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Department</label>
+              <label className="text-sm font-medium">{t("jobs.fieldDepartment")}</label>
               <select
                 value={departmentKey}
                 onChange={(e) => { setDepartmentKey(e.target.value); setAssignedEmployeeId(""); }}
                 disabled={isPending}
                 className={selectClass}
               >
-                <option value="global">Global</option>
-                <option value="helpdesk">Helpdesk</option>
-                <option value="it">IT</option>
-                <option value="rnd">R&D</option>
+                <option value="global">{t("department.global")}</option>
+                <option value="helpdesk">{t("department.helpdesk")}</option>
+                <option value="it">{t("department.it")}</option>
+                <option value="rnd">{t("department.rnd")}</option>
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Priority</label>
+              <label className="text-sm font-medium">{t("jobs.fieldPriority")}</label>
               <select value={priority} onChange={(e) => setPriority(e.target.value)} disabled={isPending} className={selectClass}>
-                <option value="low">Low</option>
-                <option value="normal">Normal</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
+                <option value="low">{t("job.priority.low")}</option>
+                <option value="normal">{t("job.priority.normal")}</option>
+                <option value="high">{t("job.priority.high")}</option>
+                <option value="urgent">{t("job.priority.urgent")}</option>
               </select>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Severity</label>
+              <label className="text-sm font-medium">{t("jobs.fieldSeverity")}</label>
               <select value={severity} onChange={(e) => setSeverity(e.target.value)} disabled={isPending} className={selectClass}>
-                <option value="minor">Minor</option>
-                <option value="moderate">Moderate</option>
-                <option value="major">Major</option>
-                <option value="critical">Critical</option>
+                <option value="minor">{t("job.severity.minor")}</option>
+                <option value="moderate">{t("job.severity.moderate")}</option>
+                <option value="major">{t("job.severity.major")}</option>
+                <option value="critical">{t("job.severity.critical")}</option>
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Assign to</label>
+              <label className="text-sm font-medium">{t("jobs.fieldAssignTo")}</label>
               <select
                 value={assignedEmployeeId}
                 onChange={(e) => { setAssignedEmployeeId(e.target.value); if (e.target.value) setSendToHub(false); }}
                 disabled={isPending}
                 className={selectClass}
               >
-                <option value="">Unassigned</option>
+                <option value="">{t("jobs.fieldUnassigned")}</option>
                 {deptUsers.map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.displayName} ({u.department.nameEn})
@@ -158,9 +168,9 @@ export function CreateJobDialog({ onClose }: Props) {
 
           {clients.length > 0 && (
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Client (optional)</label>
+              <label className="text-sm font-medium">{t("jobs.fieldClient")}</label>
               <select value={clientId} onChange={(e) => setClientId(e.target.value)} disabled={isPending} className={selectClass}>
-                <option value="">No client</option>
+                <option value="">{t("jobs.fieldClientNone")}</option>
                 {clients.map((c) => (
                   <option key={c.id} value={c.id}>{c.companyName}</option>
                 ))}
@@ -171,7 +181,7 @@ export function CreateJobDialog({ onClose }: Props) {
           {!assignedEmployeeId && (
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={sendToHub} onChange={(e) => setSendToHub(e.target.checked)} disabled={isPending} className="h-4 w-4 rounded border-input" />
-              Send to hub (employees can take it)
+              {t("jobs.sendToHub")}
             </label>
           )}
 
@@ -179,12 +189,12 @@ export function CreateJobDialog({ onClose }: Props) {
 
           <div className="flex gap-2 pt-2">
             <Button type="submit" disabled={isPending} className="flex-1">
-              {isPending ? "Creating..." : "Create job"}
+              {isPending ? t("common.creating") : t("jobs.createButton")}
             </Button>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>{t("common.cancel")}</Button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

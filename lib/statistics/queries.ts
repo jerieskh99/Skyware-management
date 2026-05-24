@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 const ACTIVE_STATUSES = [
@@ -27,14 +28,20 @@ export async function getOverviewKpis(rangeDays?: number) {
   const since = sinceDate(rangeDays);
   const dateFilter = since ? { gte: since } : undefined;
 
+  // Deterministic completion-time aggregation over the full closed-job set.
+  // PERCENTILE_CONT is exact median / p90 over all rows in window.
+  const completionWindowSql = since
+    ? Prisma.sql`AND completed_timestamp >= ${since}`
+    : Prisma.empty;
+
   const [
     activeJobs,
     completedCount,
     reviewedCount,
     cancelledCount,
-    reopenedCount,
+    reopenedEventsCount,
     totalHoursAgg,
-    avgCompletionRaw,
+    completionStats,
   ] = await Promise.all([
     prisma.job.count({ where: { status: { in: [...ACTIVE_STATUSES] } } }),
 
@@ -59,7 +66,7 @@ export async function getOverviewKpis(rangeDays?: number) {
       },
     }),
 
-    // Jobs with at least one status event marked as reopened
+    // Raw event count: one reopen transition = one tick. Not a rate.
     prisma.jobStatusEvent.count({
       where: {
         reopened: true,
@@ -67,7 +74,6 @@ export async function getOverviewKpis(rangeDays?: number) {
       },
     }),
 
-    // Sum of timeSpentMinutes across all jobs (closed + work reports where available)
     prisma.job.aggregate({
       _sum: { timeSpentMinutes: true },
       where: {
@@ -76,31 +82,34 @@ export async function getOverviewKpis(rangeDays?: number) {
       },
     }),
 
-    // Average minutes from assigned to completed on closed jobs with both timestamps
-    prisma.job.findMany({
-      where: {
-        status: { in: ["done", "reviewed"] },
-        assignedTimestamp: { not: null },
-        completedTimestamp: { not: null },
-        ...(dateFilter ? { completedTimestamp: dateFilter } : {}),
-      },
-      select: { assignedTimestamp: true, completedTimestamp: true },
-      take: 500,
-    }),
+    prisma.$queryRaw<
+      Array<{ n: bigint; avg_h: number | null; median_h: number | null; p90_h: number | null }>
+    >`
+      SELECT
+        COUNT(*)::bigint                                                                                            AS n,
+        AVG(EXTRACT(EPOCH FROM (completed_timestamp - assigned_timestamp)) / 3600.0)::float8                        AS avg_h,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (completed_timestamp - assigned_timestamp)) / 3600.0)::float8 AS median_h,
+        PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (completed_timestamp - assigned_timestamp)) / 3600.0)::float8 AS p90_h
+      FROM jobs
+      WHERE status IN ('done', 'reviewed')
+        AND assigned_timestamp  IS NOT NULL
+        AND completed_timestamp IS NOT NULL
+        ${completionWindowSql}
+    `,
   ]);
 
   const totalHoursReported = Math.round(
     ((totalHoursAgg._sum.timeSpentMinutes ?? 0) / 60) * 10
   ) / 10;
 
-  let avgCompletionHours: number | null = null;
-  if (avgCompletionRaw.length > 0) {
-    const totalMs = avgCompletionRaw.reduce((sum, j) => {
-      return sum + (j.completedTimestamp!.getTime() - j.assignedTimestamp!.getTime());
-    }, 0);
-    avgCompletionHours =
-      Math.round((totalMs / avgCompletionRaw.length / 3_600_000) * 10) / 10;
-  }
+  const round1 = (v: number | null | undefined): number | null =>
+    v == null ? null : Math.round(v * 10) / 10;
+
+  const cs = completionStats[0];
+  const completionSampleSize = cs ? Number(cs.n) : 0;
+  const avgCompletionHours = round1(cs?.avg_h);
+  const medianCompletionHours = round1(cs?.median_h);
+  const p90CompletionHours = round1(cs?.p90_h);
 
   // Delayed: active jobs where elapsed > slaTargetMinutes
   const activeWithSla = await prisma.job.findMany({
@@ -117,10 +126,16 @@ export async function getOverviewKpis(rangeDays?: number) {
     completedCount,
     reviewedCount,
     cancelledCount,
-    reopenedCount,
+    // Raw event count over window. Renamed from `reopenedCount` to avoid
+    // implying a rate. Consumers that want a rate should compute
+    // reopenedEventsCount / completedCount themselves.
+    reopenedEventsCount,
     delayedCount,
     totalHoursReported,
     avgCompletionHours,
+    medianCompletionHours,
+    p90CompletionHours,
+    completionSampleSize,
   };
 }
 

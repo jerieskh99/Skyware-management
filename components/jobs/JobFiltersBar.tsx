@@ -3,13 +3,9 @@
 import { useRouter, usePathname } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
+import { useT } from "@/lib/i18n/client";
 
-const PRIORITY_OPTIONS = [
-  { value: "urgent", label: "Urgent" },
-  { value: "high", label: "High" },
-  { value: "normal", label: "Normal" },
-  { value: "low", label: "Low" },
-];
+const PRIORITY_KEYS = ["urgent", "high", "normal", "low"] as const;
 
 interface Props {
   initialSearch?: string;
@@ -20,6 +16,7 @@ interface Props {
 export function JobFiltersBar({ initialSearch = "", initialPriority = "", showClosed = false }: Props) {
   const router = useRouter();
   const pathname = usePathname();
+  const { t } = useT();
   const [search, setSearch] = useState(initialSearch);
   const [priority, setPriority] = useState(initialPriority);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -79,24 +76,24 @@ export function JobFiltersBar({ initialSearch = "", initialPriority = "", showCl
           type="text"
           value={search}
           onChange={(e) => handleSearchChange(e.target.value)}
-          placeholder="Search jobs..."
+          placeholder={t("jobs.search")}
           className="h-8 w-full rounded-md border border-input bg-background ps-8 pe-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
       </div>
 
       {/* Priority chips */}
       <div className="flex flex-wrap gap-1">
-        {PRIORITY_OPTIONS.map((opt) => (
+        {PRIORITY_KEYS.map((key) => (
           <button
-            key={opt.value}
-            onClick={() => handlePriorityToggle(opt.value)}
+            key={key}
+            onClick={() => handlePriorityToggle(key)}
             className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors ${
-              priority === opt.value
+              priority === key
                 ? "border-primary bg-primary text-primary-foreground"
                 : "border-border bg-background text-muted-foreground hover:bg-accent"
             }`}
           >
-            {opt.label}
+            {t(`job.priority.${key}`)}
           </button>
         ))}
       </div>
@@ -110,7 +107,7 @@ export function JobFiltersBar({ initialSearch = "", initialPriority = "", showCl
             : "border-border bg-background text-muted-foreground hover:bg-accent"
         }`}
       >
-        Show closed
+        {t("jobs.showClosed")}
       </button>
 
       {/* Clear all */}
@@ -118,10 +115,10 @@ export function JobFiltersBar({ initialSearch = "", initialPriority = "", showCl
         <button
           onClick={clearAll}
           className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-          aria-label="Clear all filters"
+          aria-label={t("common.clear")}
         >
           <X className="h-3.5 w-3.5" />
-          Clear
+          {t("common.clear")}
         </button>
       )}
     </div>

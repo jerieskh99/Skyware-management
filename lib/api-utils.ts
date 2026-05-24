@@ -31,3 +31,8 @@ export function badRequest(issues: unknown) {
 export function notFound(resource = "Resource") {
   return NextResponse.json({ error: `${resource} not found` }, { status: 404 });
 }
+
+/** 422 — semantically valid request that violates a state-machine or invariant. */
+export function unprocessable(message: string) {
+  return NextResponse.json({ error: message }, { status: 422 });
+}

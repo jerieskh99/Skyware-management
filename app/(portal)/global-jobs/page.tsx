@@ -8,6 +8,7 @@ import { JobRow } from "@/components/jobs/JobRow";
 import { JobsPageHeader } from "@/components/jobs/JobsPageHeader";
 import { JobFiltersBar } from "@/components/jobs/JobFiltersBar";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { getT } from "@/lib/i18n/server";
 import { Globe } from "lucide-react";
 
 interface Props {
@@ -31,9 +32,11 @@ export default async function GlobalJobsPage({ searchParams }: Props) {
     showClosed,
   });
 
+  const { t } = await getT();
+
   return (
     <div className="space-y-4">
-      <JobsPageHeader title="Global Jobs" isAdmin={isAdmin(user)} />
+      <JobsPageHeader title={t("jobs.globalJobsTitle")} isAdmin={isAdmin(user)} />
       <JobFiltersBar
         initialSearch={search}
         initialPriority={priority ?? ""}
@@ -42,10 +45,10 @@ export default async function GlobalJobsPage({ searchParams }: Props) {
       {jobs.length === 0 ? (
         <EmptyState
           icon={Globe}
-          title={search || priority ? "No jobs match your filters." : "No global jobs yet."}
+          title={search || priority ? t("jobs.noJobsMatch") : t("jobs.noGlobalYet")}
           description={
             !search && !priority && !showClosed
-              ? "Jobs spanning multiple departments or without a specific owner appear here."
+              ? t("jobs.globalJobsDescription")
               : undefined
           }
         />

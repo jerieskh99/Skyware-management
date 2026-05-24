@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { X } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useT } from "@/lib/i18n/client";
 
 interface ClientFormData {
   id?: string;
@@ -27,6 +33,7 @@ interface Props {
 
 export function ClientDialog({ mode, initialData, onClose }: Props) {
   const router = useRouter();
+  const { t } = useT();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -41,7 +48,7 @@ export function ClientDialog({ mode, initialData, onClose }: Props) {
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!companyName.trim()) { setError("Company name is required."); return; }
+    if (!companyName.trim()) { setError(t("clients.companyNameRequired")); return; }
     setError(null);
 
     startTransition(async () => {
@@ -67,7 +74,7 @@ export function ClientDialog({ mode, initialData, onClose }: Props) {
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({})) as { error?: string };
-        setError(body.error ?? "Save failed.");
+        setError(body.error ?? t("clients.saveFailed"));
         return;
       }
 
@@ -79,122 +86,115 @@ export function ClientDialog({ mode, initialData, onClose }: Props) {
   const inputCls = "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-xl border bg-background shadow-xl">
-        <div className="flex items-center justify-between border-b px-6 py-4">
-          <h2 className="text-base font-semibold">
-            {mode === "create" ? "Add client" : "Edit client"}
-          </h2>
-          <button
-            onClick={onClose}
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-accent"
-            aria-label="Close"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {mode === "create" ? t("clients.createTitle") : t("clients.editTitle")}
+          </DialogTitle>
+        </DialogHeader>
 
-        <form onSubmit={submit} className="space-y-4 overflow-y-auto max-h-[70vh] p-6">
+        <form onSubmit={submit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Company name *</label>
+            <label className="text-sm font-medium">{t("clients.companyName")} *</label>
             <Input
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
               disabled={isPending}
               maxLength={200}
-              placeholder="Acme Ltd."
+              placeholder={t("clients.companyNamePlaceholder")}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Contact person</label>
+              <label className="text-sm font-medium">{t("clients.contactPerson")}</label>
               <Input
                 value={contactPerson}
                 onChange={(e) => setContactPerson(e.target.value)}
                 disabled={isPending}
                 maxLength={200}
-                placeholder="Full name"
+                placeholder={t("clients.contactPersonPlaceholder")}
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Email</label>
+              <label className="text-sm font-medium">{t("settings.email")}</label>
               <Input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isPending}
                 maxLength={200}
-                placeholder="contact@example.com"
+                placeholder={t("clients.emailPlaceholder")}
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Phone</label>
+              <label className="text-sm font-medium">{t("clients.phone")}</label>
               <Input
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 disabled={isPending}
                 maxLength={50}
-                placeholder="+972 ..."
+                placeholder={t("clients.phonePlaceholder")}
               />
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium">
-                Israeli tax ID{" "}
-                <span className="text-xs font-normal text-muted-foreground">(ח&quot;פ / ע&quot;מ)</span>
+                {t("clients.israeliTaxId")}{" "}
+                <span className="text-xs font-normal text-muted-foreground">{t("clients.israeliTaxIdSuffix")}</span>
               </label>
               <Input
                 value={israeliTaxId}
                 onChange={(e) => setIsraeliTaxId(e.target.value)}
                 disabled={isPending}
                 maxLength={30}
-                placeholder="Placeholder — not verified"
+                placeholder={t("clients.taxIdPlaceholder")}
               />
               <p className="text-[10px] text-muted-foreground">
-                For reference only. Validate before use in tax documents.
+                {t("clients.taxIdHint")}
               </p>
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Address</label>
+            <label className="text-sm font-medium">{t("clients.address")}</label>
             <Textarea
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               disabled={isPending}
               maxLength={500}
               rows={2}
-              placeholder="Street, city, ZIP"
+              placeholder={t("clients.addressPlaceholder")}
             />
           </div>
 
           {mode === "edit" && (
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Status</label>
+              <label className="text-sm font-medium">{t("clients.status")}</label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as "active" | "inactive")}
                 disabled={isPending}
                 className={inputCls}
               >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                <option value="active">{t("common.active")}</option>
+                <option value="inactive">{t("common.inactive")}</option>
               </select>
             </div>
           )}
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Notes</label>
+            <label className="text-sm font-medium">{t("clients.notes")}</label>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               disabled={isPending}
               maxLength={3000}
               rows={3}
-              placeholder="Internal notes about this client..."
+              placeholder={t("clients.notesPlaceholder")}
             />
           </div>
 
@@ -202,14 +202,14 @@ export function ClientDialog({ mode, initialData, onClose }: Props) {
 
           <div className="flex gap-2 pt-1">
             <Button type="submit" disabled={isPending} className="flex-1">
-              {isPending ? "Saving..." : mode === "create" ? "Add client" : "Save changes"}
+              {isPending ? t("common.saving") : mode === "create" ? t("clients.addClient") : t("clients.saveChanges")}
             </Button>
             <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
-              Cancel
+              {t("common.cancel")}
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

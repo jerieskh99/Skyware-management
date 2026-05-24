@@ -7,6 +7,7 @@ import { listClients } from "@/lib/clients/queries";
 import { ClientFiltersBar } from "@/components/clients/ClientFiltersBar";
 import { ClientsPageHeader } from "@/components/clients/ClientsPageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { getT } from "@/lib/i18n/server";
 import { Building2 } from "lucide-react";
 import type { ClientStatus } from "@prisma/client";
 
@@ -31,6 +32,7 @@ export default async function ClientsPage({ searchParams }: Props) {
       : undefined;
 
   const clients = await listClients({ search, status });
+  const { t } = await getT();
 
   return (
     <div className="space-y-4">
@@ -42,12 +44,12 @@ export default async function ClientsPage({ searchParams }: Props) {
           icon={Building2}
           title={
             search || status
-              ? "No clients match your filters."
-              : "No clients yet."
+              ? t("clients.noClientsMatch")
+              : t("clients.noClientsYet")
           }
           description={
             !search && !status
-              ? "Add your first client to start tracking jobs and billing."
+              ? t("clients.noClientsHint")
               : undefined
           }
         />
@@ -73,7 +75,7 @@ export default async function ClientsPage({ searchParams }: Props) {
                         : "border-slate-200 bg-slate-50 text-slate-500"
                     }`}
                   >
-                    {client.status === "active" ? "Active" : "Inactive"}
+                    {client.status === "active" ? t("common.active") : t("common.inactive")}
                   </span>
                 </div>
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
@@ -81,8 +83,9 @@ export default async function ClientsPage({ searchParams }: Props) {
                   {client.email && <span>{client.email}</span>}
                   {client.phone && <span>{client.phone}</span>}
                   <span>
-                    {client._count.jobs}{" "}
-                    {client._count.jobs === 1 ? "job" : "jobs"}
+                    {client._count.jobs === 1
+                      ? t("clients.jobsCountOne")
+                      : `${client._count.jobs} ${t("clients.jobsCountMany")}`}
                   </span>
                 </div>
               </div>

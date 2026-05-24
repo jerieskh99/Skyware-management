@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/lib/permissions";
 import { UserMenu } from "./UserMenu";
+import { useT } from "@/lib/i18n/client";
 import {
   LayoutDashboard,
   Briefcase,
@@ -24,52 +25,52 @@ import {
 
 interface NavItem {
   href: string;
-  label: string;
+  labelKey: string;
   icon: React.ElementType;
   adminOnly?: boolean;
 }
 
 interface NavGroup {
-  label: string;
+  labelKey: string;
   items: NavItem[];
   adminOnly?: boolean;
 }
 
 const GROUPS: NavGroup[] = [
   {
-    label: "Overview",
-    items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }],
+    labelKey: "nav.groupOverview",
+    items: [{ href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard }],
   },
   {
-    label: "Work",
+    labelKey: "nav.groupWork",
     items: [
-      { href: "/my-jobs", label: "My Jobs", icon: Briefcase },
-      { href: "/hub", label: "Task Hub", icon: Inbox },
-      { href: "/department-jobs", label: "Department", icon: Layers },
-      { href: "/global-jobs", label: "Global Jobs", icon: Globe },
+      { href: "/my-jobs", labelKey: "nav.myJobs", icon: Briefcase },
+      { href: "/hub", labelKey: "nav.hub", icon: Inbox },
+      { href: "/department-jobs", labelKey: "nav.departmentJobsShort", icon: Layers },
+      { href: "/global-jobs", labelKey: "nav.globalJobs", icon: Globe },
     ],
   },
   {
-    label: "Communication",
-    items: [{ href: "/communication", label: "Channels", icon: MessageSquare }],
+    labelKey: "nav.groupCommunication",
+    items: [{ href: "/communication", labelKey: "nav.channels", icon: MessageSquare }],
   },
   {
-    label: "Clients & Billing",
+    labelKey: "nav.groupClientsBilling",
     adminOnly: true,
     items: [
-      { href: "/clients", label: "Clients", icon: Building2, adminOnly: true },
-      { href: "/billing", label: "Billing", icon: CreditCard, adminOnly: true },
-      { href: "/receipts", label: "Receipts", icon: Receipt, adminOnly: true },
-      { href: "/financial-documents", label: "Financial Docs", icon: FileText, adminOnly: true },
+      { href: "/clients", labelKey: "nav.clients", icon: Building2, adminOnly: true },
+      { href: "/billing", labelKey: "nav.billing", icon: CreditCard, adminOnly: true },
+      { href: "/receipts", labelKey: "nav.receipts", icon: Receipt, adminOnly: true },
+      { href: "/financial-documents", labelKey: "nav.financialDocumentsShort", icon: FileText, adminOnly: true },
     ],
   },
   {
-    label: "Admin",
+    labelKey: "nav.groupAdmin",
     adminOnly: true,
     items: [
-      { href: "/statistics", label: "Statistics", icon: BarChart2, adminOnly: true },
-      { href: "/admin", label: "Admin Panel", icon: Shield, adminOnly: true },
-      { href: "/agent", label: "Agent Center", icon: Bot, adminOnly: true },
+      { href: "/statistics", labelKey: "nav.statistics", icon: BarChart2, adminOnly: true },
+      { href: "/admin", labelKey: "nav.admin", icon: Shield, adminOnly: true },
+      { href: "/agent", labelKey: "nav.agentShort", icon: Bot, adminOnly: true },
     ],
   },
 ];
@@ -80,6 +81,7 @@ interface Props {
 
 export function Sidebar({ user }: Props) {
   const pathname = usePathname();
+  const { t } = useT();
 
   function isActive(href: string) {
     return pathname === href || pathname.startsWith(href + "/");
@@ -97,7 +99,7 @@ export function Sidebar({ user }: Props) {
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold leading-none">Skyware</p>
           <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-            Operations
+            {t("nav.brandTagline")}
           </p>
         </div>
       </div>
@@ -105,10 +107,10 @@ export function Sidebar({ user }: Props) {
       {/* Nav */}
       <nav className="scrollbar-thin flex-1 overflow-y-auto py-3">
         {visibleGroups.map((group, idx) => (
-          <div key={group.label} className={cn("px-2", idx > 0 && "mt-3")}>
+          <div key={group.labelKey} className={cn("px-2", idx > 0 && "mt-3")}>
             {idx > 0 && (
               <p className="px-2 pb-1 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/70">
-                {group.label}
+                {t(group.labelKey)}
               </p>
             )}
             <ul className="space-y-0.5">
@@ -125,12 +127,12 @@ export function Sidebar({ user }: Props) {
 
         <div className="mt-3 px-2">
           <p className="px-2 pb-1 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/70">
-            System
+            {t("nav.groupSystem")}
           </p>
           <ul className="space-y-0.5">
             <li>
               <NavLink
-                item={{ href: "/settings", label: "Settings", icon: Settings }}
+                item={{ href: "/settings", labelKey: "nav.settings", icon: Settings }}
                 active={isActive("/settings")}
               />
             </li>
@@ -148,6 +150,7 @@ export function Sidebar({ user }: Props) {
 
 function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   const Icon = item.icon;
+  const { t } = useT();
   return (
     <Link
       href={item.href}
@@ -165,7 +168,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
         />
       )}
       <Icon className={cn("h-4 w-4 shrink-0", active ? "text-brand" : "")} />
-      <span className="truncate">{item.label}</span>
+      <span className="truncate">{t(item.labelKey)}</span>
     </Link>
   );
 }

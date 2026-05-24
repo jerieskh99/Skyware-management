@@ -4,6 +4,14 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useT } from "@/lib/i18n/client";
 
 interface Props {
   jobId: string;
@@ -15,6 +23,7 @@ interface Props {
 
 export function MarkDoneSheet({ jobId, jobTitle, currentStatus: _currentStatus, estimatedMinutes, onClose }: Props) {
   const router = useRouter();
+  const { t } = useT();
   const [summary, setSummary] = useState("");
   const [minutes, setMinutes] = useState(estimatedMinutes ?? 30);
   const [billable, setBillable] = useState(true);
@@ -23,8 +32,8 @@ export function MarkDoneSheet({ jobId, jobTitle, currentStatus: _currentStatus, 
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!summary.trim()) { setError("Summary is required."); return; }
-    if (minutes < 1) { setError("Time spent must be at least 1 minute."); return; }
+    if (!summary.trim()) { setError(t("jobs.summaryRequired")); return; }
+    if (minutes < 1) { setError(t("jobs.timeMinAtLeastOne")); return; }
     setError(null);
 
     startTransition(async () => {
@@ -36,7 +45,7 @@ export function MarkDoneSheet({ jobId, jobTitle, currentStatus: _currentStatus, 
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({})) as { error?: string };
-        setError(body.error ?? "Failed to submit.");
+        setError(body.error ?? t("jobs.submitFailed"));
         return;
       }
 
@@ -46,16 +55,18 @@ export function MarkDoneSheet({ jobId, jobTitle, currentStatus: _currentStatus, 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
-      <div className="w-full max-w-lg rounded-t-xl border bg-background p-6 shadow-xl sm:rounded-xl">
-        <h2 className="mb-1 text-base font-semibold">Mark job done</h2>
-        <p className="mb-4 text-sm text-muted-foreground truncate">{jobTitle}</p>
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{t("jobs.markDone")}</DialogTitle>
+          <DialogDescription className="truncate">{jobTitle}</DialogDescription>
+        </DialogHeader>
 
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Summary *</label>
+            <label className="text-sm font-medium">{t("jobs.summary")} *</label>
             <Textarea
-              placeholder="Describe what was done..."
+              placeholder={t("jobs.summaryPlaceholder")}
               rows={4}
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
@@ -64,7 +75,7 @@ export function MarkDoneSheet({ jobId, jobTitle, currentStatus: _currentStatus, 
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Time spent (minutes) *</label>
+            <label className="text-sm font-medium">{t("jobs.timeSpent")} *</label>
             <input
               type="number"
               min={1}
@@ -87,21 +98,21 @@ export function MarkDoneSheet({ jobId, jobTitle, currentStatus: _currentStatus, 
               disabled={isPending}
               className="h-4 w-4 rounded border-input"
             />
-            <label htmlFor="billable" className="text-sm">Billable</label>
+            <label htmlFor="billable" className="text-sm">{t("jobs.billable")}</label>
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 
           <div className="flex gap-2 pt-2">
             <Button type="submit" disabled={isPending} className="flex-1">
-              {isPending ? "Submitting..." : "Submit and mark done"}
+              {isPending ? t("jobs.submitting") : t("jobs.markDoneSubmit")}
             </Button>
             <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
-              Cancel
+              {t("common.cancel")}
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

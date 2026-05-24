@@ -173,6 +173,12 @@ enum Currency {
   EUR
 }
 
+enum NotificationKind {
+  sla_breached
+  job_assigned
+  mention
+}
+
 // ===== Models =====
 
 model Department {
@@ -223,24 +229,25 @@ model User {
   department Department @relation(fields: [departmentId], references: [id])
   role       Role       @relation(fields: [roleId], references: [id])
 
-  assignedJobs     Job[]            @relation("AssignedJobs")
-  createdJobs      Job[]            @relation("CreatedJobs")
-  statusEvents     JobStatusEvent[]
-  submittedReports WorkReport[]     @relation("SubmittedReports")
-  approvedReports  WorkReport[]     @relation("ApprovedReports")
-  timeSessions     TimeSession[]
-  posts            CommunicationPost[]
-  replies          CommunicationReply[]
-  savedViewsOwned  SavedView[]      @relation("SavedViewOwner")
-  savedViewsCreated SavedView[]     @relation("SavedViewCreator")
-  auditLogs        AuditLog[]
-  environmentNotes ClientEnvironmentNote[]
-  createdClients   Client[]
-  createdPayments  Payment[]
-  finalizedReceipts ReceiptDocument[]
+  assignedJobs        Job[]                   @relation("AssignedJobs")
+  createdJobs         Job[]                   @relation("CreatedJobs")
+  statusEvents        JobStatusEvent[]
+  submittedReports    WorkReport[]            @relation("SubmittedReports")
+  approvedReports     WorkReport[]            @relation("ApprovedReports")
+  timeSessions        TimeSession[]
+  posts               CommunicationPost[]
+  replies             CommunicationReply[]
+  savedViewsOwned     SavedView[]             @relation("SavedViewOwner")
+  savedViewsCreated   SavedView[]             @relation("SavedViewCreator")
+  auditLogs           AuditLog[]
+  environmentNotes    ClientEnvironmentNote[]
+  createdClients      Client[]
+  createdPayments     Payment[]
+  finalizedReceipts   ReceiptDocument[]
   uploadedAttachments Attachment[]
   bankUsagesRecorded  HourlyBankUsage[]
   updatedFeatureFlags FeatureFlag[]
+  notifications       Notification[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -269,16 +276,16 @@ model Job {
   cancelledTimestamp DateTime?   @map("cancelled_timestamp")
   firstResponseAt    DateTime?   @map("first_response_at")
   timeSpentMinutes   Int         @default(0) @map("time_spent_minutes")
-  adminNote          String?     @db.Text @map("admin_note")
+  adminNote          String?     @map("admin_note") @db.Text
   isBillable         Boolean     @default(true) @map("is_billable")
   linkedPaymentId    String?     @map("linked_payment_id") @db.Uuid
   source             JobSource   @default(portal_manual)
 
-  client           Client?          @relation(fields: [clientId], references: [id])
-  department       Department       @relation(fields: [departmentId], references: [id])
-  assignedEmployee User?            @relation("AssignedJobs", fields: [assignedEmployeeId], references: [id])
-  createdBy        User             @relation("CreatedJobs", fields: [createdByUserId], references: [id])
-  linkedPayment    Payment?         @relation("JobLinkedPayment", fields: [linkedPaymentId], references: [id])
+  client           Client?    @relation(fields: [clientId], references: [id])
+  department       Department @relation(fields: [departmentId], references: [id])
+  assignedEmployee User?      @relation("AssignedJobs", fields: [assignedEmployeeId], references: [id])
+  createdBy        User       @relation("CreatedJobs", fields: [createdByUserId], references: [id])
+  linkedPayment    Payment?   @relation("JobLinkedPayment", fields: [linkedPaymentId], references: [id])
 
   statusEvents     JobStatusEvent[]
   workReport       WorkReport?
@@ -491,16 +498,16 @@ model MonthlyBillingItem {
 }
 
 model HourlyBank {
-  id                        String           @id @default(uuid()) @db.Uuid
-  billingAccountId          String           @map("billing_account_id") @db.Uuid
-  totalHoursPurchasedMinutes Int?            @map("total_hours_purchased_minutes")
-  pricePerHourPlaceholder   Int?             @map("price_per_hour_placeholder")
-  totalPaymentPlaceholder   Int?             @map("total_payment_placeholder")
-  currency                  Currency         @default(ILS)
-  purchaseDate              DateTime         @map("purchase_date") @db.Date
-  expiryDate                DateTime?        @map("expiry_date") @db.Date
-  status                    HourlyBankStatus @default(active)
-  alertThresholdPercent     Int              @default(25) @map("alert_threshold_percent")
+  id                         String           @id @default(uuid()) @db.Uuid
+  billingAccountId           String           @map("billing_account_id") @db.Uuid
+  totalHoursPurchasedMinutes Int?             @map("total_hours_purchased_minutes")
+  pricePerHourPlaceholder    Int?             @map("price_per_hour_placeholder")
+  totalPaymentPlaceholder    Int?             @map("total_payment_placeholder")
+  currency                   Currency         @default(ILS)
+  purchaseDate               DateTime         @map("purchase_date") @db.Date
+  expiryDate                 DateTime?        @map("expiry_date") @db.Date
+  status                     HourlyBankStatus @default(active)
+  alertThresholdPercent      Int              @default(25) @map("alert_threshold_percent")
 
   billingAccount BillingAccount    @relation(fields: [billingAccountId], references: [id])
   usages         HourlyBankUsage[]
@@ -556,22 +563,22 @@ model OneTimeJobCharge {
 }
 
 model Payment {
-  id              String             @id @default(uuid()) @db.Uuid
-  clientId        String             @map("client_id") @db.Uuid
-  sourceType      PaymentSourceType  @map("source_type")
-  sourceMonthlyId String?            @map("source_monthly_id") @db.Uuid
-  sourceHourlyId  String?            @map("source_hourly_id") @db.Uuid
-  amountPlaceholder Int?             @map("amount_placeholder")
-  currency        Currency           @default(ILS)
-  issuedDate      DateTime           @map("issued_date") @db.Date
-  dueDate         DateTime?          @map("due_date") @db.Date
-  paidDate        DateTime?          @map("paid_date") @db.Date
-  status          PaymentStatus      @default(draft)
-  method          PaymentMethod?
-  reference       String?
-  linkedReceiptId String?            @map("linked_receipt_id") @db.Uuid
-  notes           String?            @db.Text
-  createdByUserId String             @map("created_by_user_id") @db.Uuid
+  id                String            @id @default(uuid()) @db.Uuid
+  clientId          String            @map("client_id") @db.Uuid
+  sourceType        PaymentSourceType @map("source_type")
+  sourceMonthlyId   String?           @map("source_monthly_id") @db.Uuid
+  sourceHourlyId    String?           @map("source_hourly_id") @db.Uuid
+  amountPlaceholder Int?              @map("amount_placeholder")
+  currency          Currency          @default(ILS)
+  issuedDate        DateTime          @map("issued_date") @db.Date
+  dueDate           DateTime?         @map("due_date") @db.Date
+  paidDate          DateTime?         @map("paid_date") @db.Date
+  status            PaymentStatus     @default(draft)
+  method            PaymentMethod?
+  reference         String?
+  linkedReceiptId   String?           @map("linked_receipt_id") @db.Uuid
+  notes             String?           @db.Text
+  createdByUserId   String            @map("created_by_user_id") @db.Uuid
 
   client        Client              @relation(fields: [clientId], references: [id])
   sourceMonthly MonthlyBillingItem? @relation(fields: [sourceMonthlyId], references: [id])
@@ -579,8 +586,8 @@ model Payment {
   createdBy     User                @relation(fields: [createdByUserId], references: [id])
   linkedReceipt ReceiptDocument?    @relation("PaymentReceipt", fields: [linkedReceiptId], references: [id])
 
-  linkedJobs       Job[]              @relation("JobLinkedPayment")
-  oneTimeCharges   OneTimeJobCharge[] @relation("OtcPayment")
+  linkedJobs     Job[]              @relation("JobLinkedPayment")
+  oneTimeCharges OneTimeJobCharge[] @relation("OtcPayment")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -592,33 +599,33 @@ model Payment {
 }
 
 model ReceiptDocument {
-  id                  String                @id @default(uuid()) @db.Uuid
-  type                ReceiptDocumentType
-  clientId            String                @map("client_id") @db.Uuid
-  paymentId           String?               @map("payment_id") @db.Uuid
-  documentNumber      Int?                  @map("document_number")
-  documentNumberYear  Int?                  @map("document_number_year")
-  status              ReceiptDocumentStatus @default(draft)
-  issueDate           DateTime              @map("issue_date") @db.Date
-  paymentDate         DateTime?             @map("payment_date") @db.Date
-  descriptionLines    Json                  @default("[]") @map("description_lines")
-  amountBeforeVat     Int?                  @map("amount_before_vat")
-  vatRateBasisPoints  Int                   @default(1800) @map("vat_rate_basis_points")
-  vatAmount           Int?                  @map("vat_amount")
-  totalAmount         Int?                  @map("total_amount")
-  paymentMethod       PaymentMethod?        @map("payment_method")
-  reference           String?
-  currency            Currency              @default(ILS)
-  notes               String?               @db.Text
-  language            String                @default("he")
-  allocationNumber    String?               @map("allocation_number")
-  allocationStatus    AllocationStatus      @default(not_required) @map("allocation_status")
-  allocationObtainedAt DateTime?            @map("allocation_obtained_at")
-  finalizedAt         DateTime?             @map("finalized_at")
-  finalizedByUserId   String?               @map("finalized_by_user_id") @db.Uuid
+  id                   String                @id @default(uuid()) @db.Uuid
+  type                 ReceiptDocumentType
+  clientId             String                @map("client_id") @db.Uuid
+  paymentId            String?               @map("payment_id") @db.Uuid
+  documentNumber       Int?                  @map("document_number")
+  documentNumberYear   Int?                  @map("document_number_year")
+  status               ReceiptDocumentStatus @default(draft)
+  issueDate            DateTime              @map("issue_date") @db.Date
+  paymentDate          DateTime?             @map("payment_date") @db.Date
+  descriptionLines     Json                  @default("[]") @map("description_lines")
+  amountBeforeVat      Int?                  @map("amount_before_vat")
+  vatRateBasisPoints   Int                   @default(1800) @map("vat_rate_basis_points")
+  vatAmount            Int?                  @map("vat_amount")
+  totalAmount          Int?                  @map("total_amount")
+  paymentMethod        PaymentMethod?        @map("payment_method")
+  reference            String?
+  currency             Currency              @default(ILS)
+  notes                String?               @db.Text
+  language             String                @default("he")
+  allocationNumber     String?               @map("allocation_number")
+  allocationStatus     AllocationStatus      @default(not_required) @map("allocation_status")
+  allocationObtainedAt DateTime?             @map("allocation_obtained_at")
+  finalizedAt          DateTime?             @map("finalized_at")
+  finalizedByUserId    String?               @map("finalized_by_user_id") @db.Uuid
 
-  client      Client  @relation(fields: [clientId], references: [id])
-  finalizedBy User?   @relation(fields: [finalizedByUserId], references: [id])
+  client      Client @relation(fields: [clientId], references: [id])
+  finalizedBy User?  @relation(fields: [finalizedByUserId], references: [id])
 
   sourcePayments Payment[] @relation("PaymentReceipt")
 
@@ -661,15 +668,15 @@ model CommunicationChannel {
 }
 
 model CommunicationPost {
-  id              String    @id @default(uuid()) @db.Uuid
-  channelId       String    @map("channel_id") @db.Uuid
-  authorId        String    @map("author_id") @db.Uuid
+  id              String  @id @default(uuid()) @db.Uuid
+  channelId       String  @map("channel_id") @db.Uuid
+  authorId        String  @map("author_id") @db.Uuid
   title           String
-  body            String    @db.Text
-  relatedJobId    String?   @map("related_job_id") @db.Uuid
-  relatedClientId String?   @map("related_client_id") @db.Uuid
-  pinned          Boolean   @default(false)
-  resolved        Boolean   @default(false)
+  body            String  @db.Text
+  relatedJobId    String? @map("related_job_id") @db.Uuid
+  relatedClientId String? @map("related_client_id") @db.Uuid
+  pinned          Boolean @default(false)
+  resolved        Boolean @default(false)
 
   channel       CommunicationChannel @relation(fields: [channelId], references: [id])
   author        User                 @relation(fields: [authorId], references: [id])
@@ -706,13 +713,13 @@ model CommunicationReply {
 }
 
 model SavedView {
-  id            String         @id @default(uuid()) @db.Uuid
-  userId        String?        @map("user_id") @db.Uuid
-  scope         SavedViewScope
-  name          String
-  filterJson    Json           @map("filter_json")
-  isTeam        Boolean        @default(false) @map("is_team")
-  createdById   String         @map("created_by_user_id") @db.Uuid
+  id          String         @id @default(uuid()) @db.Uuid
+  userId      String?        @map("user_id") @db.Uuid
+  scope       SavedViewScope
+  name        String
+  filterJson  Json           @map("filter_json")
+  isTeam      Boolean        @default(false) @map("is_team")
+  createdById String         @map("created_by_user_id") @db.Uuid
 
   owner     User? @relation("SavedViewOwner", fields: [userId], references: [id])
   createdBy User  @relation("SavedViewCreator", fields: [createdById], references: [id])
@@ -726,14 +733,14 @@ model SavedView {
 }
 
 model AuditLog {
-  id          String  @id @default(uuid()) @db.Uuid
-  actorUserId String? @map("actor_user_id") @db.Uuid
+  id          String   @id @default(uuid()) @db.Uuid
+  actorUserId String?  @map("actor_user_id") @db.Uuid
   action      String
-  entityType  String  @map("entity_type")
-  entityId    String  @map("entity_id") @db.Uuid
-  diffJson    Json?   @map("diff_json")
-  ipAddress   String? @map("ip_address")
-  userAgent   String? @map("user_agent")
+  entityType  String   @map("entity_type")
+  entityId    String   @map("entity_id") @db.Uuid
+  diffJson    Json?    @map("diff_json")
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
   createdAt   DateTime @default(now()) @map("created_at")
 
   actor User? @relation(fields: [actorUserId], references: [id])
@@ -753,10 +760,10 @@ model Attachment {
   uploadedByUserId String               @map("uploaded_by_user_id") @db.Uuid
   visibility       AttachmentVisibility @default(public_in_org)
 
-  uploadedBy  User              @relation(fields: [uploadedByUserId], references: [id])
-  jobLinks    JobAttachment[]
-  postLinks   PostAttachment[]
-  replyLinks  ReplyAttachment[]
+  uploadedBy User              @relation(fields: [uploadedByUserId], references: [id])
+  jobLinks   JobAttachment[]
+  postLinks  PostAttachment[]
+  replyLinks ReplyAttachment[]
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -809,4 +816,28 @@ model FeatureFlag {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("feature_flags")
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  kind      NotificationKind
+  /// Free-form payload. Shape varies by `kind`; consumers narrow by `kind`.
+  /// Examples:
+  ///   sla_breached  -> { jobId: string, publicNumber: string, breachMinutes: number }
+  ///   job_assigned  -> { jobId: string, publicNumber: string, title: string }
+  ///   mention       -> { postId: string, replyId?: string, channelKey: string }
+  payload   Json
+  /// Optional deep link the UI navigates to when the row is clicked.
+  link      String?
+  seenAt    DateTime?        @map("seen_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Unread-first per user (NULL sorts highest with Desc by default in Postgres,
+  // but we expose this index to support `seenAt IS NULL` filtering quickly).
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, seenAt])
+  @@map("notifications")
 }

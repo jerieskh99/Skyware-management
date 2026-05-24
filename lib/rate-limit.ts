@@ -65,4 +65,10 @@ export const LIMITS = {
   passwordReset: { windowMs: 15 * 60 * 1000, max: 5 },
   /** Admin user create: 20 per 15 minutes per IP. */
   adminCreate: { windowMs: 15 * 60 * 1000, max: 20 },
+  /**
+   * Credentials sign-in: 10 attempts per 15 minutes per IP.
+   * Tighter than UI guidance so brute-force is impractical without exposing
+   * a normal user who fat-fingers a few passwords during a single session.
+   */
+  authLogin: { windowMs: 15 * 60 * 1000, max: 10 },
 } as const;

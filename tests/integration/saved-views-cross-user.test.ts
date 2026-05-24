@@ -27,11 +27,17 @@ describe("Cross-user access to /api/saved-views/[id]", () => {
     vi.resetAllMocks();
     resetPrisma();
     mockAuthAs(makeEmployeeSession({ department: "helpdesk" }));
-    // The view exists, but it belongs to a different user — every read filtered
-    // by `userId` should miss.
-    prisma.savedView.findFirst.mockResolvedValue(null);
-    prisma.savedView.updateMany.mockResolvedValue({ count: 0 });
-    prisma.savedView.deleteMany.mockResolvedValue({ count: 0 });
+    // The view exists but belongs to a different user. A non-admin non-owner
+    // is rejected by `canManageTeamView` and the route converts that to 404.
+    prisma.savedView.findFirst.mockResolvedValue({
+      id: OTHER_USER_VIEW_ID,
+      userId: "some-other-user",
+      createdById: "some-other-user",
+      scope: "jobs",
+      name: "Their view",
+      isDefault: false,
+      visibility: "personal",
+    });
   });
 
   it("PATCH returns 404 (not 403) for a view owned by another user", async () => {

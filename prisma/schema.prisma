@@ -179,6 +179,12 @@ enum NotificationKind {
   mention
 }
 
+enum SavedViewVisibility {
+  personal
+  /// Any logged-in user can see team-shared views on the matching scope.
+  team
+}
+
 // ===== Models =====
 
 model Department {
@@ -188,9 +194,10 @@ model Department {
   nameHe   String        @map("name_he")
   isGlobal Boolean       @default(false) @map("is_global")
 
-  users    User[]
-  jobs     Job[]
-  channels CommunicationChannel[]
+  users              User[]
+  jobs               Job[]
+  channels           CommunicationChannel[]
+  recurringTemplates RecurringJobTemplate[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -229,25 +236,32 @@ model User {
   department Department @relation(fields: [departmentId], references: [id])
   role       Role       @relation(fields: [roleId], references: [id])
 
-  assignedJobs        Job[]                   @relation("AssignedJobs")
-  createdJobs         Job[]                   @relation("CreatedJobs")
-  statusEvents        JobStatusEvent[]
-  submittedReports    WorkReport[]            @relation("SubmittedReports")
-  approvedReports     WorkReport[]            @relation("ApprovedReports")
-  timeSessions        TimeSession[]
-  posts               CommunicationPost[]
-  replies             CommunicationReply[]
-  savedViewsOwned     SavedView[]             @relation("SavedViewOwner")
-  savedViewsCreated   SavedView[]             @relation("SavedViewCreator")
-  auditLogs           AuditLog[]
-  environmentNotes    ClientEnvironmentNote[]
-  createdClients      Client[]
-  createdPayments     Payment[]
-  finalizedReceipts   ReceiptDocument[]
-  uploadedAttachments Attachment[]
-  bankUsagesRecorded  HourlyBankUsage[]
-  updatedFeatureFlags FeatureFlag[]
-  notifications       Notification[]
+  assignedJobs               Job[]                   @relation("AssignedJobs")
+  createdJobs                Job[]                   @relation("CreatedJobs")
+  statusEvents               JobStatusEvent[]
+  submittedReports           WorkReport[]            @relation("SubmittedReports")
+  approvedReports            WorkReport[]            @relation("ApprovedReports")
+  timeSessions               TimeSession[]
+  posts                      CommunicationPost[]
+  replies                    CommunicationReply[]
+  savedViewsOwned            SavedView[]             @relation("SavedViewOwner")
+  savedViewsCreated          SavedView[]             @relation("SavedViewCreator")
+  auditLogs                  AuditLog[]
+  environmentNotes           ClientEnvironmentNote[]
+  createdClients             Client[]
+  createdPayments            Payment[]
+  finalizedReceipts          ReceiptDocument[]
+  uploadedAttachments        Attachment[]
+  bankUsagesRecorded         HourlyBankUsage[]
+  updatedFeatureFlags        FeatureFlag[]
+  notifications              Notification[]
+  slaDefaults                SlaDefaults[]
+  updatedCompanySettings     CompanySettings[]       @relation("UpdatedCompanySettings")
+  recurringTemplatesCreated  RecurringJobTemplate[]  @relation("RecurringCreatedBy")
+  recurringTemplatesUpdated  RecurringJobTemplate[]  @relation("RecurringUpdatedBy")
+  recurringTemplatesAssigned RecurringJobTemplate[]  @relation("RecurringDefaultAssignee")
+  knowledgeAuthored          KnowledgeArticle[]      @relation("KnowledgeAuthor")
+  knowledgeEdited            KnowledgeArticle[]      @relation("KnowledgeLastEditor")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -256,36 +270,38 @@ model User {
 }
 
 model Job {
-  id                 String      @id @default(uuid()) @db.Uuid
-  publicNumber       String      @unique @map("public_number")
-  clientId           String?     @map("client_id") @db.Uuid
-  departmentId       String      @map("department_id") @db.Uuid
-  title              String
-  description        String?     @db.Text
-  assignedEmployeeId String?     @map("assigned_employee_id") @db.Uuid
-  createdByUserId    String      @map("created_by_user_id") @db.Uuid
-  status             JobStatus   @default(new)
-  priority           JobPriority @default(normal)
-  severity           JobSeverity @default(moderate)
-  slaTargetMinutes   Int         @map("sla_target_minutes")
-  assignedTimestamp  DateTime?   @map("assigned_timestamp")
-  takenTimestamp     DateTime?   @map("taken_timestamp")
-  startedTimestamp   DateTime?   @map("started_timestamp")
-  completedTimestamp DateTime?   @map("completed_timestamp")
-  reviewedTimestamp  DateTime?   @map("reviewed_timestamp")
-  cancelledTimestamp DateTime?   @map("cancelled_timestamp")
-  firstResponseAt    DateTime?   @map("first_response_at")
-  timeSpentMinutes   Int         @default(0) @map("time_spent_minutes")
-  adminNote          String?     @map("admin_note") @db.Text
-  isBillable         Boolean     @default(true) @map("is_billable")
-  linkedPaymentId    String?     @map("linked_payment_id") @db.Uuid
-  source             JobSource   @default(portal_manual)
+  id                  String      @id @default(uuid()) @db.Uuid
+  publicNumber        String      @unique @map("public_number")
+  clientId            String?     @map("client_id") @db.Uuid
+  departmentId        String      @map("department_id") @db.Uuid
+  title               String
+  description         String?     @db.Text
+  assignedEmployeeId  String?     @map("assigned_employee_id") @db.Uuid
+  createdByUserId     String      @map("created_by_user_id") @db.Uuid
+  status              JobStatus   @default(new)
+  priority            JobPriority @default(normal)
+  severity            JobSeverity @default(moderate)
+  slaTargetMinutes    Int         @map("sla_target_minutes")
+  assignedTimestamp   DateTime?   @map("assigned_timestamp")
+  takenTimestamp      DateTime?   @map("taken_timestamp")
+  startedTimestamp    DateTime?   @map("started_timestamp")
+  completedTimestamp  DateTime?   @map("completed_timestamp")
+  reviewedTimestamp   DateTime?   @map("reviewed_timestamp")
+  cancelledTimestamp  DateTime?   @map("cancelled_timestamp")
+  firstResponseAt     DateTime?   @map("first_response_at")
+  timeSpentMinutes    Int         @default(0) @map("time_spent_minutes")
+  adminNote           String?     @map("admin_note") @db.Text
+  isBillable          Boolean     @default(true) @map("is_billable")
+  linkedPaymentId     String?     @map("linked_payment_id") @db.Uuid
+  source              JobSource   @default(portal_manual)
+  recurringTemplateId String?     @map("recurring_template_id") @db.Uuid
 
-  client           Client?    @relation(fields: [clientId], references: [id])
-  department       Department @relation(fields: [departmentId], references: [id])
-  assignedEmployee User?      @relation("AssignedJobs", fields: [assignedEmployeeId], references: [id])
-  createdBy        User       @relation("CreatedJobs", fields: [createdByUserId], references: [id])
-  linkedPayment    Payment?   @relation("JobLinkedPayment", fields: [linkedPaymentId], references: [id])
+  client            Client?               @relation(fields: [clientId], references: [id])
+  department        Department            @relation(fields: [departmentId], references: [id])
+  assignedEmployee  User?                 @relation("AssignedJobs", fields: [assignedEmployeeId], references: [id])
+  createdBy         User                  @relation("CreatedJobs", fields: [createdByUserId], references: [id])
+  linkedPayment     Payment?              @relation("JobLinkedPayment", fields: [linkedPaymentId], references: [id])
+  recurringTemplate RecurringJobTemplate? @relation("RecurringSourceTemplate", fields: [recurringTemplateId], references: [id])
 
   statusEvents     JobStatusEvent[]
   workReport       WorkReport?
@@ -305,6 +321,7 @@ model Job {
   @@index([status, createdAt(sort: Desc)])
   @@index([priority, status])
   @@index([severity, status])
+  @@index([recurringTemplateId])
   @@map("jobs")
 }
 
@@ -378,8 +395,9 @@ model Tag {
   isSystem Boolean  @default(false) @map("is_system")
   colorHex String?  @map("color_hex")
 
-  jobTags  JobTag[]
-  postTags PostTag[]
+  jobTags              JobTag[]
+  postTags             PostTag[]
+  knowledgeArticleTags KnowledgeArticleTag[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -423,12 +441,15 @@ model Client {
 
   createdBy User @relation(fields: [createdByUserId], references: [id])
 
-  billingAccount   BillingAccount?
-  jobs             Job[]
-  payments         Payment[]
-  receipts         ReceiptDocument[]
-  environmentNotes ClientEnvironmentNote[]
-  relatedPosts     CommunicationPost[]
+  billingAccount     BillingAccount?
+  jobs               Job[]
+  payments           Payment[]
+  receipts           ReceiptDocument[]
+  environmentNotes   ClientEnvironmentNote[]
+  relatedPosts       CommunicationPost[]
+  recurringTemplates RecurringJobTemplate[]
+  knowledgeArticles  KnowledgeArticle[]      @relation("ClientKnowledge")
+  healthSnapshots    ClientHealthSnapshot[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -623,9 +644,17 @@ model ReceiptDocument {
   allocationObtainedAt DateTime?             @map("allocation_obtained_at")
   finalizedAt          DateTime?             @map("finalized_at")
   finalizedByUserId    String?               @map("finalized_by_user_id") @db.Uuid
+  /// Rate from `currency` to ILS at finalize moment. Required when finalized
+  /// and currency is not ILS. Enforced by check constraint in migration
+  /// 20260524000600_receipt_invariants.
+  exchangeRate         Decimal?              @map("exchange_rate") @db.Decimal(18, 6)
+  /// On a credit-note row, points to the original receipt being credited.
+  creditedReceiptId    String?               @map("credited_receipt_id") @db.Uuid
 
-  client      Client @relation(fields: [clientId], references: [id])
-  finalizedBy User?  @relation(fields: [finalizedByUserId], references: [id])
+  client          Client            @relation(fields: [clientId], references: [id])
+  finalizedBy     User?             @relation(fields: [finalizedByUserId], references: [id])
+  creditedReceipt ReceiptDocument?  @relation("ReceiptCredits", fields: [creditedReceiptId], references: [id])
+  creditedBy      ReceiptDocument[] @relation("ReceiptCredits")
 
   sourcePayments Payment[] @relation("PaymentReceipt")
 
@@ -713,14 +742,15 @@ model CommunicationReply {
 }
 
 model SavedView {
-  id          String         @id @default(uuid()) @db.Uuid
-  userId      String?        @map("user_id") @db.Uuid
+  id          String              @id @default(uuid()) @db.Uuid
+  userId      String?             @map("user_id") @db.Uuid
   scope       SavedViewScope
   name        String
-  filterJson  Json           @map("filter_json")
-  isTeam      Boolean        @default(false) @map("is_team")
-  isDefault   Boolean        @default(false) @map("is_default")
-  createdById String         @map("created_by_user_id") @db.Uuid
+  filterJson  Json                @map("filter_json")
+  isTeam      Boolean             @default(false) @map("is_team")
+  visibility  SavedViewVisibility @default(personal)
+  isDefault   Boolean             @default(false) @map("is_default")
+  createdById String              @map("created_by_user_id") @db.Uuid
 
   owner     User? @relation("SavedViewOwner", fields: [userId], references: [id])
   createdBy User  @relation("SavedViewCreator", fields: [createdById], references: [id])
@@ -728,10 +758,14 @@ model SavedView {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  // At most one default per (user, scope) is enforced by a partial unique
-  // index in the follow-up migration `20260524000300_saved_view_extras`.
+  // Default-per-scope guarantees:
+  //  - Personal default: unique per (user_id, scope) when visibility=personal.
+  //  - Team default: unique per (scope) when visibility=team.
+  // Enforced by partial unique indexes in migration
+  // `20260524001300_saved_view_visibility`.
   @@index([userId, scope])
   @@index([isTeam, scope])
+  @@index([visibility, scope])
   @@map("saved_views")
 }
 
@@ -843,4 +877,190 @@ model Notification {
   @@index([userId, createdAt(sort: Desc)])
   @@index([userId, seenAt])
   @@map("notifications")
+}
+
+model SlaDefaults {
+  id              String      @id @default(uuid()) @db.Uuid
+  priority        JobPriority @unique
+  /// Minutes from `assigned_timestamp` to when the job is considered breached.
+  targetMinutes   Int         @map("target_minutes")
+  updatedByUserId String?     @map("updated_by_user_id") @db.Uuid
+  updatedBy       User?       @relation(fields: [updatedByUserId], references: [id])
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  @@map("sla_defaults")
+}
+
+model CompanySettings {
+  /// Application enforces a single row by always using this id; backed by a
+  /// CHECK constraint in migration 20260524000800_company_settings_singleton.
+  id                    String   @id @default("00000000-0000-0000-0000-000000000001") @db.Uuid
+  legalNameEn           String?  @map("legal_name_en")
+  legalNameHe           String?  @map("legal_name_he")
+  companyNumber         String?  @map("company_number")
+  vatNumber             String?  @map("vat_number")
+  timezone              String   @default("Asia/Jerusalem")
+  /// VAT rate stored as basis points (e.g. 1800 = 18.00%).
+  defaultVatBasisPoints Int      @default(1800) @map("default_vat_basis_points")
+  defaultCurrency       Currency @default(ILS) @map("default_currency")
+  email                 String?
+  phone                 String?
+  addressLine1          String?  @map("address_line1")
+  addressLine2          String?  @map("address_line2")
+  city                  String?
+  postalCode            String?  @map("postal_code")
+  country               String   @default("IL")
+  websiteUrl            String?  @map("website_url")
+  receiptFooterEn       String?  @map("receipt_footer_en") @db.Text
+  receiptFooterHe       String?  @map("receipt_footer_he") @db.Text
+  updatedByUserId       String?  @map("updated_by_user_id") @db.Uuid
+
+  updatedBy User? @relation("UpdatedCompanySettings", fields: [updatedByUserId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("company_settings")
+}
+
+enum RecurringCadence {
+  daily
+  weekly
+  biweekly
+  monthly
+  quarterly
+}
+
+enum RecurringTemplateStatus {
+  active
+  paused
+}
+
+model RecurringJobTemplate {
+  id                String                  @id @default(uuid()) @db.Uuid
+  /// Optional friendly name; if null, derived from `titleTemplate`.
+  name              String?
+  /// Job-creation template fields. Same shape as a manual job create form.
+  titleTemplate     String                  @map("title_template")
+  description       String?                 @db.Text
+  departmentId      String                  @map("department_id") @db.Uuid
+  clientId          String?                 @map("client_id") @db.Uuid
+  priority          JobPriority             @default(normal)
+  severity          JobSeverity             @default(moderate)
+  defaultAssigneeId String?                 @map("default_assignee_id") @db.Uuid
+  cadence           RecurringCadence
+  /// Cron-style anchor: minute-of-day 0..1439 for daily, day-of-week 0..6 for
+  /// weekly/biweekly (0 = Sunday), day-of-month 1..28 for monthly/quarterly.
+  /// Stored as JSON so cadences can extend without a migration.
+  anchor            Json
+  /// Asia/Jerusalem by default. Generation respects this zone.
+  timezone          String                  @default("Asia/Jerusalem")
+  /// Next time the writer should consider this template.
+  nextRunAt         DateTime                @map("next_run_at")
+  lastGeneratedAt   DateTime?               @map("last_generated_at")
+  /// Total number of jobs this template has spawned (cumulative).
+  generatedCount    Int                     @default(0) @map("generated_count")
+  status            RecurringTemplateStatus @default(active)
+  createdByUserId   String                  @map("created_by_user_id") @db.Uuid
+  updatedByUserId   String?                 @map("updated_by_user_id") @db.Uuid
+
+  department      Department @relation(fields: [departmentId], references: [id])
+  client          Client?    @relation(fields: [clientId], references: [id])
+  defaultAssignee User?      @relation("RecurringDefaultAssignee", fields: [defaultAssigneeId], references: [id])
+  createdBy       User       @relation("RecurringCreatedBy", fields: [createdByUserId], references: [id])
+  updatedBy       User?      @relation("RecurringUpdatedBy", fields: [updatedByUserId], references: [id])
+  generatedJobs   Job[]      @relation("RecurringSourceTemplate")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([status, nextRunAt])
+  @@index([departmentId])
+  @@index([clientId])
+  @@map("recurring_job_templates")
+}
+
+enum KnowledgeArticleStatus {
+  draft
+  published
+  archived
+}
+
+enum KnowledgeArticleVisibility {
+  /// Visible to everyone with portal access.
+  internal
+  /// Visible only to admins.
+  admin_only
+}
+
+model KnowledgeArticle {
+  id                 String                     @id @default(uuid()) @db.Uuid
+  /// URL-safe identifier; unique. Generated from title at create time.
+  slug               String                     @unique
+  title              String
+  /// Markdown body. Render via existing markdown helper if any; else plain text.
+  body               String                     @db.Text
+  /// Optional one-line summary used in lists.
+  summary            String?
+  status             KnowledgeArticleStatus     @default(draft)
+  visibility         KnowledgeArticleVisibility @default(internal)
+  /// Soft-delete: archived articles drop out of search and list views.
+  /// Hard delete via API is admin-only and audited.
+  authorUserId       String                     @map("author_user_id") @db.Uuid
+  lastEditedByUserId String?                    @map("last_edited_by_user_id") @db.Uuid
+  publishedAt        DateTime?                  @map("published_at")
+  /// Optional related client; gives a "this article is about client X" hint.
+  relatedClientId    String?                    @map("related_client_id") @db.Uuid
+
+  author        User                  @relation("KnowledgeAuthor", fields: [authorUserId], references: [id])
+  lastEditedBy  User?                 @relation("KnowledgeLastEditor", fields: [lastEditedByUserId], references: [id])
+  relatedClient Client?               @relation("ClientKnowledge", fields: [relatedClientId], references: [id])
+  tags          KnowledgeArticleTag[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([status, updatedAt(sort: Desc)])
+  @@index([relatedClientId])
+  @@map("knowledge_articles")
+}
+
+/// Reuses the existing Tag table. A tag with scope `communication`, `job`,
+/// or `both` may attach to articles; this join expresses that link.
+model KnowledgeArticleTag {
+  articleId String @map("article_id") @db.Uuid
+  tagId     String @map("tag_id") @db.Uuid
+
+  article KnowledgeArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tag     Tag              @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, tagId])
+  @@map("knowledge_article_tags")
+}
+
+model ClientHealthSnapshot {
+  id                    String   @id @default(uuid()) @db.Uuid
+  clientId              String   @map("client_id") @db.Uuid
+  /// ISO week start (Monday 00:00 in client timezone or Asia/Jerusalem fallback).
+  periodStart           DateTime @map("period_start") @db.Date
+  periodEnd             DateTime @map("period_end") @db.Date
+  openJobs              Int      @map("open_jobs")
+  delayedJobs           Int      @map("delayed_jobs")
+  /// Hours reported on this client's jobs that closed within the period.
+  hoursConsumed         Decimal  @map("hours_consumed") @db.Decimal(10, 2)
+  /// Sum of unpaid + overdue payment amounts (minor units) AS OF the snapshot time.
+  outstandingMinorUnits Int      @map("outstanding_minor_units")
+  /// Average projected months remaining on the client's active hourly banks.
+  /// Null if the client has no active hourly banks.
+  avgProjectedMonths    Decimal? @map("avg_projected_months") @db.Decimal(8, 2)
+  /// Free-form JSON for forward-compatible metrics we add later.
+  extra                 Json     @default("{}")
+  generatedAt           DateTime @default(now()) @map("generated_at")
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, periodStart], name: "client_period_unique")
+  @@index([clientId, periodStart(sort: Desc)])
+  @@map("client_health_snapshots")
 }

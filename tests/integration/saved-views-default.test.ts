@@ -26,41 +26,57 @@ describe("Set default saved view", () => {
     mockAuthAs(makeEmployeeSession({ department: "helpdesk" }));
   });
 
-  it("clears prior default in the same scope before setting the new one (single tx)", async () => {
-    // Initial lookup: the target view is owned and currently not default.
+  it("clears prior personal defaults in the same scope before setting the new one", async () => {
     prisma.savedView.findFirst
+      // PATCH route's existence + manage check
       .mockResolvedValueOnce({
         id: VIEW_ID,
+        userId: USER_ID,
+        createdById: USER_ID,
         scope: "jobs",
         name: "Urgent",
         isDefault: false,
+        visibility: "personal",
       })
-      // setDefaultForUser ownership check.
-      .mockResolvedValueOnce({ id: VIEW_ID })
-      // updateForUser re-read.
+      // updateForUser existence lookup
+      .mockResolvedValueOnce({
+        id: VIEW_ID,
+        userId: USER_ID,
+        createdById: USER_ID,
+        visibility: "personal",
+      })
+      // updateForUser re-read after no-op patch
       .mockResolvedValueOnce({
         id: VIEW_ID,
         userId: USER_ID,
         scope: "jobs",
         name: "Urgent",
         filterJson: {},
+        visibility: "personal",
         isDefault: false,
+        createdById: USER_ID,
       })
-      // setDefaultForUser final select after pinning.
+      // setDefaultForUser target lookup
+      .mockResolvedValueOnce({
+        id: VIEW_ID,
+        userId: USER_ID,
+        createdById: USER_ID,
+        visibility: "personal",
+      })
+      // setDefaultForUser final select after pinning
       .mockResolvedValueOnce({
         id: VIEW_ID,
         userId: USER_ID,
         scope: "jobs",
         name: "Urgent",
         filterJson: {},
+        visibility: "personal",
         isDefault: true,
+        createdById: USER_ID,
       });
 
-    prisma.savedView.updateMany
-      // updateForUser updateMany
-      .mockResolvedValueOnce({ count: 1 })
-      // setDefaultForUser clearing prior defaults
-      .mockResolvedValueOnce({ count: 1 });
+    // setDefaultForUser personal clearing updateMany
+    prisma.savedView.updateMany.mockResolvedValueOnce({ count: 1 });
 
     prisma.savedView.update.mockResolvedValueOnce({
       id: VIEW_ID,
@@ -78,14 +94,21 @@ describe("Set default saved view", () => {
     expect(body.id).toBe(VIEW_ID);
     expect(body.isDefault).toBe(true);
 
-    // The clearing updateMany must scope to the SAME (userId, scope) and
-    // exclude the view being pinned.
-    const clearingCall = prisma.savedView.updateMany.mock.calls[1]?.[0] as {
-      where: { userId: string; scope: string; isDefault: boolean; NOT: { id: string } };
+    // The personal clearing updateMany must scope to (userId, scope, visibility=personal)
+    // and exclude the view being pinned.
+    const clearingCall = prisma.savedView.updateMany.mock.calls[0]?.[0] as {
+      where: {
+        userId: string;
+        scope: string;
+        visibility: string;
+        isDefault: boolean;
+        NOT: { id: string };
+      };
       data: { isDefault: boolean };
     };
     expect(clearingCall.where.userId).toBe(USER_ID);
     expect(clearingCall.where.scope).toBe("jobs");
+    expect(clearingCall.where.visibility).toBe("personal");
     expect(clearingCall.where.isDefault).toBe(true);
     expect(clearingCall.where.NOT.id).toBe(VIEW_ID);
     expect(clearingCall.data.isDefault).toBe(false);

@@ -51,6 +51,18 @@ export interface MockedPrisma {
   notification: MockedModel;
   featureFlag: MockedModel;
   savedView: MockedModel;
+  companySettings: MockedModel;
+  slaDefaults: MockedModel;
+  receiptDocument: MockedModel;
+  receiptDocumentSequence: MockedModel;
+  attachment: MockedModel;
+  jobAttachment: MockedModel;
+  postAttachment: MockedModel;
+  replyAttachment: MockedModel;
+  recurringJobTemplate: MockedModel;
+  knowledgeArticle: MockedModel;
+  knowledgeArticleTag: MockedModel;
+  clientHealthSnapshot: MockedModel;
   $transaction: Mock;
   $queryRaw: Mock;
   $executeRaw: Mock;

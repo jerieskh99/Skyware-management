@@ -1,0 +1,50 @@
+import { redirect, notFound } from "next/navigation";
+import { BookOpen } from "lucide-react";
+import { auth } from "@/lib/auth";
+import type { SessionUser } from "@/lib/permissions";
+import { isAdmin } from "@/lib/permissions";
+import { getT } from "@/lib/i18n/server";
+import { getFeatureFlag } from "@/lib/feature-flags";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { ArticleEditor } from "@/components/knowledge/ArticleEditor";
+import { getArticleBySlug } from "@/lib/knowledge/queries";
+
+interface Params {
+  params: Promise<{ slug: string }>;
+}
+
+export default async function EditArticlePage({ params }: Params) {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+  const user = session.user as SessionUser;
+  if (!isAdmin(user)) notFound();
+
+  const enabled = await getFeatureFlag("knowledge_articles_enabled");
+  if (!enabled) notFound();
+
+  const { slug } = await params;
+  const article = await getArticleBySlug(slug, true);
+  if (!article) notFound();
+
+  const { t } = await getT();
+
+  return (
+    <div className="space-y-4">
+      <PageHeader
+        icon={BookOpen}
+        title={t("knowledge.editor.editTitle")}
+        description={article.title}
+      />
+      <ArticleEditor
+        mode="edit"
+        initial={{
+          slug: article.slug,
+          title: article.title,
+          summary: article.summary,
+          body: article.body,
+          visibility: article.visibility,
+        }}
+      />
+    </div>
+  );
+}

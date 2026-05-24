@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
-import { Search as SearchIcon, Briefcase, Building2, MessageSquare } from "lucide-react";
+import { Search as SearchIcon, Briefcase, Building2, MessageSquare, BookOpen } from "lucide-react";
 import { auth } from "@/lib/auth";
 import type { SessionUser } from "@/lib/permissions";
 import { isAdmin } from "@/lib/permissions";
 import { getT } from "@/lib/i18n/server";
-import { getFeatureFlag } from "@/lib/feature-flags";
+import { getFeatureFlags } from "@/lib/feature-flags";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { SectionCard } from "@/components/shared/SectionCard";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -15,19 +15,21 @@ import {
   MIN_QUERY_LENGTH,
   searchClients,
   searchJobs,
+  searchKnowledge,
   searchPosts,
   type SearchScope,
   type SearchPage,
   type JobHit,
   type ClientHit,
   type PostHit,
+  type KnowledgeHit,
 } from "@/lib/search/queries";
 
 interface Props {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-const VALID_SCOPES = new Set<SearchScope>(["all", "jobs", "clients", "posts"]);
+const VALID_SCOPES = new Set<SearchScope>(["all", "jobs", "clients", "posts", "knowledge"]);
 
 function readScope(v: string | string[] | undefined): SearchScope {
   if (typeof v !== "string") return "all";
@@ -45,7 +47,9 @@ export default async function SearchPage({ searchParams }: Props) {
   const user = session.user as SessionUser;
   const { t } = await getT();
 
-  const ftsEnabled = await getFeatureFlag("fts_search_enabled");
+  const flags = await getFeatureFlags(["fts_search_enabled", "knowledge_articles_enabled"]);
+  const ftsEnabled = flags["fts_search_enabled"] ?? false;
+  const knowledgeEnabled = flags["knowledge_articles_enabled"] ?? false;
   if (!ftsEnabled) notFound();
 
   const params = await searchParams;
@@ -54,19 +58,24 @@ export default async function SearchPage({ searchParams }: Props) {
   const jobsCursor = readString(params["jobsCursor"]) || undefined;
   const clientsCursor = readString(params["clientsCursor"]) || undefined;
   const postsCursor = readString(params["postsCursor"]) || undefined;
+  const knowledgeCursor = readString(params["knowledgeCursor"]) || undefined;
 
   // Coerce admin-only scope to "all" for non-admins.
   if (scope === "clients" && !isAdmin(user)) scope = "all";
+  // If knowledge is requested but the flag is off, fall back to "all".
+  if (scope === "knowledge" && !knowledgeEnabled) scope = "all";
 
   const tooShort = q.length < MIN_QUERY_LENGTH;
 
   const doJobs = scope === "all" || scope === "jobs";
   const doClients = (scope === "all" || scope === "clients") && isAdmin(user);
   const doPosts = scope === "all" || scope === "posts";
+  const doKnowledge = (scope === "all" || scope === "knowledge") && knowledgeEnabled;
 
   let jobs: SearchPage<JobHit> = { items: [], nextCursor: null };
   let clients: SearchPage<ClientHit> = { items: [], nextCursor: null };
   let posts: SearchPage<PostHit> = { items: [], nextCursor: null };
+  let knowledge: SearchPage<KnowledgeHit> = { items: [], nextCursor: null };
 
   if (!tooShort) {
     const limit = scope === "all" ? 5 : 20;
@@ -74,6 +83,10 @@ export default async function SearchPage({ searchParams }: Props) {
     if (doJobs) tasks.push(searchJobs(user, q, { limit, cursor: jobsCursor }).then((r) => (jobs = r)));
     if (doClients) tasks.push(searchClients(user, q, { limit, cursor: clientsCursor }).then((r) => (clients = r)));
     if (doPosts) tasks.push(searchPosts(user, q, { limit, cursor: postsCursor }).then((r) => (posts = r)));
+    if (doKnowledge)
+      tasks.push(
+        searchKnowledge(user, q, { limit, cursor: knowledgeCursor }).then((r) => (knowledge = r)),
+      );
     await Promise.all(tasks);
   }
 
@@ -82,6 +95,7 @@ export default async function SearchPage({ searchParams }: Props) {
     { value: "jobs", label: t("search.scope.jobs"), show: true },
     { value: "clients", label: t("search.scope.clients"), show: isAdmin(user) },
     { value: "posts", label: t("search.scope.posts"), show: true },
+    { value: "knowledge", label: t("search.scope.knowledge"), show: knowledgeEnabled },
   ];
 
   function chipHref(s: SearchScope): string {
@@ -265,6 +279,52 @@ export default async function SearchPage({ searchParams }: Props) {
                 <div className="border-t px-4 py-2 text-end">
                   <Link
                     href={loadMoreHref("postsCursor", posts.nextCursor)}
+                    className="text-xs font-medium text-brand hover:underline"
+                  >
+                    {t("search.loadMore")}
+                  </Link>
+                </div>
+              )}
+            </SectionCard>
+          )}
+
+          {doKnowledge && (
+            <SectionCard
+              icon={BookOpen}
+              title={t("search.scope.knowledge")}
+              count={knowledge.items.length}
+              bodyClassName="p-0"
+            >
+              {knowledge.items.length === 0 ? (
+                <EmptyState
+                  icon={BookOpen}
+                  title={t("search.noResults").replace("{q}", q)}
+                  className="border-none py-8"
+                />
+              ) : (
+                <ul className="divide-y">
+                  {knowledge.items.map((a) => (
+                    <li key={a.id}>
+                      <Link
+                        href={`/knowledge/${a.slug}`}
+                        className="flex items-start gap-3 px-4 py-3 text-sm transition-colors hover:bg-accent/40"
+                      >
+                        <BookOpen className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium">{a.title}</p>
+                          {a.summary && (
+                            <p className="truncate text-xs text-muted-foreground">{a.summary}</p>
+                          )}
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {knowledge.nextCursor && (
+                <div className="border-t px-4 py-2 text-end">
+                  <Link
+                    href={loadMoreHref("knowledgeCursor", knowledge.nextCursor)}
                     className="text-xs font-medium text-brand hover:underline"
                   >
                     {t("search.loadMore")}

@@ -109,7 +109,14 @@ export default async function JobDetailPage({ params, searchParams }: Props) {
         )}
         {activeTab === "timeline" && <JobTimelineTab job={job} />}
         {activeTab === "related" && <JobRelatedTab job={job} />}
-        {activeTab === "files" && <JobFilesTab />}
+        {activeTab === "files" && (
+          <JobFilesTab
+            jobId={job.id}
+            currentUserId={user.id}
+            isAdmin={admin}
+            canUpload={admin || job.assignedEmployeeId === user.id}
+          />
+        )}
       </div>
     );
   }

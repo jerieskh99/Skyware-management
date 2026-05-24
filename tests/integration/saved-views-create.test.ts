@@ -31,14 +31,16 @@ describe("POST /api/saved-views", () => {
     expect(prisma.savedView.create).not.toHaveBeenCalled();
   });
 
-  it("creates a view, audits it, and returns 201", async () => {
+  it("creates a personal view, audits it, and returns 201", async () => {
     prisma.savedView.create.mockResolvedValueOnce({
       id: "view-1",
       userId: USER_ID,
       scope: "jobs",
       name: "Urgent",
       filterJson: { priority: "urgent" },
+      visibility: "personal",
       isDefault: false,
+      createdById: USER_ID,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -59,11 +61,12 @@ describe("POST /api/saved-views", () => {
 
     expect(prisma.savedView.create).toHaveBeenCalledTimes(1);
     const createArg = prisma.savedView.create.mock.calls[0]?.[0] as {
-      data: { userId: string; createdById: string; scope: string };
+      data: { userId: string; createdById: string; scope: string; visibility: string };
     };
     expect(createArg.data.userId).toBe(USER_ID);
     expect(createArg.data.createdById).toBe(USER_ID);
     expect(createArg.data.scope).toBe("jobs");
+    expect(createArg.data.visibility).toBe("personal");
 
     expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
     const auditArg = prisma.auditLog.create.mock.calls[0]?.[0] as {
@@ -88,18 +91,27 @@ describe("GET /api/saved-views", () => {
     expect(prisma.savedView.findMany).not.toHaveBeenCalled();
   });
 
-  it("returns only the calling user's views in the requested scope", async () => {
+  it("returns the calling user's views and team views in the requested scope", async () => {
     prisma.savedView.findMany.mockResolvedValueOnce([
-      { id: "v1", userId: USER_ID, scope: "jobs", name: "A", filterJson: {}, isDefault: true },
+      {
+        id: "v1",
+        userId: USER_ID,
+        scope: "jobs",
+        name: "A",
+        filterJson: {},
+        visibility: "personal",
+        isDefault: true,
+        createdById: USER_ID,
+      },
     ]);
 
     const res = await GET(getRequest("jobs"));
     expect(res.status).toBe(200);
 
     const findArg = prisma.savedView.findMany.mock.calls[0]?.[0] as {
-      where: { userId: string; scope: string };
+      where: { scope: string; OR: Array<{ userId?: string; visibility?: string }> };
     };
-    expect(findArg.where.userId).toBe(USER_ID);
     expect(findArg.where.scope).toBe("jobs");
+    expect(findArg.where.OR).toEqual([{ userId: USER_ID }, { visibility: "team" }]);
   });
 });

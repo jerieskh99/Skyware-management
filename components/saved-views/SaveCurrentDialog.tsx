@@ -19,7 +19,8 @@ interface Props {
   pending: boolean;
   errorMessage?: string | null;
   description?: string;
-  onSubmit: (input: { name: string; isDefault: boolean }) => void;
+  teamSharedEnabled?: boolean;
+  onSubmit: (input: { name: string; isDefault: boolean; visibility: "personal" | "team" }) => void;
 }
 
 export function SaveCurrentDialog({
@@ -28,17 +29,20 @@ export function SaveCurrentDialog({
   pending,
   errorMessage,
   description,
+  teamSharedEnabled = false,
   onSubmit,
 }: Props) {
   const { t } = useT();
   const [name, setName] = useState("");
   const [isDefault, setIsDefault] = useState(false);
+  const [shareWithTeam, setShareWithTeam] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
   function handleOpenChange(o: boolean) {
     if (!o) {
       setName("");
       setIsDefault(false);
+      setShareWithTeam(false);
       setLocalError(null);
     }
     onOpenChange(o);
@@ -56,7 +60,11 @@ export function SaveCurrentDialog({
       return;
     }
     setLocalError(null);
-    onSubmit({ name: trimmed, isDefault });
+    onSubmit({
+      name: trimmed,
+      isDefault,
+      visibility: shareWithTeam ? "team" : "personal",
+    });
   }
 
   const shownError = localError ?? errorMessage ?? null;
@@ -93,6 +101,23 @@ export function SaveCurrentDialog({
             />
             {t("savedViews.pinDefault")}
           </label>
+          {teamSharedEnabled && (
+            <div className="space-y-1">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={shareWithTeam}
+                  onChange={(e) => setShareWithTeam(e.target.checked)}
+                  disabled={pending}
+                  className="h-4 w-4 rounded border-input"
+                />
+                {t("savedViews.shareWithTeam")}
+              </label>
+              <p className="ps-6 text-xs text-muted-foreground">
+                {t("savedViews.teamHint")}
+              </p>
+            </div>
+          )}
           {shownError && (
             <p className="text-sm text-destructive" role="alert">
               {shownError}

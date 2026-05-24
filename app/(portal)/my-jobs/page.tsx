@@ -9,7 +9,7 @@ import { JobsPageHeader } from "@/components/jobs/JobsPageHeader";
 import { JobFiltersBar } from "@/components/jobs/JobFiltersBar";
 import { SavedViewBar } from "@/components/saved-views/SavedViewBar";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { getFeatureFlag } from "@/lib/feature-flags";
+import { getFeatureFlags } from "@/lib/feature-flags";
 import { getT } from "@/lib/i18n/server";
 import { Briefcase } from "lucide-react";
 
@@ -27,15 +27,17 @@ export default async function MyJobsPage({ searchParams }: Props) {
   const priority = params["priority"] as JobPriority | undefined;
   const showClosed = params["closed"] === "1";
 
-  const [jobs, savedViewsEnabled] = await Promise.all([
+  const [jobs, flags] = await Promise.all([
     listJobsForUser(user, {
       assignedToMe: !isAdmin(user),
       search: search || undefined,
       priority: priority ? [priority] : undefined,
       showClosed,
     }),
-    getFeatureFlag("saved_views_enabled"),
+    getFeatureFlags(["saved_views_enabled", "saved_views_team_shared_enabled"]),
   ]);
+  const savedViewsEnabled = flags["saved_views_enabled"] ?? false;
+  const teamSharedEnabled = flags["saved_views_team_shared_enabled"] ?? false;
 
   const { t } = await getT();
   const admin = isAdmin(user);
@@ -57,7 +59,13 @@ export default async function MyJobsPage({ searchParams }: Props) {
         isAdmin={admin}
       />
       {savedViewsEnabled && (
-        <SavedViewBar scope="jobs" currentFilters={currentFilters} />
+        <SavedViewBar
+          scope="jobs"
+          currentFilters={currentFilters}
+          currentUserId={user.id}
+          isAdmin={admin}
+          teamSharedEnabled={teamSharedEnabled}
+        />
       )}
       <JobFiltersBar
         initialSearch={search}

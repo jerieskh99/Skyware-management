@@ -16,6 +16,7 @@
     "financialDocumentsShort": "מסמכי כספים",
     "statistics": "סטטיסטיקה",
     "myStatistics": "הסטטיסטיקה שלי",
+    "knowledge": "מאגר ידע",
     "agent": "מרכז אוטומציה",
     "agentShort": "מרכז סוכן",
     "admin": "פאנל ניהול",
@@ -75,7 +76,9 @@
     "active": "פעיל",
     "inactive": "לא פעיל",
     "add": "הוסף",
-    "viewAll": "הצג הכל"
+    "viewAll": "הצג הכל",
+    "saved": "נשמר",
+    "deleted": "נמחק"
   },
   "job": {
     "status": {
@@ -435,7 +438,8 @@
       "all": "הכל",
       "jobs": "משימות",
       "clients": "לקוחות",
-      "posts": "פוסטים"
+      "posts": "פוסטים",
+      "knowledge": "מאגר ידע"
     }
   },
   "savedViews": {
@@ -463,7 +467,12 @@
     "pinned": "נקבע כברירת מחדל.",
     "unpinned": "ברירת המחדל נוקתה.",
     "saveFailed": "שמירת התצוגה נכשלה.",
-    "deleteFailed": "מחיקת התצוגה נכשלה."
+    "deleteFailed": "מחיקת התצוגה נכשלה.",
+    "shareWithTeam": "שתף עם הצוות",
+    "makePersonal": "הפוך לאישי",
+    "teamBadge": "צוות",
+    "teamHint": "תצוגות צוות גלויות לכל העובדים בעמוד זה.",
+    "cannotShareTeamWithFlagOff": "תצוגות שמורות משותפות עם הצוות מושבתות."
   },
   "admin": {
     "title": "פאנל ניהול",
@@ -475,7 +484,9 @@
       "audit": "יומן ביקורת",
       "org": "תפקידים ומחלקות",
       "sla": "ברירות מחדל SLA",
-      "company": "פרטי חברה"
+      "cron": "משימות מתוזמנות",
+      "company": "פרטי חברה",
+      "recurring": "משימות חוזרות"
     },
     "users": {
       "addUser": "הוסף משתמש",
@@ -538,6 +549,114 @@
       "deleteFailed": "המחיקה נכשלה.",
       "uses": "שימושים",
       "deleteConfirm": "פעולה זו אינה ניתנת לביטול."
+    },
+    "sla": {
+      "intro": "יעד SLA במינוטים לפי עדיפות. משימה חורגת מ-SLA כאשר (עכשיו - מועד ההקצאה) עולה על המינימום בין יעד העדיפות לבין תקרת החומרה.",
+      "colPriority": "עדיפות",
+      "colTargetMinutes": "יעד בדקות",
+      "colLastUpdated": "עודכן לאחרונה",
+      "priority": {
+        "urgent": "דחוף",
+        "high": "גבוהה",
+        "normal": "רגילה",
+        "low": "נמוכה"
+      },
+      "save": "שמור",
+      "saved": "יעד ה-SLA נשמר.",
+      "saveFailed": "שמירת יעד ה-SLA נכשלה.",
+      "invalidRange": "ערך היעד חייב להיות מספר שלם חיובי עד 7200 (5 ימים).",
+      "notSet": "לא נקבע",
+      "severityNote": "תקרות החומרה קבועות בקוד: קריטית 240 דקות, גדולה 1440 דקות, בינונית 4320 דקות, קלה 10080 דקות. SLA אפקטיבי = מינימום (עדיפות, חומרה)."
+    },
+    "cron": {
+      "intro": "הפעלה ידנית של משימות מתוזמנות. כל משימה מופעלת בדרך כלל על-פי לוח זמנים עם CRON_SECRET; כפתורי ההפעלה כאן מריצים את אותו קוד מיידית ורושמים שורת ביקורת.",
+      "runNow": "הפעל עכשיו",
+      "running": "מריץ...",
+      "runSucceeded": "המשימה הסתיימה",
+      "runFailed": "המשימה נכשלה",
+      "lastResult": "התוצאה האחרונה",
+      "jobs": {
+        "sla-breach": {
+          "label": "סריקת חריגות SLA",
+          "description": "סריקת משימות פעילות שהזמן שחלף מאז ההקצאה חורג מיעד ה-SLA וכתיבת התראת sla_breached אחת לכל מקבל. מכבד את notifications_enabled ואת sla_breach_automation_enabled."
+        },
+        "recurring-jobs": {
+          "label": "כותב משימות חוזרות",
+          "description": "סריקת תבניות חוזרות פעילות שזמן ההפעלה הבא שלהן הגיע ויצירת משימה חדשה לכל תבנית. ללא פעולה כאשר recurring_jobs_enabled כבוי."
+        },
+        "client-health": {
+          "label": "תמונת מצב בריאות לקוח",
+          "description": "חישוב מדדים שבועיים לכל לקוח ועדכון שורה אחת לכל לקוח לכל שבוע ISO. אידמפוטנטי. ללא פעולה כאשר client_health_snapshots_enabled כבוי."
+        }
+      }
+    },
+    "recurring": {
+      "intro": "תבניות שיוצרות משימה חדשה לפי לוח זמנים. כל תבנית מורצת בטרנזקציה משלה ורושמת שורת ביקורת. השתמש בהשהיה כדי לעצור יצירה בלי לאבד היסטוריה.",
+      "flagOff": "משימות חוזרות מושבתות. הפעל את דגל התכונה recurring_jobs_enabled כדי להפעיל.",
+      "addTemplate": "הוסף תבנית",
+      "editTemplate": "ערוך תבנית",
+      "deleteTemplate": "מחק תבנית",
+      "deleteConfirm": "מחיקת תבנית עוצרת יצירה עתידית אך משאירה משימות שכבר נוצרו. פעולה זו אינה ניתנת לביטול.",
+      "noTemplates": "אין עדיין תבניות חוזרות.",
+      "colName": "תבנית",
+      "colCadence": "תדירות",
+      "colNextRun": "הרצה הבאה",
+      "colGenerated": "נוצרו",
+      "colStatus": "סטטוס",
+      "colActions": "פעולות",
+      "status": {
+        "active": "פעילה",
+        "paused": "מושהית"
+      },
+      "actions": {
+        "pause": "השהה",
+        "resume": "חדש פעילות"
+      },
+      "fields": {
+        "name": "שם תצוגה",
+        "namePlaceholder": "בדיקת תקינות שרתים שבועית",
+        "titleTemplate": "תבנית כותרת המשימה",
+        "titleTemplateHint": "השתמש ב-{{date}}, {{week}} או {{month}} כדי להוסיף את התקופה הנוכחית.",
+        "description": "תיאור",
+        "department": "מחלקה",
+        "client": "לקוח",
+        "noClient": "ללא לקוח",
+        "priority": "עדיפות",
+        "severity": "חומרה",
+        "defaultAssignee": "מקבל ברירת מחדל",
+        "noAssignee": "השאר ללא הקצאה (סטטוס: חדשה)",
+        "cadence": "תדירות",
+        "anchor": "עיגון לוח הזמנים",
+        "anchorHelp": {
+          "daily": "שעת היום באזור הזמן של התבנית.",
+          "weekly": "יום בשבוע ושעה באזור הזמן של התבנית.",
+          "biweekly": "יום בשבוע ושעה. רץ כל שבוע שני החל מההתאמה הבאה.",
+          "monthly": "יום בחודש (1-28) ושעה באזור הזמן של התבנית.",
+          "quarterly": "יום בחודש (1-28) ושעה. רץ כל שלושה חודשים החל מההתאמה הבאה."
+        },
+        "dayOfWeek": "יום בשבוע",
+        "dayOfMonth": "יום בחודש",
+        "time": "שעה",
+        "timezone": "אזור זמן"
+      },
+      "cadenceLabels": {
+        "daily": "יומית",
+        "weekly": "שבועית",
+        "biweekly": "דו-שבועית",
+        "monthly": "חודשית",
+        "quarterly": "רבעונית"
+      },
+      "dayNames": {
+        "0": "ראשון",
+        "1": "שני",
+        "2": "שלישי",
+        "3": "רביעי",
+        "4": "חמישי",
+        "5": "שישי",
+        "6": "שבת"
+      },
+      "saveFailed": "שמירת התבנית נכשלה.",
+      "deleteFailed": "מחיקת התבנית נכשלה."
     }
   },
   "notifications": {
@@ -557,5 +676,63 @@
       "hoursAgo": "לפני {n} שעות",
       "daysAgo": "לפני {n} ימים"
     }
+  },
+  "knowledge": {
+    "title": "מאגר ידע",
+    "description": "מאמרים, נהלים והנחיות פנימיות לצוות.",
+    "addArticle": "מאמר חדש",
+    "searchPlaceholder": "חיפוש במאמרים...",
+    "empty": "אין עדיין מאמרים.",
+    "emptyHint": "מנהל יכול ליצור את המאמר הראשון מכאן.",
+    "noMatch": "אין מאמרים התואמים את החיפוש.",
+    "authoredBy": "מאת {name}",
+    "tagsLabel": "תגיות",
+    "tagsEmpty": "לא צורפו תגיות.",
+    "filter": {
+      "allActive": "כל הפעילים"
+    },
+    "status": {
+      "draft": "טיוטה",
+      "published": "פורסם",
+      "archived": "בארכיון"
+    },
+    "visibility": {
+      "label": "נראות",
+      "internal": "כולם",
+      "admin_only": "מנהלים בלבד"
+    },
+    "editor": {
+      "createTitle": "מאמר חדש",
+      "createDescription": "יצירת מאמר ידע. נשמר כטיוטה; פרסם כשהוא מוכן.",
+      "editTitle": "עריכת מאמר",
+      "title": "כותרת",
+      "summary": "תקציר",
+      "summaryPlaceholder": "שורה קצרה שמופיעה ברשימות ובחיפוש.",
+      "body": "תוכן",
+      "bodyPlaceholder": "כתוב את המאמר בטקסט חופשי או ב-Markdown.",
+      "bodyHint": "טקסט חופשי או Markdown. אין עריכה עשירה.",
+      "titleRequired": "כותרת היא שדה חובה.",
+      "bodyRequired": "תוכן הוא שדה חובה.",
+      "saveFailed": "שמירת המאמר נכשלה."
+    }
+  },
+  "clientHealth": {
+    "sectionTitle": "בריאות הלקוח",
+    "sectionDescription": "תמונת מצב שבועית של מדדי הלקוח. מופקת על-ידי משימת client-health.",
+    "kpiOpenJobs": "משימות פתוחות",
+    "kpiDelayedJobs": "באיחור",
+    "kpiHoursConsumed": "שעות השבוע",
+    "kpiOutstanding": "יתרת חוב",
+    "kpiAvgMonths": "ממוצע חודשים נותרים",
+    "kpiAvgMonthsNa": "אין בנקי שעות פעילים",
+    "noSnapshot": "אין עדיין תמונת מצב.",
+    "noSnapshotHint": "הכותב השבועי טרם הפיק תמונת מצב ללקוח זה. הפעל אותה מפאנל המשימות המתוזמנות.",
+    "generateNow": "הפק עכשיו",
+    "lastComputed": "חושב לאחרונה",
+    "trendTitle": "8 השבועות האחרונים",
+    "trendEmpty": "אין עדיין היסטוריה.",
+    "colWeek": "שבוע מתחיל",
+    "colOpen": "פתוחות",
+    "colDelayed": "באיחור"
   }
 }

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { PendingAttachmentChips } from "@/components/attachments/PendingAttachmentChips";
 
 interface Tag {
   key: string;
@@ -16,9 +17,10 @@ interface Tag {
 
 interface Props {
   channelKey: string;
+  attachmentsEnabled?: boolean;
 }
 
-export function ComposePost({ channelKey }: Props) {
+export function ComposePost({ channelKey, attachmentsEnabled = false }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -27,6 +29,7 @@ export function ComposePost({ channelKey }: Props) {
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [pendingIds, setPendingIds] = useState<string[]>([]);
 
   useEffect(() => {
     fetch("/api/tags")
@@ -47,6 +50,7 @@ export function ComposePost({ channelKey }: Props) {
     setTitle("");
     setBody("");
     setSelectedTags([]);
+    setPendingIds([]);
     setError(null);
     setOpen(false);
   }
@@ -72,6 +76,15 @@ export function ComposePost({ channelKey }: Props) {
         const data = await res.json().catch(() => ({})) as { error?: string };
         setError(data.error ?? "Failed to create post.");
         return;
+      }
+
+      const created = (await res.json()) as { id: string };
+      for (const attachmentId of pendingIds) {
+        await fetch(`/api/channels/${channelKey}/posts/${created.id}/attachments`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ attachmentId }),
+        });
       }
 
       reset();
@@ -153,6 +166,10 @@ export function ComposePost({ channelKey }: Props) {
               ))}
             </div>
           </div>
+        )}
+
+        {attachmentsEnabled && (
+          <PendingAttachmentChips onIdsChange={setPendingIds} />
         )}
 
         {error && <p className="text-sm text-destructive">{error}</p>}

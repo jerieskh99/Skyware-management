@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, badRequest, forbidden } from "@/lib/api-utils";
 import { isAdmin } from "@/lib/permissions";
-import { deriveSlaTargetMinutes } from "@/lib/sla";
+import { deriveSlaTargetMinutes, getSlaDefaults } from "@/lib/sla";
 import { generatePublicNumber } from "@/lib/jobs/numbers";
 import { writeAudit } from "@/lib/audit";
 import { listJobsForUser } from "@/lib/jobs/queries";
@@ -66,7 +66,8 @@ export async function POST(req: Request) {
   });
   if (!department) return badRequest([{ message: "Invalid department" }]);
 
-  const slaTargetMinutes = deriveSlaTargetMinutes(data.priority, data.severity);
+  const slaDefaults = await getSlaDefaults();
+  const slaTargetMinutes = deriveSlaTargetMinutes(data.priority, data.severity, slaDefaults);
   const initialStatus: JobStatus = data.assignedEmployeeId
     ? "assigned"
     : data.sendToHub

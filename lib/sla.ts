@@ -1,11 +1,16 @@
 import type { JobPriority, JobSeverity } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
-// Configurable defaults. These match the spec's suggested values.
-const DEFAULT_PRIORITY_SLA_MINUTES: Record<JobPriority, number> = {
-  urgent: 240,    // 4 h
-  high: 1440,     // 24 h
-  normal: 4320,   // 72 h
-  low: 10080,     // 168 h
+/**
+ * Hardcoded fallback defaults. Used when the `sla_defaults` table is empty
+ * (fresh dev DB / unseeded test DB) so behavior stays stable. Production gets
+ * its values from the DB via `getSlaDefaults()` after seed.
+ */
+export const FALLBACK_PRIORITY_SLA_MINUTES: Record<JobPriority, number> = {
+  urgent: 60,
+  high: 120,
+  normal: 240,
+  low: 480,
 };
 
 const DEFAULT_SEVERITY_SLA_MINUTES: Record<JobSeverity, number> = {
@@ -17,23 +22,31 @@ const DEFAULT_SEVERITY_SLA_MINUTES: Record<JobSeverity, number> = {
 
 export type SlaState = "green" | "amber" | "red" | "breached";
 
-/** Effective SLA = min(priority SLA, severity SLA). */
+/** Read SLA defaults per priority from the DB. Falls back to constants
+ *  when the table is empty (fresh dev / unseeded tests). */
+export async function getSlaDefaults(): Promise<Record<JobPriority, number>> {
+  const rows = await prisma.slaDefaults.findMany({
+    select: { priority: true, targetMinutes: true },
+  });
+  if (rows.length === 0) return { ...FALLBACK_PRIORITY_SLA_MINUTES };
+  const result: Record<JobPriority, number> = { ...FALLBACK_PRIORITY_SLA_MINUTES };
+  for (const row of rows) result[row.priority] = row.targetMinutes;
+  return result;
+}
+
+/** Effective SLA = min(priority SLA, severity SLA). Severity ceiling stays
+ *  in code; priority defaults come from the DB via `getSlaDefaults()`. */
 export function deriveSlaTargetMinutes(
   priority: JobPriority,
   severity: JobSeverity,
-  overrides?: {
-    priority?: Partial<Record<JobPriority, number>>;
-    severity?: Partial<Record<JobSeverity, number>>;
-  }
+  defaults: Record<JobPriority, number>
 ): number {
-  const pMin = overrides?.priority?.[priority] ?? DEFAULT_PRIORITY_SLA_MINUTES[priority];
-  const sMin = overrides?.severity?.[severity] ?? DEFAULT_SEVERITY_SLA_MINUTES[severity];
+  const pMin = defaults[priority] ?? FALLBACK_PRIORITY_SLA_MINUTES[priority];
+  const sMin = DEFAULT_SEVERITY_SLA_MINUTES[severity];
   return Math.min(pMin, sMin);
 }
 
-/** Classify elapsed vs target.
- *  Display-only in MVP. No automated breach events.
- */
+/** Classify elapsed vs target. */
 export function computeSlaState(
   elapsedMinutes: number,
   targetMinutes: number

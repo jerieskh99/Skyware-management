@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookmarkPlus, Star, StarOff } from "lucide-react";
+import { BookmarkPlus, Star, StarOff, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -34,7 +34,9 @@ interface SavedViewDTO {
   scope: string;
   name: string;
   filterJson: unknown;
+  visibility: "personal" | "team";
   isDefault: boolean;
+  createdById: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -42,6 +44,9 @@ interface SavedViewDTO {
 interface Props {
   scope: SavedViewScope;
   currentFilters: Record<string, string | undefined>;
+  currentUserId: string;
+  isAdmin: boolean;
+  teamSharedEnabled?: boolean;
 }
 
 function listKey(scope: SavedViewScope) {
@@ -54,7 +59,22 @@ async function fetchViews(scope: SavedViewScope): Promise<SavedViewDTO[]> {
   return (await res.json()) as SavedViewDTO[];
 }
 
-export function SavedViewBar({ scope, currentFilters }: Props) {
+function sortViews(views: SavedViewDTO[]): SavedViewDTO[] {
+  // Pinned-default first, then team views, then personal views; tie-break by name.
+  return [...views].sort((a, b) => {
+    if (a.isDefault !== b.isDefault) return a.isDefault ? -1 : 1;
+    if (a.visibility !== b.visibility) return a.visibility === "team" ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+export function SavedViewBar({
+  scope,
+  currentFilters,
+  currentUserId,
+  isAdmin,
+  teamSharedEnabled = false,
+}: Props) {
   const { t } = useT();
   const pathname = usePathname();
   const toast = useToast();
@@ -81,7 +101,11 @@ export function SavedViewBar({ scope, currentFilters }: Props) {
   }
 
   const createMutation = useMutation({
-    mutationFn: async (input: { name: string; isDefault: boolean }) => {
+    mutationFn: async (input: {
+      name: string;
+      isDefault: boolean;
+      visibility: "personal" | "team";
+    }) => {
       const res = await fetch("/api/saved-views", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -90,6 +114,7 @@ export function SavedViewBar({ scope, currentFilters }: Props) {
           name: input.name,
           filterJson: normalized,
           isDefault: input.isDefault,
+          visibility: input.visibility,
         }),
       });
       if (!res.ok) throw new Error("create_failed");
@@ -144,6 +169,39 @@ export function SavedViewBar({ scope, currentFilters }: Props) {
     onError: () => toast.push({ tone: "error", title: t("savedViews.saveFailed") }),
   });
 
+  const toggleVisibilityMutation = useMutation({
+    mutationFn: async (input: { id: string; visibility: "personal" | "team" }) => {
+      const res = await fetch(`/api/saved-views/${input.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visibility: input.visibility }),
+      });
+      if (!res.ok) {
+        if (res.status === 400) throw new Error("flag_off");
+        throw new Error("visibility_failed");
+      }
+      return (await res.json()) as SavedViewDTO;
+    },
+    onSuccess: (view) => {
+      invalidate();
+      toast.push({
+        tone: "success",
+        title:
+          view.visibility === "team"
+            ? t("savedViews.shareWithTeam")
+            : t("savedViews.makePersonal"),
+        description: view.name,
+      });
+    },
+    onError: (err) => {
+      if (err instanceof Error && err.message === "flag_off") {
+        toast.push({ tone: "error", title: t("savedViews.cannotShareTeamWithFlagOff") });
+      } else {
+        toast.push({ tone: "error", title: t("savedViews.saveFailed") });
+      }
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/saved-views/${id}`, { method: "DELETE" });
@@ -158,7 +216,7 @@ export function SavedViewBar({ scope, currentFilters }: Props) {
     onError: () => setMutationError(t("savedViews.deleteFailed")),
   });
 
-  const views = query.data ?? [];
+  const views = useMemo(() => sortViews(query.data ?? []), [query.data]);
 
   return (
     <div className="flex flex-wrap items-center gap-1.5 rounded-lg border bg-muted/20 px-3 py-2">
@@ -174,6 +232,9 @@ export function SavedViewBar({ scope, currentFilters }: Props) {
         views.map((view) => {
           const filters = parseFilterJson(view.filterJson);
           const href = toHref(pathname, filters);
+          const isOwner = view.createdById === currentUserId || view.userId === currentUserId;
+          const canManage = isAdmin || isOwner;
+          const isTeam = view.visibility === "team";
           return (
             <span
               key={view.id}
@@ -188,27 +249,42 @@ export function SavedViewBar({ scope, currentFilters }: Props) {
               >
                 {view.name}
               </Link>
-              <button
-                type="button"
-                aria-label={
-                  view.isDefault ? t("savedViews.unpinDefault") : t("savedViews.pinDefault")
-                }
-                title={
-                  view.isDefault ? t("savedViews.unpinDefault") : t("savedViews.pinDefault")
-                }
-                onClick={() =>
-                  togglePinMutation.mutate({ id: view.id, isDefault: !view.isDefault })
-                }
-                disabled={togglePinMutation.isPending}
-                className="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
-              >
-                {view.isDefault ? (
-                  <Star className="h-3 w-3 fill-current" />
-                ) : (
-                  <StarOff className="h-3 w-3" />
-                )}
-              </button>
+              {isTeam && (
+                <span
+                  className="inline-flex items-center gap-0.5 rounded bg-muted px-1 py-px text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+                  title={t("savedViews.teamHint")}
+                  aria-label={t("savedViews.teamBadge")}
+                >
+                  <Users className="h-2.5 w-2.5" />
+                  {t("savedViews.teamBadge")}
+                </span>
+              )}
+              {canManage && (
+                <button
+                  type="button"
+                  aria-label={
+                    view.isDefault ? t("savedViews.unpinDefault") : t("savedViews.pinDefault")
+                  }
+                  title={
+                    view.isDefault ? t("savedViews.unpinDefault") : t("savedViews.pinDefault")
+                  }
+                  onClick={() =>
+                    togglePinMutation.mutate({ id: view.id, isDefault: !view.isDefault })
+                  }
+                  disabled={togglePinMutation.isPending}
+                  className="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+                >
+                  {view.isDefault ? (
+                    <Star className="h-3 w-3 fill-current" />
+                  ) : (
+                    <StarOff className="h-3 w-3" />
+                  )}
+                </button>
+              )}
               <SavedViewsManageMenu
+                canManage={canManage}
+                visibility={view.visibility}
+                showVisibilityToggle={teamSharedEnabled || isTeam}
                 onRename={() => {
                   setMutationError(null);
                   setRenameTarget(view);
@@ -217,7 +293,13 @@ export function SavedViewBar({ scope, currentFilters }: Props) {
                   setMutationError(null);
                   setDeleteTarget(view);
                 }}
-                disabled={togglePinMutation.isPending}
+                onToggleVisibility={() =>
+                  toggleVisibilityMutation.mutate({
+                    id: view.id,
+                    visibility: isTeam ? "personal" : "team",
+                  })
+                }
+                disabled={togglePinMutation.isPending || toggleVisibilityMutation.isPending}
               />
             </span>
           );
@@ -250,6 +332,7 @@ export function SavedViewBar({ scope, currentFilters }: Props) {
         pending={createMutation.isPending}
         errorMessage={mutationError}
         description={hasFilters ? undefined : t("savedViews.applyFirst")}
+        teamSharedEnabled={teamSharedEnabled}
         onSubmit={(input) => createMutation.mutate(input)}
       />
 

@@ -5,10 +5,11 @@ import type {
   DepartmentKey,
   JobStatus,
   JobPriority,
+  KnowledgeArticleVisibility,
   Prisma,
 } from "@prisma/client";
 
-export type SearchScope = "all" | "jobs" | "clients" | "posts";
+export type SearchScope = "all" | "jobs" | "clients" | "posts" | "knowledge";
 
 export interface SearchOptions {
   limit?: number;
@@ -48,10 +49,20 @@ export interface PostHit {
   createdAt: Date;
 }
 
+export interface KnowledgeHit {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string | null;
+  visibility: KnowledgeArticleVisibility;
+  updatedAt: Date;
+}
+
 export interface SearchAllResult {
   jobs: SearchPage<JobHit>;
   clients: SearchPage<ClientHit>;
   posts: SearchPage<PostHit>;
+  knowledge: SearchPage<KnowledgeHit>;
 }
 
 export const DEFAULT_LIMIT = 20;
@@ -227,15 +238,70 @@ export async function searchPosts(
   return { items, nextCursor: nextCursorOf(rows, limit) };
 }
 
+export async function searchKnowledge(
+  user: SessionUser,
+  q: string,
+  opts: SearchOptions = {}
+): Promise<SearchPage<KnowledgeHit>> {
+  if (q.length < MIN_QUERY_LENGTH) return { items: [], nextCursor: null };
+  const limit = take(opts);
+  const cursorWhere: Prisma.KnowledgeArticleWhereInput = opts.cursor
+    ? { id: { gt: opts.cursor } }
+    : {};
+
+  const visibilityWhere: Prisma.KnowledgeArticleWhereInput = isAdmin(user)
+    ? {}
+    : { visibility: "internal" };
+
+  const rows = await prisma.knowledgeArticle.findMany({
+    where: {
+      AND: [
+        { status: "published" },
+        visibilityWhere,
+        cursorWhere,
+        {
+          OR: [
+            { title: { contains: q, mode: "insensitive" } },
+            { body: { contains: q, mode: "insensitive" } },
+            { summary: { contains: q, mode: "insensitive" } },
+          ],
+        },
+      ],
+    },
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      summary: true,
+      visibility: true,
+      updatedAt: true,
+    },
+    orderBy: { id: "asc" },
+    take: limit,
+  });
+
+  return { items: rows, nextCursor: nextCursorOf(rows, limit) };
+}
+
+export interface SearchAllOptions {
+  /** When false, the `knowledge` bucket is returned empty without hitting the DB. */
+  includeKnowledge?: boolean;
+}
+
 export async function searchAll(
   user: SessionUser,
-  q: string
+  q: string,
+  options: SearchAllOptions = {}
 ): Promise<SearchAllResult> {
   const opts: SearchOptions = { limit: ALL_SCOPE_PER_BUCKET };
-  const [jobs, clients, posts] = await Promise.all([
+  const includeKnowledge = options.includeKnowledge ?? false;
+  const [jobs, clients, posts, knowledge] = await Promise.all([
     searchJobs(user, q, opts),
     searchClients(user, q, opts),
     searchPosts(user, q, opts),
+    includeKnowledge
+      ? searchKnowledge(user, q, opts)
+      : Promise.resolve<SearchPage<KnowledgeHit>>({ items: [], nextCursor: null }),
   ]);
-  return { jobs, clients, posts };
+  return { jobs, clients, posts, knowledge };
 }

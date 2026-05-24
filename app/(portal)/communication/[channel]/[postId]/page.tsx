@@ -10,6 +10,9 @@ import { JobTagChips } from "@/components/jobs/JobTagChips";
 import { Separator } from "@/components/ui/separator";
 import { timeAgo, formatTz } from "@/lib/time";
 import { ArrowLeft, Pin, CheckCircle } from "lucide-react";
+import { getFeatureFlag } from "@/lib/feature-flags";
+import { PostAttachmentsView } from "@/components/communication/PostAttachmentsView";
+import { ReplyAttachmentsView } from "@/components/communication/ReplyAttachmentsView";
 
 interface Props {
   params: Promise<{ channel: string; postId: string }>;
@@ -24,7 +27,10 @@ export default async function PostDetailPage({ params }: Props) {
   const channel = await getChannelOrNull(user, channelKey);
   if (!channel) notFound();
 
-  const post = await getPostWithReplies(postId, channel.id);
+  const [post, attachmentsEnabled] = await Promise.all([
+    getPostWithReplies(postId, channel.id),
+    getFeatureFlag("attachments_enabled"),
+  ]);
   if (!post) notFound();
 
   const admin = isAdmin(user);
@@ -91,6 +97,15 @@ export default async function PostDetailPage({ params }: Props) {
           isAuthor={isAuthor}
           isAdmin={admin}
         />
+
+        {attachmentsEnabled && (
+          <PostAttachmentsView
+            channelKey={channelKey}
+            postId={post.id}
+            currentUserId={user.id}
+            isAdmin={admin}
+          />
+        )}
       </article>
 
       {/* Replies */}
@@ -122,6 +137,15 @@ export default async function PostDetailPage({ params }: Props) {
                 >
                   {reply.body}
                 </p>
+                {attachmentsEnabled && (
+                  <ReplyAttachmentsView
+                    channelKey={channelKey}
+                    postId={post.id}
+                    replyId={reply.id}
+                    currentUserId={user.id}
+                    isAdmin={admin}
+                  />
+                )}
               </div>
             ))}
           </div>
@@ -131,7 +155,11 @@ export default async function PostDetailPage({ params }: Props) {
 
         <div className="space-y-2">
           <h3 className="text-sm font-medium">Add a reply</h3>
-          <ComposeReply channelKey={channelKey} postId={post.id} />
+          <ComposeReply
+            channelKey={channelKey}
+            postId={post.id}
+            attachmentsEnabled={attachmentsEnabled}
+          />
         </div>
       </section>
     </div>

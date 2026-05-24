@@ -57,8 +57,13 @@ export default async function BillingPage({ searchParams }: Props) {
   const clientFilter = sp["clientId"] ?? undefined;
   const agingFilter = sp["aging"] && VALID_AGING.has(sp["aging"]) ? (sp["aging"] as AgingBucketKey) : undefined;
 
-  const flags = await getFeatureFlags(["saved_views_enabled", "aging_buckets_enabled"]);
+  const flags = await getFeatureFlags([
+    "saved_views_enabled",
+    "saved_views_team_shared_enabled",
+    "aging_buckets_enabled",
+  ]);
   const savedViewsEnabled = flags["saved_views_enabled"] ?? false;
+  const teamSharedEnabled = flags["saved_views_team_shared_enabled"] ?? false;
   const agingEnabled = flags["aging_buckets_enabled"] ?? false;
 
   const [kpis, payments, aging, agingBuckets] = await Promise.all([
@@ -86,7 +91,13 @@ export default async function BillingPage({ searchParams }: Props) {
       />
 
       {savedViewsEnabled && (
-        <SavedViewBar scope="billing" currentFilters={currentFilters} />
+        <SavedViewBar
+          scope="billing"
+          currentFilters={currentFilters}
+          currentUserId={user.id}
+          isAdmin={isAdmin(user)}
+          teamSharedEnabled={teamSharedEnabled}
+        />
       )}
 
       {/* KPI strip */}

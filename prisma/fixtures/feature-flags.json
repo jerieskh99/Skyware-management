@@ -20,6 +20,11 @@
     "description": "Show the personal Saved Views bar on /my-jobs, /clients, and /billing. Phase 2 §4.2 — personal scope only; team-shared scope is Phase 3."
   },
   {
+    "key": "saved_views_team_shared_enabled",
+    "enabled": false,
+    "description": "Allow users to mark saved views as team-shared (visible to all logged-in users on the matching scope). When off, the UI hides the toggle and the API rejects visibility=team with 400. Phase 3 §5.8."
+  },
+  {
     "key": "fts_search_enabled",
     "enabled": false,
     "description": "Show search scope chips and the /search results page. The /api/search endpoint stays callable so a power-user URL still works."
@@ -48,5 +53,25 @@
     "key": "hourly_burn_enabled",
     "enabled": false,
     "description": "Show hourly-bank burn-rate (projected months remaining) on each bank in the client billing tab, and the admin dashboard 'Hourly banks low' strip. Phase 2 §4.4."
+  },
+  {
+    "key": "sla_breach_automation_enabled",
+    "enabled": false,
+    "description": "Run the SLA breach scan cron and write one sla_breached notification per breached job. Off by default until the pilot operator confirms current SLA targets and is ready to receive alerts. Phase 3 §5.1."
+  },
+  {
+    "key": "recurring_jobs_enabled",
+    "enabled": false,
+    "description": "Enable the recurring job template surface (admin tab) and the nightly cron writer that generates Jobs from due templates. Phase 3 §5.5."
+  },
+  {
+    "key": "knowledge_articles_enabled",
+    "enabled": false,
+    "description": "Show the Knowledge area (/knowledge), sidebar link, and global-search Knowledge scope. When off, all /api/knowledge and /knowledge routes return 404 and the search bucket is excluded. Phase 3 §5.6."
+  },
+  {
+    "key": "client_health_snapshots_enabled",
+    "enabled": false,
+    "description": "Compute and store weekly per-client health snapshots (open / delayed jobs, hours consumed, outstanding payments, projected hourly-bank months) and show the Health tab on client detail. The /api/cron/client-health writer no-ops when off. Phase 3 §5.7."
   }
 ]

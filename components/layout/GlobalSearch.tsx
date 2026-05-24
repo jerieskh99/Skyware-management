@@ -3,13 +3,13 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Search, Loader2, MessageSquare, Building2 } from "lucide-react";
+import { Search, Loader2, MessageSquare, Building2, BookOpen } from "lucide-react";
 import { JobStatusChip } from "@/components/jobs/JobStatusChip";
 import { useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import type { JobStatus } from "@prisma/client";
 
-type Scope = "all" | "jobs" | "clients" | "posts";
+type Scope = "all" | "jobs" | "clients" | "posts" | "knowledge";
 
 interface JobHit {
   id: string;
@@ -38,6 +38,14 @@ interface PostHit {
   createdAt: string;
 }
 
+interface KnowledgeHit {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string | null;
+  visibility: string;
+}
+
 interface Page<T> {
   items: T[];
   nextCursor: string | null;
@@ -50,6 +58,7 @@ interface ApiResponse {
     jobs?: Page<JobHit>;
     clients?: Page<ClientHit>;
     posts?: Page<PostHit>;
+    knowledge?: Page<KnowledgeHit>;
   };
 }
 
@@ -60,9 +69,15 @@ interface Props {
   ftsEnabled?: boolean;
   /** Hide clients chip for non-admins. */
   isAdmin?: boolean;
+  /** Show knowledge scope chip and bucket when the knowledge feature is on. */
+  knowledgeEnabled?: boolean;
 }
 
-export function GlobalSearch({ ftsEnabled = false, isAdmin = false }: Props) {
+export function GlobalSearch({
+  ftsEnabled = false,
+  isAdmin = false,
+  knowledgeEnabled = false,
+}: Props) {
   const { t } = useT();
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -158,9 +173,18 @@ export function GlobalSearch({ ftsEnabled = false, isAdmin = false }: Props) {
   const jobs = results.jobs?.items ?? [];
   const clients = results.clients?.items ?? [];
   const posts = results.posts?.items ?? [];
-  const hasResults = jobs.length > 0 || clients.length > 0 || posts.length > 0;
+  const knowledge = results.knowledge?.items ?? [];
+  const hasResults =
+    jobs.length > 0 ||
+    clients.length > 0 ||
+    posts.length > 0 ||
+    knowledge.length > 0;
   const showDropdown = open && (query.length >= 2 || loading);
-  const sectionCount = (jobs.length > 0 ? 1 : 0) + (clients.length > 0 ? 1 : 0) + (posts.length > 0 ? 1 : 0);
+  const sectionCount =
+    (jobs.length > 0 ? 1 : 0) +
+    (clients.length > 0 ? 1 : 0) +
+    (posts.length > 0 ? 1 : 0) +
+    (knowledge.length > 0 ? 1 : 0);
   const showSectionHeaders = sectionCount > 1;
 
   const chips: { value: Scope; label: string }[] = [
@@ -169,6 +193,9 @@ export function GlobalSearch({ ftsEnabled = false, isAdmin = false }: Props) {
   ];
   if (isAdmin) chips.push({ value: "clients", label: t("search.scope.clients") });
   chips.push({ value: "posts", label: t("search.scope.posts") });
+  if (knowledgeEnabled) {
+    chips.push({ value: "knowledge", label: t("search.scope.knowledge") });
+  }
 
   return (
     <div ref={containerRef} className="relative flex-1">
@@ -301,6 +328,34 @@ export function GlobalSearch({ ftsEnabled = false, isAdmin = false }: Props) {
                     <p className="text-xs text-muted-foreground">
                       {post.channelNameEn} · {post.authorDisplayName}
                     </p>
+                  </div>
+                </Link>
+              ))}
+            </>
+          )}
+
+          {knowledge.length > 0 && (
+            <>
+              {showSectionHeaders && (
+                <SectionLabel
+                  first={jobs.length === 0 && clients.length === 0 && posts.length === 0}
+                >
+                  {t("search.scope.knowledge")}
+                </SectionLabel>
+              )}
+              {knowledge.map((a) => (
+                <Link
+                  key={a.id}
+                  href={`/knowledge/${a.slug}`}
+                  onClick={handleResultClick}
+                  className="flex items-start gap-3 px-4 py-2.5 text-sm hover:bg-accent"
+                >
+                  <BookOpen className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{a.title}</p>
+                    {a.summary && (
+                      <p className="truncate text-xs text-muted-foreground">{a.summary}</p>
+                    )}
                   </div>
                 </Link>
               ))}

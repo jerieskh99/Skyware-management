@@ -16,6 +16,7 @@
     "financialDocumentsShort": "Financial Docs",
     "statistics": "Statistics",
     "myStatistics": "My Statistics",
+    "knowledge": "Knowledge",
     "agent": "Agent Control Center",
     "agentShort": "Agent Center",
     "admin": "Admin Panel",
@@ -75,7 +76,9 @@
     "active": "Active",
     "inactive": "Inactive",
     "add": "Add",
-    "viewAll": "View all"
+    "viewAll": "View all",
+    "saved": "Saved",
+    "deleted": "Deleted"
   },
   "job": {
     "status": {
@@ -435,7 +438,8 @@
       "all": "All",
       "jobs": "Jobs",
       "clients": "Clients",
-      "posts": "Posts"
+      "posts": "Posts",
+      "knowledge": "Knowledge"
     }
   },
   "savedViews": {
@@ -463,7 +467,12 @@
     "pinned": "Pinned as default.",
     "unpinned": "Default cleared.",
     "saveFailed": "Failed to save view.",
-    "deleteFailed": "Failed to delete view."
+    "deleteFailed": "Failed to delete view.",
+    "shareWithTeam": "Share with the team",
+    "makePersonal": "Make personal",
+    "teamBadge": "Team",
+    "teamHint": "Team views are visible to all employees on this page.",
+    "cannotShareTeamWithFlagOff": "Team-shared saved views are disabled."
   },
   "admin": {
     "title": "Admin Panel",
@@ -475,7 +484,9 @@
       "audit": "Audit Log",
       "org": "Roles & Depts",
       "sla": "SLA Defaults",
-      "company": "Company Details"
+      "cron": "Scheduled Jobs",
+      "company": "Company Details",
+      "recurring": "Recurring Jobs"
     },
     "users": {
       "addUser": "Add user",
@@ -538,6 +549,114 @@
       "deleteFailed": "Delete failed.",
       "uses": "uses",
       "deleteConfirm": "This cannot be undone."
+    },
+    "sla": {
+      "intro": "Per-priority SLA target in minutes. A job is past SLA when (now - assigned at) exceeds the smaller of its priority target and the severity ceiling.",
+      "colPriority": "Priority",
+      "colTargetMinutes": "Target minutes",
+      "colLastUpdated": "Last updated",
+      "priority": {
+        "urgent": "Urgent",
+        "high": "High",
+        "normal": "Normal",
+        "low": "Low"
+      },
+      "save": "Save",
+      "saved": "SLA target saved.",
+      "saveFailed": "Failed to save SLA target.",
+      "invalidRange": "Target minutes must be a positive integer up to 7200 (5 days).",
+      "notSet": "Not set",
+      "severityNote": "Severity ceilings are fixed in code: critical 240m, major 1440m, moderate 4320m, minor 10080m. Effective SLA = min(priority, severity)."
+    },
+    "cron": {
+      "intro": "Manual triggers for scheduled jobs. Each job is normally invoked on a schedule with the CRON_SECRET bearer token; the buttons here run the same code immediately and write an audit row.",
+      "runNow": "Run now",
+      "running": "Running...",
+      "runSucceeded": "Job finished",
+      "runFailed": "Job failed",
+      "lastResult": "Last result",
+      "jobs": {
+        "sla-breach": {
+          "label": "SLA breach scan",
+          "description": "Scan active jobs whose elapsed-since-assigned time has exceeded their SLA target and write one sla_breached notification per assignee. Respects notifications_enabled and sla_breach_automation_enabled."
+        },
+        "recurring-jobs": {
+          "label": "Recurring job writer",
+          "description": "Scan active recurring job templates whose next run time has passed and create a Job per template. No-op when recurring_jobs_enabled is off."
+        },
+        "client-health": {
+          "label": "Client health snapshots",
+          "description": "Compute weekly per-client KPI snapshots and upsert one row per client per ISO week. Idempotent. No-op when client_health_snapshots_enabled is off."
+        }
+      }
+    },
+    "recurring": {
+      "intro": "Templates that spawn a new Job on a schedule. Each template runs in its own transaction and writes an audit row. Use Pause to stop generation without losing history.",
+      "flagOff": "Recurring jobs are disabled. Enable the recurring_jobs_enabled feature flag to turn this on.",
+      "addTemplate": "Add template",
+      "editTemplate": "Edit template",
+      "deleteTemplate": "Delete template",
+      "deleteConfirm": "Deleting a template stops future generations but keeps previously generated jobs. This cannot be undone.",
+      "noTemplates": "No recurring templates yet.",
+      "colName": "Template",
+      "colCadence": "Cadence",
+      "colNextRun": "Next run",
+      "colGenerated": "Generated",
+      "colStatus": "Status",
+      "colActions": "Actions",
+      "status": {
+        "active": "Active",
+        "paused": "Paused"
+      },
+      "actions": {
+        "pause": "Pause",
+        "resume": "Resume"
+      },
+      "fields": {
+        "name": "Display name",
+        "namePlaceholder": "Weekly server health check",
+        "titleTemplate": "Job title template",
+        "titleTemplateHint": "Use {{date}}, {{week}}, or {{month}} to insert the current period.",
+        "description": "Description",
+        "department": "Department",
+        "client": "Client",
+        "noClient": "No client",
+        "priority": "Priority",
+        "severity": "Severity",
+        "defaultAssignee": "Default assignee",
+        "noAssignee": "Leave unassigned (status: new)",
+        "cadence": "Cadence",
+        "anchor": "Schedule anchor",
+        "anchorHelp": {
+          "daily": "Time of day in the template timezone.",
+          "weekly": "Day of week and time in the template timezone.",
+          "biweekly": "Day of week and time. Runs every other week starting from the next match.",
+          "monthly": "Day of month (1-28) and time in the template timezone.",
+          "quarterly": "Day of month (1-28) and time. Runs every third month from the next match."
+        },
+        "dayOfWeek": "Day of week",
+        "dayOfMonth": "Day of month",
+        "time": "Time",
+        "timezone": "Timezone"
+      },
+      "cadenceLabels": {
+        "daily": "Daily",
+        "weekly": "Weekly",
+        "biweekly": "Bi-weekly",
+        "monthly": "Monthly",
+        "quarterly": "Quarterly"
+      },
+      "dayNames": {
+        "0": "Sunday",
+        "1": "Monday",
+        "2": "Tuesday",
+        "3": "Wednesday",
+        "4": "Thursday",
+        "5": "Friday",
+        "6": "Saturday"
+      },
+      "saveFailed": "Failed to save template.",
+      "deleteFailed": "Failed to delete template."
     }
   },
   "notifications": {
@@ -557,5 +676,63 @@
       "hoursAgo": "{n}h ago",
       "daysAgo": "{n}d ago"
     }
+  },
+  "knowledge": {
+    "title": "Knowledge",
+    "description": "Internal articles, runbooks, and how-tos for the team.",
+    "addArticle": "Add article",
+    "searchPlaceholder": "Search articles...",
+    "empty": "No articles yet.",
+    "emptyHint": "Admins can write the first one from this page.",
+    "noMatch": "No articles match your search.",
+    "authoredBy": "by {name}",
+    "tagsLabel": "Tags",
+    "tagsEmpty": "No tags attached.",
+    "filter": {
+      "allActive": "All active"
+    },
+    "status": {
+      "draft": "Draft",
+      "published": "Published",
+      "archived": "Archived"
+    },
+    "visibility": {
+      "label": "Visibility",
+      "internal": "Everyone",
+      "admin_only": "Admins only"
+    },
+    "editor": {
+      "createTitle": "New article",
+      "createDescription": "Create a knowledge article. It starts as a draft; publish it when ready.",
+      "editTitle": "Edit article",
+      "title": "Title",
+      "summary": "Summary",
+      "summaryPlaceholder": "One short line that appears in lists and search.",
+      "body": "Body",
+      "bodyPlaceholder": "Write the article in Markdown or plain text.",
+      "bodyHint": "Plain text or Markdown. No rich formatting in this editor.",
+      "titleRequired": "Title is required.",
+      "bodyRequired": "Body is required.",
+      "saveFailed": "Failed to save the article."
+    }
+  },
+  "clientHealth": {
+    "sectionTitle": "Health",
+    "sectionDescription": "Weekly KPI snapshot for this client. Generated by the client-health cron.",
+    "kpiOpenJobs": "Open jobs",
+    "kpiDelayedJobs": "Delayed",
+    "kpiHoursConsumed": "Hours this week",
+    "kpiOutstanding": "Outstanding",
+    "kpiAvgMonths": "Avg. months left",
+    "kpiAvgMonthsNa": "No active banks",
+    "noSnapshot": "No snapshot yet.",
+    "noSnapshotHint": "The weekly writer has not produced a snapshot for this client. Generate one from the admin Scheduled Jobs panel.",
+    "generateNow": "Generate now",
+    "lastComputed": "Last computed",
+    "trendTitle": "Last 8 weeks",
+    "trendEmpty": "No history yet.",
+    "colWeek": "Week starting",
+    "colOpen": "Open",
+    "colDelayed": "Delayed"
   }
 }

@@ -3,30 +3,31 @@ import {
   deriveSlaTargetMinutes,
   computeSlaState,
   elapsedMinutes,
+  FALLBACK_PRIORITY_SLA_MINUTES,
 } from "@/lib/sla";
 
+const D = FALLBACK_PRIORITY_SLA_MINUTES;
+
 describe("deriveSlaTargetMinutes", () => {
-  it("urgent + critical gives minimum of both (240)", () => {
-    expect(deriveSlaTargetMinutes("urgent", "critical")).toBe(240);
+  it("urgent + critical gives min(priority,severity) = min(60, 240) = 60", () => {
+    expect(deriveSlaTargetMinutes("urgent", "critical", D)).toBe(60);
   });
 
-  it("normal + moderate gives 4320 (72h)", () => {
-    expect(deriveSlaTargetMinutes("normal", "moderate")).toBe(4320);
+  it("normal + moderate gives min(240, 4320) = 240", () => {
+    expect(deriveSlaTargetMinutes("normal", "moderate", D)).toBe(240);
   });
 
-  it("critical severity overrides low priority (returns 240 not 10080)", () => {
-    expect(deriveSlaTargetMinutes("low", "critical")).toBe(240);
+  it("critical severity caps even a relaxed low priority (low=480, critical=240)", () => {
+    expect(deriveSlaTargetMinutes("low", "critical", D)).toBe(240);
   });
 
-  it("high priority but minor severity returns 1440 (24h)", () => {
-    expect(deriveSlaTargetMinutes("high", "minor")).toBe(1440);
+  it("high priority + minor severity returns priority (120 < 10080)", () => {
+    expect(deriveSlaTargetMinutes("high", "minor", D)).toBe(120);
   });
 
-  it("respects custom priority overrides", () => {
-    const result = deriveSlaTargetMinutes("urgent", "minor", {
-      priority: { urgent: 60 },
-    });
-    expect(result).toBe(60);
+  it("respects a caller-supplied defaults map", () => {
+    const custom = { ...D, urgent: 30 };
+    expect(deriveSlaTargetMinutes("urgent", "minor", custom)).toBe(30);
   });
 });
 
@@ -66,7 +67,7 @@ describe("elapsedMinutes", () => {
   });
 
   it("a recent date returns > 0", () => {
-    const past = new Date(Date.now() - 10 * 60 * 1000); // 10 min ago
+    const past = new Date(Date.now() - 10 * 60 * 1000);
     expect(elapsedMinutes(past)).toBeGreaterThanOrEqual(9);
   });
 });

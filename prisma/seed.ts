@@ -98,6 +98,24 @@ async function main() {
   }
   console.log("  Feature flags OK");
 
+  // ---- SLA defaults (per priority) ----
+  // Initial values match the previous hardcoded defaults in lib/sla.ts.
+  // Admin can edit these from /admin?tab=sla; we only insert on first run.
+  const slaDefaults: Array<{ priority: "low" | "normal" | "high" | "urgent"; targetMinutes: number }> = [
+    { priority: "low",    targetMinutes: 480 },
+    { priority: "normal", targetMinutes: 240 },
+    { priority: "high",   targetMinutes: 120 },
+    { priority: "urgent", targetMinutes: 60  },
+  ];
+  for (const row of slaDefaults) {
+    await prisma.slaDefaults.upsert({
+      where: { priority: row.priority },
+      update: {},
+      create: { priority: row.priority, targetMinutes: row.targetMinutes },
+    });
+  }
+  console.log("  SLA defaults OK");
+
   // ---- Demo users (placeholder only — NOT real employees) ----
   // WARNING: Change all passwords before pilot deployment.
   const passwordHash = await bcryptjs.hash(DEMO_PASSWORD_PLAIN, 12);

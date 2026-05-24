@@ -12,15 +12,24 @@ interface Props {
 export async function Header({ user }: Props) {
   const [{ locale, t }, flags] = await Promise.all([
     getT(),
-    getFeatureFlags(["fts_search_enabled", "notifications_enabled"]),
+    getFeatureFlags([
+      "fts_search_enabled",
+      "notifications_enabled",
+      "knowledge_articles_enabled",
+    ]),
   ]);
   const ftsEnabled = flags["fts_search_enabled"] ?? false;
   const notificationsEnabled = flags["notifications_enabled"] ?? false;
+  const knowledgeEnabled = flags["knowledge_articles_enabled"] ?? false;
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur-sm">
       <div className="max-w-xl flex-1">
-        <GlobalSearch ftsEnabled={ftsEnabled} isAdmin={user.isAdmin} />
+        <GlobalSearch
+          ftsEnabled={ftsEnabled}
+          isAdmin={user.isAdmin}
+          knowledgeEnabled={knowledgeEnabled}
+        />
       </div>
 
       <div className="flex shrink-0 items-center gap-2">

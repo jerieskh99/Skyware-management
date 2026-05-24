@@ -13,6 +13,7 @@ import { getFeatureFlag } from "@/lib/feature-flags";
 import { EnvironmentNotesSection } from "@/components/clients/EnvironmentNotesSection";
 import { ClientDetailHeader } from "@/components/clients/ClientDetailHeader";
 import { ClientBillingTab } from "@/components/billing/ClientBillingTab";
+import { ClientHealthTab } from "@/components/clients/ClientHealthTab";
 import { JobStatusChip } from "@/components/jobs/JobStatusChip";
 import {
   Building2,
@@ -21,15 +22,24 @@ import {
   Receipt,
   Server,
   ArrowLeft,
+  Activity,
 } from "lucide-react";
 
-const TABS = [
+interface TabDef {
+  key: string;
+  label: string;
+  icon: typeof Building2;
+}
+
+const BASE_TABS: TabDef[] = [
   { key: "overview", label: "Overview", icon: Building2 },
   { key: "jobs", label: "Jobs", icon: Briefcase },
   { key: "billing", label: "Billing", icon: CreditCard },
   { key: "receipts", label: "Receipts", icon: Receipt },
   { key: "environment", label: "Environment", icon: Server },
 ];
+
+const HEALTH_TAB: TabDef = { key: "health", label: "Health", icon: Activity };
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -44,6 +54,9 @@ export default async function ClientDetailPage({ params, searchParams }: Props) 
 
   const { id } = await params;
   const sp = await searchParams;
+
+  const healthEnabled = await getFeatureFlag("client_health_snapshots_enabled");
+  const TABS = healthEnabled ? [...BASE_TABS, HEALTH_TAB] : BASE_TABS;
   const activeTab = TABS.some((t) => t.key === sp["tab"]) ? sp["tab"] : "overview";
 
   const client = await getClientDetail(id);
@@ -121,6 +134,7 @@ export default async function ClientDetailPage({ params, searchParams }: Props) 
       {activeTab === "environment" && (
         <EnvironmentNotesSection clientId={id} initialNotes={envNotes} />
       )}
+      {activeTab === "health" && healthEnabled && <ClientHealthTab clientId={id} />}
     </div>
   );
 }

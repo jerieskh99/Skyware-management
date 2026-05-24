@@ -15,6 +15,7 @@ import {
   MessageSquare,
   Receipt,
   BarChart2,
+  BookOpen,
   Bot,
   Settings,
   CreditCard,
@@ -52,7 +53,10 @@ const GROUPS: NavGroup[] = [
   },
   {
     labelKey: "nav.groupCommunication",
-    items: [{ href: "/communication", labelKey: "nav.channels", icon: MessageSquare }],
+    items: [
+      { href: "/communication", labelKey: "nav.channels", icon: MessageSquare },
+      { href: "/knowledge", labelKey: "nav.knowledge", icon: BookOpen },
+    ],
   },
   {
     labelKey: "nav.groupClientsBilling",
@@ -78,9 +82,14 @@ const GROUPS: NavGroup[] = [
 interface Props {
   user: SessionUser;
   statisticsMeEnabled?: boolean;
+  knowledgeEnabled?: boolean;
 }
 
-export function Sidebar({ user, statisticsMeEnabled = false }: Props) {
+export function Sidebar({
+  user,
+  statisticsMeEnabled = false,
+  knowledgeEnabled = false,
+}: Props) {
   const pathname = usePathname();
   const { t } = useT();
 
@@ -92,15 +101,22 @@ export function Sidebar({ user, statisticsMeEnabled = false }: Props) {
   // statistics_me_enabled flag is on. Admins already have /statistics in the
   // Admin group, so they do not see this duplicate.
   const groups: NavGroup[] = GROUPS.map((g) => {
-    if (g.labelKey !== "nav.groupOverview") return g;
-    if (user.isAdmin || !statisticsMeEnabled) return g;
-    return {
-      ...g,
-      items: [
-        ...g.items,
-        { href: "/statistics/me", labelKey: "nav.myStatistics", icon: BarChart2 },
-      ],
-    };
+    if (g.labelKey === "nav.groupOverview" && !user.isAdmin && statisticsMeEnabled) {
+      return {
+        ...g,
+        items: [
+          ...g.items,
+          { href: "/statistics/me", labelKey: "nav.myStatistics", icon: BarChart2 },
+        ],
+      };
+    }
+    if (g.labelKey === "nav.groupCommunication" && !knowledgeEnabled) {
+      return {
+        ...g,
+        items: g.items.filter((it) => it.href !== "/knowledge"),
+      };
+    }
+    return g;
   });
 
   const visibleGroups = groups.filter((g) => !g.adminOnly || user.isAdmin);

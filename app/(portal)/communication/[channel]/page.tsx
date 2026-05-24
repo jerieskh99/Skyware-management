@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { JobTagChips } from "@/components/jobs/JobTagChips";
 import { timeAgo } from "@/lib/time";
 import { MessageSquare, ArrowLeft, Pin, CheckCircle } from "lucide-react";
+import { getFeatureFlag } from "@/lib/feature-flags";
 
 interface Props {
   params: Promise<{ channel: string }>;
@@ -30,10 +31,13 @@ export default async function ChannelPage({ params, searchParams }: Props) {
   const channel = await getChannelOrNull(user, channelKey);
   if (!channel) notFound();
 
-  const posts = await listChannelPosts(channel.id, {
-    search,
-    resolved: showResolved ? true : undefined,
-  });
+  const [posts, attachmentsEnabled] = await Promise.all([
+    listChannelPosts(channel.id, {
+      search,
+      resolved: showResolved ? true : undefined,
+    }),
+    getFeatureFlag("attachments_enabled"),
+  ]);
 
   return (
     <div className="space-y-5">
@@ -72,7 +76,7 @@ export default async function ChannelPage({ params, searchParams }: Props) {
       </div>
 
       {/* Compose */}
-      <ComposePost channelKey={channelKey} />
+      <ComposePost channelKey={channelKey} attachmentsEnabled={attachmentsEnabled} />
 
       {/* Post list */}
       {posts.length === 0 ? (

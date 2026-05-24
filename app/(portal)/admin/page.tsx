@@ -7,19 +7,29 @@ import { prisma } from "@/lib/prisma";
 import { UserManagementSection } from "@/components/admin/UserManagementSection";
 import { TagManagementSection } from "@/components/admin/TagManagementSection";
 import { FeatureFlagSection } from "@/components/admin/FeatureFlagSection";
-import { Shield, Users, Tag, Flag, BookOpen, SlidersHorizontal, Building2, Network } from "lucide-react";
+import { SlaDefaultsSection } from "@/components/admin/SlaDefaultsSection";
+import { CronTriggerSection } from "@/components/admin/CronTriggerSection";
+import { RecurringTemplatesSection } from "@/components/admin/RecurringTemplatesSection";
+import { Shield, Users, Tag, Flag, BookOpen, SlidersHorizontal, Building2, Network, Clock, Repeat } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { getT } from "@/lib/i18n/server";
+import { FALLBACK_PRIORITY_SLA_MINUTES } from "@/lib/sla";
+import { getFeatureFlag } from "@/lib/feature-flags";
+import { listTemplates } from "@/lib/recurring/template-queries";
+import type { JobPriority } from "@prisma/client";
 
-const TAB_KEYS = [
+const BASE_TAB_KEYS = [
   { key: "users",   icon: Users },
   { key: "tags",    icon: Tag },
   { key: "flags",   icon: Flag },
   { key: "audit",   icon: BookOpen },
   { key: "org",     icon: Network },
   { key: "sla",     icon: SlidersHorizontal },
+  { key: "cron",    icon: Clock },
   { key: "company", icon: Building2 },
 ] as const;
+
+const RECURRING_TAB = { key: "recurring", icon: Repeat } as const;
 
 const PAGE_SIZE = 25;
 
@@ -34,6 +44,8 @@ export default async function AdminPage({ searchParams }: Props) {
   if (!isAdmin(user)) redirect("/dashboard");
 
   const sp = await searchParams;
+  const recurringFlag = await getFeatureFlag("recurring_jobs_enabled");
+  const TAB_KEYS = recurringFlag ? [...BASE_TAB_KEYS, RECURRING_TAB] : BASE_TAB_KEYS;
   const tab = TAB_KEYS.some((t) => t.key === sp["tab"]) ? sp["tab"] : "users";
   const { t } = await getT();
   const page = Math.max(1, parseInt(sp["page"] ?? "1", 10));
@@ -51,6 +63,11 @@ export default async function AdminPage({ searchParams }: Props) {
   let auditPageCount = 0;
   let orgRoles: Awaited<ReturnType<typeof getOrgRoles>> = [];
   let orgDepts: Awaited<ReturnType<typeof getOrgDepts>> = [];
+  let slaRows: Awaited<ReturnType<typeof getSlaRows>> = [];
+  let recurringRows: Awaited<ReturnType<typeof listTemplates>> = [];
+  let recurringDepts: Awaited<ReturnType<typeof getRecurringDepts>> = [];
+  let recurringClients: Awaited<ReturnType<typeof getRecurringClients>> = [];
+  let recurringUsers: Awaited<ReturnType<typeof getRecurringUsers>> = [];
 
   if (tab === "users") {
     [users, roleOptions, deptOptions] = await Promise.all([
@@ -69,6 +86,15 @@ export default async function AdminPage({ searchParams }: Props) {
     auditPageCount = result.pageCount;
   } else if (tab === "org") {
     [orgRoles, orgDepts] = await Promise.all([getOrgRoles(), getOrgDepts()]);
+  } else if (tab === "sla") {
+    slaRows = await getSlaRows();
+  } else if (tab === "recurring") {
+    [recurringRows, recurringDepts, recurringClients, recurringUsers] = await Promise.all([
+      listTemplates(),
+      getRecurringDepts(),
+      getRecurringClients(),
+      getRecurringUsers(),
+    ]);
   }
 
   return (
@@ -126,9 +152,37 @@ export default async function AdminPage({ searchParams }: Props) {
 
       {tab === "org" && <OrgTab roles={orgRoles} departments={orgDepts} />}
 
-      {tab === "sla" && <SlaTab />}
+      {tab === "sla" && <SlaDefaultsSection rows={slaRows} />}
+
+      {tab === "cron" && <CronTriggerSection />}
 
       {tab === "company" && <CompanyTab />}
+
+      {tab === "recurring" && (
+        <RecurringTemplatesSection
+          templates={recurringRows.map((r) => ({
+            id: r.id,
+            name: r.name,
+            titleTemplate: r.titleTemplate,
+            description: r.description,
+            departmentId: r.departmentId,
+            clientId: r.clientId,
+            priority: r.priority,
+            severity: r.severity,
+            defaultAssigneeId: r.defaultAssigneeId,
+            cadence: r.cadence,
+            anchor: r.anchor,
+            timezone: r.timezone,
+            nextRunAt: r.nextRunAt,
+            lastGeneratedAt: r.lastGeneratedAt,
+            generatedCount: r.generatedCount,
+            status: r.status,
+          }))}
+          deptOptions={recurringDepts}
+          clientOptions={recurringClients}
+          userOptions={recurringUsers}
+        />
+      )}
     </div>
   );
 }
@@ -182,6 +236,48 @@ async function getOrgDepts() {
       _count: { select: { users: { where: { isActive: true } } } },
     },
     orderBy: { key: "asc" },
+  });
+}
+
+async function getSlaRows(): Promise<
+  Array<{ priority: JobPriority; targetMinutes: number; updatedAt: Date | null }>
+> {
+  const rows = await prisma.slaDefaults.findMany({
+    select: { priority: true, targetMinutes: true, updatedAt: true },
+  });
+  const byPriority = new Map(rows.map((r) => [r.priority, r]));
+  const order: JobPriority[] = ["urgent", "high", "normal", "low"];
+  return order.map((p) => {
+    const row = byPriority.get(p);
+    return {
+      priority: p,
+      targetMinutes: row?.targetMinutes ?? FALLBACK_PRIORITY_SLA_MINUTES[p],
+      updatedAt: row?.updatedAt ?? null,
+    };
+  });
+}
+
+async function getRecurringDepts() {
+  return prisma.department.findMany({
+    select: { id: true, nameEn: true, nameHe: true },
+    orderBy: { key: "asc" },
+  });
+}
+
+async function getRecurringClients() {
+  return prisma.client.findMany({
+    where: { status: "active" },
+    select: { id: true, companyName: true },
+    orderBy: { companyName: "asc" },
+    take: 500,
+  });
+}
+
+async function getRecurringUsers() {
+  return prisma.user.findMany({
+    where: { isActive: true },
+    select: { id: true, displayName: true },
+    orderBy: { displayName: "asc" },
   });
 }
 
@@ -376,58 +472,6 @@ function OrgTab({ roles, departments }: { roles: OrgRole[]; departments: OrgDept
               </div>
             </div>
           ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── SLA defaults tab (read-only, from lib/sla.ts) ────────────────────────────
-
-function SlaTab() {
-  const prioritySla = [
-    { name: "Urgent", value: "4h (240 min)" },
-    { name: "High",   value: "24h (1440 min)" },
-    { name: "Normal", value: "72h (4320 min)" },
-    { name: "Low",    value: "168h (10080 min)" },
-  ];
-  const severitySla = [
-    { name: "Critical", value: "4h (240 min)" },
-    { name: "Major",    value: "24h (1440 min)" },
-    { name: "Moderate", value: "72h (4320 min)" },
-    { name: "Minor",    value: "168h (10080 min)" },
-  ];
-
-  return (
-    <div className="space-y-5">
-      <div className="rounded-lg border border-dashed bg-muted/20 p-4 text-sm text-muted-foreground">
-        SLA defaults are currently hardcoded in <code className="rounded bg-muted px-1 font-mono text-xs">lib/sla.ts</code>.
-        Editing them requires a code change. A database-backed SLA config table is planned for a future hardening pass.
-        Effective SLA for a job = <strong>min(priority SLA, severity SLA)</strong>.
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold">Priority SLA targets</h3>
-          <div className="divide-y rounded-lg border">
-            {prioritySla.map(({ name, value }) => (
-              <div key={name} className="flex items-center justify-between px-4 py-2.5 text-sm">
-                <span>{name}</span>
-                <span className="font-mono text-xs text-muted-foreground">{value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold">Severity SLA targets</h3>
-          <div className="divide-y rounded-lg border">
-            {severitySla.map(({ name, value }) => (
-              <div key={name} className="flex items-center justify-between px-4 py-2.5 text-sm">
-                <span>{name}</span>
-                <span className="font-mono text-xs text-muted-foreground">{value}</span>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     </div>

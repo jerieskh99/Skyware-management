@@ -60,6 +60,18 @@ function buildPrismaMock() {
     notification: modelStub(),
     featureFlag: modelStub(),
     savedView: modelStub(),
+    companySettings: modelStub(),
+    slaDefaults: modelStub(),
+    receiptDocument: modelStub(),
+    receiptDocumentSequence: modelStub(),
+    attachment: modelStub(),
+    jobAttachment: modelStub(),
+    postAttachment: modelStub(),
+    replyAttachment: modelStub(),
+    recurringJobTemplate: modelStub(),
+    knowledgeArticle: modelStub(),
+    knowledgeArticleTag: modelStub(),
+    clientHealthSnapshot: modelStub(),
     $transaction: vi.fn(async (arg: unknown) => {
       if (typeof arg === "function") {
         return (arg as AnyFn)(client);

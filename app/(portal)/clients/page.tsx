@@ -8,7 +8,7 @@ import { ClientFiltersBar } from "@/components/clients/ClientFiltersBar";
 import { ClientsPageHeader } from "@/components/clients/ClientsPageHeader";
 import { SavedViewBar } from "@/components/saved-views/SavedViewBar";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { getFeatureFlag } from "@/lib/feature-flags";
+import { getFeatureFlags } from "@/lib/feature-flags";
 import { getT } from "@/lib/i18n/server";
 import { Building2 } from "lucide-react";
 import type { ClientStatus } from "@prisma/client";
@@ -33,10 +33,12 @@ export default async function ClientsPage({ searchParams }: Props) {
       ? (statusParam as ClientStatus)
       : undefined;
 
-  const [clients, savedViewsEnabled] = await Promise.all([
+  const [clients, flags] = await Promise.all([
     listClients({ search, status }),
-    getFeatureFlag("saved_views_enabled"),
+    getFeatureFlags(["saved_views_enabled", "saved_views_team_shared_enabled"]),
   ]);
+  const savedViewsEnabled = flags["saved_views_enabled"] ?? false;
+  const teamSharedEnabled = flags["saved_views_team_shared_enabled"] ?? false;
   const { t } = await getT();
 
   const currentFilters: Record<string, string> = {};
@@ -47,7 +49,13 @@ export default async function ClientsPage({ searchParams }: Props) {
     <div className="space-y-4">
       <ClientsPageHeader />
       {savedViewsEnabled && (
-        <SavedViewBar scope="clients" currentFilters={currentFilters} />
+        <SavedViewBar
+          scope="clients"
+          currentFilters={currentFilters}
+          currentUserId={user.id}
+          isAdmin={isAdmin(user)}
+          teamSharedEnabled={teamSharedEnabled}
+        />
       )}
       <ClientFiltersBar initialSearch={search ?? ""} initialStatus={status ?? ""} />
 

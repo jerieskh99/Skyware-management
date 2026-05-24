@@ -1,0 +1,110 @@
+{
+  "nav": {
+    "dashboard": "לוח בקרה",
+    "myJobs": "המשימות שלי",
+    "departmentJobs": "משימות מחלקה",
+    "globalJobs": "משימות כלל-ארגוניות",
+    "hub": "מוקד משימות",
+    "communication": "תקשורת",
+    "clients": "לקוחות",
+    "billing": "חיוב",
+    "receipts": "קבלות / מסמכי מס",
+    "financialDocuments": "מסמכים פיננסיים",
+    "statistics": "סטטיסטיקה",
+    "agent": "מרכז אוטומציה",
+    "admin": "פאנל ניהול",
+    "settings": "הגדרות",
+    "logout": "התנתקות"
+  },
+  "auth": {
+    "login": "כניסה",
+    "username": "שם משתמש",
+    "password": "סיסמה",
+    "loginButton": "כניסה",
+    "loggingIn": "מתחבר...",
+    "invalidCredentials": "שם משתמש או סיסמה שגויים.",
+    "accountDisabled": "החשבון מושבת. פנה למנהל מערכת.",
+    "welcome": "פורטל פנימי - Skyware"
+  },
+  "common": {
+    "save": "שמור",
+    "cancel": "ביטול",
+    "confirm": "אישור",
+    "delete": "מחיקה",
+    "edit": "עריכה",
+    "create": "יצירה",
+    "search": "חיפוש",
+    "filter": "סינון",
+    "export": "ייצוא CSV",
+    "loading": "טוען...",
+    "noResults": "לא נמצאו תוצאות.",
+    "error": "משהו השתבש.",
+    "retry": "נסה שוב",
+    "back": "חזרה",
+    "required": "שדה חובה",
+    "optional": "אופציונלי",
+    "none": "ללא",
+    "yes": "כן",
+    "no": "לא",
+    "active": "פעיל",
+    "inactive": "לא פעיל"
+  },
+  "job": {
+    "status": {
+      "new": "חדש",
+      "assigned": "שויך",
+      "available": "פנוי",
+      "taken": "נלקח",
+      "working_on_it": "בטיפול",
+      "waiting_for_client": "ממתין ללקוח",
+      "waiting_for_admin": "ממתין למנהל",
+      "done": "הושלם",
+      "reviewed": "נבדק",
+      "cancelled": "בוטל"
+    },
+    "priority": {
+      "low": "נמוך",
+      "normal": "רגיל",
+      "high": "גבוה",
+      "urgent": "דחוף"
+    },
+    "severity": {
+      "minor": "קל",
+      "moderate": "בינוני",
+      "major": "חמור",
+      "critical": "קריטי"
+    }
+  },
+  "payment": {
+    "status": {
+      "draft": "טיוטה",
+      "sent_to_client": "נשלח ללקוח",
+      "waiting_for_payment": "ממתין לתשלום",
+      "partially_paid": "שולם חלקית",
+      "paid": "שולם",
+      "cancelled": "בוטל",
+      "overdue": "באיחור"
+    }
+  },
+  "department": {
+    "global": "כללי",
+    "helpdesk": "תמיכה",
+    "it": "מערכות מידע",
+    "rnd": "מחקר ופיתוח"
+  },
+  "settings": {
+    "title": "הגדרות",
+    "displayName": "שם תצוגה",
+    "email": "דוא\"ל",
+    "password": "סיסמה",
+    "newPassword": "סיסמה חדשה",
+    "confirmPassword": "אישור סיסמה",
+    "language": "שפה",
+    "timezone": "אזור זמן",
+    "saved": "ההגדרות נשמרו."
+  },
+  "placeholders": {
+    "financialDocuments": "קליטת מסמכים פיננסיים טרם הוגדרה. תכונה זו תאפשר ייבוא אוטומטי של אישורי תשלום, חשבוניות ספקים ואישורי העברה בנקאית.",
+    "agent": "סוכן האוטומציה הפנימי אינו פעיל עדיין. כשיופעל, יציע עדכוני חיוב, יטייט עבודות מאימיילים וידגיש בעיות דחופות."
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "myJobs": "My Jobs",
+    "departmentJobs": "Department Jobs",
+    "globalJobs": "Global Jobs",
+    "hub": "Task Hub",
+    "communication": "Communication",
+    "clients": "Clients",
+    "billing": "Billing",
+    "receipts": "Receipts / Tax Docs",
+    "financialDocuments": "Financial Documents",
+    "statistics": "Statistics",
+    "agent": "Agent Control Center",
+    "admin": "Admin Panel",
+    "settings": "Settings",
+    "logout": "Log out"
+  },
+  "auth": {
+    "login": "Log in",
+    "username": "Username",
+    "password": "Password",
+    "loginButton": "Log in",
+    "loggingIn": "Logging in...",
+    "invalidCredentials": "Invalid username or password.",
+    "accountDisabled": "Your account is disabled. Contact an admin.",
+    "welcome": "Skyware Internal Portal"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export CSV",
+    "loading": "Loading...",
+    "noResults": "No results found.",
+    "error": "Something went wrong.",
+    "retry": "Retry",
+    "back": "Back",
+    "required": "Required",
+    "optional": "Optional",
+    "none": "None",
+    "yes": "Yes",
+    "no": "No",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "job": {
+    "status": {
+      "new": "New",
+      "assigned": "Assigned",
+      "available": "Available",
+      "taken": "Taken",
+      "working_on_it": "Working on it",
+      "waiting_for_client": "Waiting for client",
+      "waiting_for_admin": "Waiting for admin",
+      "done": "Done",
+      "reviewed": "Reviewed",
+      "cancelled": "Cancelled"
+    },
+    "priority": {
+      "low": "Low",
+      "normal": "Normal",
+      "high": "High",
+      "urgent": "Urgent"
+    },
+    "severity": {
+      "minor": "Minor",
+      "moderate": "Moderate",
+      "major": "Major",
+      "critical": "Critical"
+    }
+  },
+  "payment": {
+    "status": {
+      "draft": "Draft",
+      "sent_to_client": "Sent to client",
+      "waiting_for_payment": "Waiting for payment",
+      "partially_paid": "Partially paid",
+      "paid": "Paid",
+      "cancelled": "Cancelled",
+      "overdue": "Overdue"
+    }
+  },
+  "department": {
+    "global": "Global",
+    "helpdesk": "Helpdesk",
+    "it": "IT",
+    "rnd": "R&D"
+  },
+  "settings": {
+    "title": "Settings",
+    "displayName": "Display name",
+    "email": "Email",
+    "password": "Password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "language": "Language",
+    "timezone": "Timezone",
+    "saved": "Settings saved."
+  },
+  "placeholders": {
+    "financialDocuments": "Financial document ingestion is not yet configured. This feature will allow automatic import of payment confirmations, supplier invoices, and bank receipts.",
+    "agent": "The internal automation agent is not yet active. When enabled, it will suggest billing updates, draft jobs from emails, and flag urgent issues."
+  }
+}

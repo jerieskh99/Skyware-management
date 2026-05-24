@@ -1,0 +1,6 @@
+[
+  { "key": "global",   "departmentKey": null,       "nameEn": "Global",   "nameHe": "כללי" },
+  { "key": "helpdesk", "departmentKey": "helpdesk", "nameEn": "Helpdesk", "nameHe": "תמיכה" },
+  { "key": "it",       "departmentKey": "it",       "nameEn": "IT",       "nameHe": "מערכות מידע" },
+  { "key": "rnd",      "departmentKey": "rnd",      "nameEn": "R&D",      "nameHe": "מחקר ופיתוח" }
+]

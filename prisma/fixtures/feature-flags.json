@@ -1,0 +1,17 @@
+[
+  {
+    "key": "receipt_finalize_enabled",
+    "enabled": false,
+    "description": "Allow finalizing receipt/tax documents. MUST remain false until accountant verifies templates, VAT rate, numbering, and any Tax Authority requirements."
+  },
+  {
+    "key": "financial_documents_module",
+    "enabled": false,
+    "description": "Show the Financial Documents ingestion page (Phase 3 feature)."
+  },
+  {
+    "key": "agent_control_center_module",
+    "enabled": false,
+    "description": "Show the Agent Control Center page (Phase 4 feature)."
+  }
+]

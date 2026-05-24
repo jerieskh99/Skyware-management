@@ -1,0 +1,9 @@
+[
+  { "key": "urgent",             "labelEn": "Urgent",             "labelHe": "דחוף",              "scope": "both",         "colorHex": "#ef4444" },
+  { "key": "client_issue",       "labelEn": "Client issue",       "labelHe": "תקלת לקוח",         "scope": "both",         "colorHex": "#f97316" },
+  { "key": "technical_note",     "labelEn": "Technical note",     "labelHe": "הערה טכנית",        "scope": "both",         "colorHex": "#3b82f6" },
+  { "key": "internal_update",    "labelEn": "Internal update",    "labelHe": "עדכון פנימי",       "scope": "communication","colorHex": "#8b5cf6" },
+  { "key": "needs_admin",        "labelEn": "Needs admin",        "labelHe": "דורש אישור מנהל",   "scope": "both",         "colorHex": "#ec4899" },
+  { "key": "solved",             "labelEn": "Solved",             "labelHe": "נפתר",              "scope": "communication","colorHex": "#22c55e" },
+  { "key": "follow_up_required", "labelEn": "Follow-up required", "labelHe": "נדרש המשך טיפול",  "scope": "both",         "colorHex": "#eab308" }
+]

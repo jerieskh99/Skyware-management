@@ -1,0 +1,5 @@
+[
+  { "key": "employee", "nameEn": "Employee", "nameHe": "עובד",                       "isAdmin": false },
+  { "key": "ceo",      "nameEn": "CEO",      "nameHe": "מנכ\"ל",                     "isAdmin": true  },
+  { "key": "cto",      "nameEn": "CTO",      "nameHe": "סמנכ\"ל טכנולוגיות",         "isAdmin": true  }
+]

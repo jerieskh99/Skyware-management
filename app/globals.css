@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 30% 98.5%;
+    --foreground: 222 30% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 30% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 30% 11%;
+
+    /* Brand primary — quiet "Skyware" sky/indigo */
+    --primary: 222 47% 22%;
+    --primary-foreground: 0 0% 100%;
+    --brand: 212 90% 48%;
+    --brand-foreground: 0 0% 100%;
+    --brand-soft: 212 95% 96%;
+
+    --secondary: 220 14% 95%;
+    --secondary-foreground: 222 30% 16%;
+    --muted: 220 14% 95.5%;
+    --muted-foreground: 220 10% 42%;
+    --accent: 220 14% 94%;
+    --accent-foreground: 222 30% 16%;
+    --destructive: 0 75% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Semantic surfaces (background tints) */
+    --success: 152 60% 38%;
+    --success-soft: 150 70% 95%;
+    --warn: 32 92% 48%;
+    --warn-soft: 38 100% 95%;
+    --danger: 0 75% 50%;
+    --danger-soft: 0 90% 96%;
+
+    --border: 220 16% 89%;
+    --input: 220 16% 89%;
+    --ring: 212 90% 48%;
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    --background: 222 28% 8%;
+    --foreground: 220 14% 96%;
+    --card: 222 28% 10%;
+    --card-foreground: 220 14% 96%;
+    --popover: 222 28% 10%;
+    --popover-foreground: 220 14% 96%;
+    --primary: 220 14% 96%;
+    --primary-foreground: 222 30% 11%;
+    --brand: 212 95% 60%;
+    --brand-foreground: 222 28% 8%;
+    --brand-soft: 215 60% 16%;
+    --secondary: 222 18% 16%;
+    --secondary-foreground: 220 14% 96%;
+    --muted: 222 18% 16%;
+    --muted-foreground: 220 10% 65%;
+    --accent: 222 18% 16%;
+    --accent-foreground: 220 14% 96%;
+    --destructive: 0 60% 50%;
+    --destructive-foreground: 220 14% 96%;
+    --success: 152 50% 50%;
+    --success-soft: 150 30% 16%;
+    --warn: 32 90% 58%;
+    --warn-soft: 38 50% 16%;
+    --danger: 0 70% 60%;
+    --danger-soft: 0 35% 18%;
+    --border: 222 18% 18%;
+    --input: 222 18% 18%;
+    --ring: 212 95% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-inter), system-ui, sans-serif;
+    font-feature-settings: "cv11", "ss01", "ss03";
+  }
+}
+
+/* RTL-aware helpers */
+[dir="rtl"] .rtl-flip {
+  transform: scaleX(-1);
+}
+
+/* Subtle layered backdrop for the portal shell */
+.app-shell-bg {
+  background:
+    radial-gradient(1200px 600px at 0% -10%, hsl(var(--brand-soft)) 0%, transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, hsl(220 30% 96%) 0%, transparent 50%),
+    hsl(var(--background));
+}
+
+/* Quiet card surface used in sidebar/user tile */
+.surface-soft {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+}
+
+/* Scrollbar refinement */
+.scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 4px; }
+.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }

@@ -1,0 +1,812 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ===== Enums =====
+
+enum DepartmentKey {
+  global
+  helpdesk
+  it
+  rnd
+}
+
+enum RoleKey {
+  employee
+  ceo
+  cto
+}
+
+enum LanguagePref {
+  en
+  he
+}
+
+enum JobStatus {
+  new
+  assigned
+  available
+  taken
+  working_on_it
+  waiting_for_client
+  waiting_for_admin
+  done
+  reviewed
+  cancelled
+}
+
+enum JobPriority {
+  low
+  normal
+  high
+  urgent
+}
+
+enum JobSeverity {
+  minor
+  moderate
+  major
+  critical
+}
+
+enum JobSource {
+  portal_manual
+  email_manual
+}
+
+enum PaymentStatus {
+  draft
+  sent_to_client
+  waiting_for_payment
+  partially_paid
+  paid
+  cancelled
+  overdue
+}
+
+enum PaymentMethod {
+  bank_transfer
+  bit
+  cheque
+  cash
+  credit_card
+  other
+}
+
+enum PaymentSourceType {
+  monthly
+  hourly_bank
+  one_time
+}
+
+enum ReceiptDocumentType {
+  invoice
+  receipt
+  tax_invoice
+  tax_invoice_receipt
+  credit_note
+  proforma_invoice
+}
+
+enum ReceiptDocumentStatus {
+  draft
+  finalized
+  cancelled
+}
+
+enum AllocationStatus {
+  not_required
+  pending
+  issued
+  failed
+}
+
+enum ClientStatus {
+  active
+  inactive
+}
+
+enum MonthlyBillingStatus {
+  active
+  paused
+  cancelled
+  none
+}
+
+enum HourlyBankStatus {
+  active
+  used_up
+  none
+}
+
+enum TagScope {
+  communication
+  job
+  both
+}
+
+enum AttachmentVisibility {
+  public_in_org
+  admin_only
+}
+
+enum CommunicationChannelKey {
+  global
+  helpdesk
+  it
+  rnd
+}
+
+enum SavedViewScope {
+  jobs
+  clients
+  billing
+  receipts
+  communication
+  statistics
+}
+
+enum TimerSource {
+  manual_button
+  idle_resume
+}
+
+enum EnvironmentNoteSection {
+  network
+  servers
+  hosting
+  contacts
+  vendors
+  security
+  backup
+  other
+}
+
+enum Currency {
+  ILS
+  USD
+  EUR
+}
+
+// ===== Models =====
+
+model Department {
+  id       String        @id @default(uuid()) @db.Uuid
+  key      DepartmentKey @unique
+  nameEn   String        @map("name_en")
+  nameHe   String        @map("name_he")
+  isGlobal Boolean       @default(false) @map("is_global")
+
+  users    User[]
+  jobs     Job[]
+  channels CommunicationChannel[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("departments")
+}
+
+model Role {
+  id      String  @id @default(uuid()) @db.Uuid
+  key     RoleKey @unique
+  nameEn  String  @map("name_en")
+  nameHe  String  @map("name_he")
+  isAdmin Boolean @default(false) @map("is_admin")
+
+  users User[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("roles")
+}
+
+model User {
+  id           String       @id @default(uuid()) @db.Uuid
+  username     String       @unique
+  email        String       @unique
+  displayName  String       @map("display_name")
+  passwordHash String       @map("password_hash")
+  departmentId String       @map("department_id") @db.Uuid
+  roleId       String       @map("role_id") @db.Uuid
+  isActive     Boolean      @default(true) @map("is_active")
+  languagePref LanguagePref @default(en) @map("language_pref")
+  timezone     String       @default("Asia/Jerusalem")
+  lastLoginAt  DateTime?    @map("last_login_at")
+
+  department Department @relation(fields: [departmentId], references: [id])
+  role       Role       @relation(fields: [roleId], references: [id])
+
+  assignedJobs     Job[]            @relation("AssignedJobs")
+  createdJobs      Job[]            @relation("CreatedJobs")
+  statusEvents     JobStatusEvent[]
+  submittedReports WorkReport[]     @relation("SubmittedReports")
+  approvedReports  WorkReport[]     @relation("ApprovedReports")
+  timeSessions     TimeSession[]
+  posts            CommunicationPost[]
+  replies          CommunicationReply[]
+  savedViewsOwned  SavedView[]      @relation("SavedViewOwner")
+  savedViewsCreated SavedView[]     @relation("SavedViewCreator")
+  auditLogs        AuditLog[]
+  environmentNotes ClientEnvironmentNote[]
+  createdClients   Client[]
+  createdPayments  Payment[]
+  finalizedReceipts ReceiptDocument[]
+  uploadedAttachments Attachment[]
+  bankUsagesRecorded  HourlyBankUsage[]
+  updatedFeatureFlags FeatureFlag[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Job {
+  id                 String      @id @default(uuid()) @db.Uuid
+  publicNumber       String      @unique @map("public_number")
+  clientId           String?     @map("client_id") @db.Uuid
+  departmentId       String      @map("department_id") @db.Uuid
+  title              String
+  description        String?     @db.Text
+  assignedEmployeeId String?     @map("assigned_employee_id") @db.Uuid
+  createdByUserId    String      @map("created_by_user_id") @db.Uuid
+  status             JobStatus   @default(new)
+  priority           JobPriority @default(normal)
+  severity           JobSeverity @default(moderate)
+  slaTargetMinutes   Int         @map("sla_target_minutes")
+  assignedTimestamp  DateTime?   @map("assigned_timestamp")
+  takenTimestamp     DateTime?   @map("taken_timestamp")
+  startedTimestamp   DateTime?   @map("started_timestamp")
+  completedTimestamp DateTime?   @map("completed_timestamp")
+  reviewedTimestamp  DateTime?   @map("reviewed_timestamp")
+  cancelledTimestamp DateTime?   @map("cancelled_timestamp")
+  firstResponseAt    DateTime?   @map("first_response_at")
+  timeSpentMinutes   Int         @default(0) @map("time_spent_minutes")
+  adminNote          String?     @db.Text @map("admin_note")
+  isBillable         Boolean     @default(true) @map("is_billable")
+  linkedPaymentId    String?     @map("linked_payment_id") @db.Uuid
+  source             JobSource   @default(portal_manual)
+
+  client           Client?          @relation(fields: [clientId], references: [id])
+  department       Department       @relation(fields: [departmentId], references: [id])
+  assignedEmployee User?            @relation("AssignedJobs", fields: [assignedEmployeeId], references: [id])
+  createdBy        User             @relation("CreatedJobs", fields: [createdByUserId], references: [id])
+  linkedPayment    Payment?         @relation("JobLinkedPayment", fields: [linkedPaymentId], references: [id])
+
+  statusEvents     JobStatusEvent[]
+  workReport       WorkReport?
+  timeSessions     TimeSession[]
+  hourlyBankUsages HourlyBankUsage[]
+  oneTimeCharge    OneTimeJobCharge?
+  tags             JobTag[]
+  attachments      JobAttachment[]
+  relatedPosts     CommunicationPost[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([departmentId, status])
+  @@index([assignedEmployeeId, status])
+  @@index([clientId])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([priority, status])
+  @@index([severity, status])
+  @@map("jobs")
+}
+
+model JobStatusEvent {
+  id                    String     @id @default(uuid()) @db.Uuid
+  jobId                 String     @map("job_id") @db.Uuid
+  fromStatus            JobStatus? @map("from_status")
+  toStatus              JobStatus  @map("to_status")
+  changedByUserId       String     @map("changed_by_user_id") @db.Uuid
+  changedAt             DateTime   @default(now()) @map("changed_at")
+  note                  String?    @db.Text
+  timeSpentDeltaMinutes Int        @default(0) @map("time_spent_delta_minutes")
+  reopened              Boolean    @default(false)
+
+  job       Job  @relation(fields: [jobId], references: [id])
+  changedBy User @relation(fields: [changedByUserId], references: [id])
+
+  @@index([jobId, changedAt(sort: Desc)])
+  @@index([changedByUserId, changedAt(sort: Desc)])
+  @@map("job_status_events")
+}
+
+model WorkReport {
+  id               String    @id @default(uuid()) @db.Uuid
+  jobId            String    @unique @map("job_id") @db.Uuid
+  summary          String    @db.Text
+  totalTimeMinutes Int       @map("total_time_minutes")
+  billable         Boolean   @default(true)
+  submittedById    String    @map("submitted_by_user_id") @db.Uuid
+  submittedAt      DateTime  @default(now()) @map("submitted_at")
+  approvedById     String?   @map("approved_by_user_id") @db.Uuid
+  approvedAt       DateTime? @map("approved_at")
+
+  job         Job   @relation(fields: [jobId], references: [id])
+  submittedBy User  @relation("SubmittedReports", fields: [submittedById], references: [id])
+  approvedBy  User? @relation("ApprovedReports", fields: [approvedById], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("work_reports")
+}
+
+model TimeSession {
+  id                 String      @id @default(uuid()) @db.Uuid
+  userId             String      @map("user_id") @db.Uuid
+  jobId              String      @map("job_id") @db.Uuid
+  startedAt          DateTime    @map("started_at")
+  pausedAt           DateTime?   @map("paused_at")
+  resumedAt          DateTime?   @map("resumed_at")
+  endedAt            DateTime?   @map("ended_at")
+  accumulatedMinutes Int         @default(0) @map("accumulated_minutes")
+  source             TimerSource @default(manual_button)
+  idleWarnedAt       DateTime?   @map("idle_warned_at")
+
+  user User @relation(fields: [userId], references: [id])
+  job  Job  @relation(fields: [jobId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([jobId, startedAt(sort: Desc)])
+  @@map("time_sessions")
+}
+
+model Tag {
+  id       String   @id @default(uuid()) @db.Uuid
+  key      String   @unique
+  labelEn  String   @map("label_en")
+  labelHe  String   @map("label_he")
+  scope    TagScope @default(communication)
+  isSystem Boolean  @default(false) @map("is_system")
+  colorHex String?  @map("color_hex")
+
+  jobTags  JobTag[]
+  postTags PostTag[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("tags")
+}
+
+model JobTag {
+  jobId String @map("job_id") @db.Uuid
+  tagId String @map("tag_id") @db.Uuid
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  tag Tag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([jobId, tagId])
+  @@map("job_tags")
+}
+
+model PostTag {
+  postId String @map("post_id") @db.Uuid
+  tagId  String @map("tag_id") @db.Uuid
+
+  post CommunicationPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag  Tag               @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@map("post_tags")
+}
+
+model Client {
+  id              String       @id @default(uuid()) @db.Uuid
+  companyName     String       @map("company_name")
+  contactPerson   String?      @map("contact_person")
+  email           String?
+  phone           String?
+  address         String?      @db.Text
+  israeliTaxId    String?      @map("israeli_tax_id")
+  status          ClientStatus @default(active)
+  notes           String?      @db.Text
+  createdByUserId String       @map("created_by_user_id") @db.Uuid
+
+  createdBy User @relation(fields: [createdByUserId], references: [id])
+
+  billingAccount   BillingAccount?
+  jobs             Job[]
+  payments         Payment[]
+  receipts         ReceiptDocument[]
+  environmentNotes ClientEnvironmentNote[]
+  relatedPosts     CommunicationPost[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([companyName])
+  @@index([status])
+  @@map("clients")
+}
+
+model BillingAccount {
+  id              String   @id @default(uuid()) @db.Uuid
+  clientId        String   @unique @map("client_id") @db.Uuid
+  defaultCurrency Currency @default(ILS) @map("default_currency")
+  notes           String?  @db.Text
+
+  client              Client               @relation(fields: [clientId], references: [id])
+  monthlyBillingItems MonthlyBillingItem[]
+  hourlyBanks         HourlyBank[]
+  oneTimeCharges      OneTimeJobCharge[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("billing_accounts")
+}
+
+model ClientEnvironmentNote {
+  id                 String                 @id @default(uuid()) @db.Uuid
+  clientId           String                 @map("client_id") @db.Uuid
+  section            EnvironmentNoteSection
+  content            String                 @db.Text
+  lastEditedByUserId String                 @map("last_edited_by_user_id") @db.Uuid
+  lastEditedAt       DateTime               @map("last_edited_at")
+
+  client       Client @relation(fields: [clientId], references: [id])
+  lastEditedBy User   @relation(fields: [lastEditedByUserId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([clientId, section])
+  @@map("client_environment_notes")
+}
+
+model MonthlyBillingItem {
+  id                     String               @id @default(uuid()) @db.Uuid
+  billingAccountId       String               @map("billing_account_id") @db.Uuid
+  serviceName            String               @map("service_name")
+  priceAmountPlaceholder Int?                 @map("price_amount_placeholder")
+  currency               Currency             @default(ILS)
+  billingCycle           String               @default("monthly") @map("billing_cycle")
+  startDate              DateTime             @map("start_date") @db.Date
+  endDate                DateTime?            @map("end_date") @db.Date
+  status                 MonthlyBillingStatus @default(active)
+  lastBilledPeriod       String?              @map("last_billed_period")
+  nextDueDate            DateTime?            @map("next_due_date") @db.Date
+
+  billingAccount BillingAccount @relation(fields: [billingAccountId], references: [id])
+  payments       Payment[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([billingAccountId])
+  @@index([status])
+  @@index([nextDueDate])
+  @@map("monthly_billing_items")
+}
+
+model HourlyBank {
+  id                        String           @id @default(uuid()) @db.Uuid
+  billingAccountId          String           @map("billing_account_id") @db.Uuid
+  totalHoursPurchasedMinutes Int?            @map("total_hours_purchased_minutes")
+  pricePerHourPlaceholder   Int?             @map("price_per_hour_placeholder")
+  totalPaymentPlaceholder   Int?             @map("total_payment_placeholder")
+  currency                  Currency         @default(ILS)
+  purchaseDate              DateTime         @map("purchase_date") @db.Date
+  expiryDate                DateTime?        @map("expiry_date") @db.Date
+  status                    HourlyBankStatus @default(active)
+  alertThresholdPercent     Int              @default(25) @map("alert_threshold_percent")
+
+  billingAccount BillingAccount    @relation(fields: [billingAccountId], references: [id])
+  usages         HourlyBankUsage[]
+  payments       Payment[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([billingAccountId])
+  @@index([status])
+  @@map("hourly_banks")
+}
+
+model HourlyBankUsage {
+  id               String   @id @default(uuid()) @db.Uuid
+  hourlyBankId     String   @map("hourly_bank_id") @db.Uuid
+  jobId            String   @map("job_id") @db.Uuid
+  minutesUsed      Int      @map("minutes_used")
+  usedAt           DateTime @default(now()) @map("used_at")
+  recordedByUserId String   @map("recorded_by_user_id") @db.Uuid
+  note             String?  @db.Text
+
+  hourlyBank HourlyBank @relation(fields: [hourlyBankId], references: [id])
+  job        Job        @relation(fields: [jobId], references: [id])
+  recordedBy User       @relation(fields: [recordedByUserId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([hourlyBankId, usedAt(sort: Desc)])
+  @@index([jobId])
+  @@map("hourly_bank_usages")
+}
+
+model OneTimeJobCharge {
+  id                     String    @id @default(uuid()) @db.Uuid
+  billingAccountId       String    @map("billing_account_id") @db.Uuid
+  jobId                  String    @unique @map("job_id") @db.Uuid
+  jobNameSnapshot        String    @map("job_name_snapshot")
+  priceAmountPlaceholder Int?      @map("price_amount_placeholder")
+  currency               Currency  @default(ILS)
+  paymentId              String?   @map("payment_id") @db.Uuid
+  dateCreated            DateTime  @default(now()) @map("date_created")
+  datePaid               DateTime? @map("date_paid")
+
+  billingAccount BillingAccount @relation(fields: [billingAccountId], references: [id])
+  job            Job            @relation(fields: [jobId], references: [id])
+  payment        Payment?       @relation("OtcPayment", fields: [paymentId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("one_time_job_charges")
+}
+
+model Payment {
+  id              String             @id @default(uuid()) @db.Uuid
+  clientId        String             @map("client_id") @db.Uuid
+  sourceType      PaymentSourceType  @map("source_type")
+  sourceMonthlyId String?            @map("source_monthly_id") @db.Uuid
+  sourceHourlyId  String?            @map("source_hourly_id") @db.Uuid
+  amountPlaceholder Int?             @map("amount_placeholder")
+  currency        Currency           @default(ILS)
+  issuedDate      DateTime           @map("issued_date") @db.Date
+  dueDate         DateTime?          @map("due_date") @db.Date
+  paidDate        DateTime?          @map("paid_date") @db.Date
+  status          PaymentStatus      @default(draft)
+  method          PaymentMethod?
+  reference       String?
+  linkedReceiptId String?            @map("linked_receipt_id") @db.Uuid
+  notes           String?            @db.Text
+  createdByUserId String             @map("created_by_user_id") @db.Uuid
+
+  client        Client              @relation(fields: [clientId], references: [id])
+  sourceMonthly MonthlyBillingItem? @relation(fields: [sourceMonthlyId], references: [id])
+  sourceHourly  HourlyBank?         @relation(fields: [sourceHourlyId], references: [id])
+  createdBy     User                @relation(fields: [createdByUserId], references: [id])
+  linkedReceipt ReceiptDocument?    @relation("PaymentReceipt", fields: [linkedReceiptId], references: [id])
+
+  linkedJobs       Job[]              @relation("JobLinkedPayment")
+  oneTimeCharges   OneTimeJobCharge[] @relation("OtcPayment")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([clientId, status])
+  @@index([status, dueDate])
+  @@index([paidDate])
+  @@map("payments")
+}
+
+model ReceiptDocument {
+  id                  String                @id @default(uuid()) @db.Uuid
+  type                ReceiptDocumentType
+  clientId            String                @map("client_id") @db.Uuid
+  paymentId           String?               @map("payment_id") @db.Uuid
+  documentNumber      Int?                  @map("document_number")
+  documentNumberYear  Int?                  @map("document_number_year")
+  status              ReceiptDocumentStatus @default(draft)
+  issueDate           DateTime              @map("issue_date") @db.Date
+  paymentDate         DateTime?             @map("payment_date") @db.Date
+  descriptionLines    Json                  @default("[]") @map("description_lines")
+  amountBeforeVat     Int?                  @map("amount_before_vat")
+  vatRateBasisPoints  Int                   @default(1800) @map("vat_rate_basis_points")
+  vatAmount           Int?                  @map("vat_amount")
+  totalAmount         Int?                  @map("total_amount")
+  paymentMethod       PaymentMethod?        @map("payment_method")
+  reference           String?
+  currency            Currency              @default(ILS)
+  notes               String?               @db.Text
+  language            String                @default("he")
+  allocationNumber    String?               @map("allocation_number")
+  allocationStatus    AllocationStatus      @default(not_required) @map("allocation_status")
+  allocationObtainedAt DateTime?            @map("allocation_obtained_at")
+  finalizedAt         DateTime?             @map("finalized_at")
+  finalizedByUserId   String?               @map("finalized_by_user_id") @db.Uuid
+
+  client      Client  @relation(fields: [clientId], references: [id])
+  finalizedBy User?   @relation(fields: [finalizedByUserId], references: [id])
+
+  sourcePayments Payment[] @relation("PaymentReceipt")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([type, documentNumberYear, documentNumber], name: "unique_document_number")
+  @@index([clientId])
+  @@index([status])
+  @@map("receipt_documents")
+}
+
+model ReceiptDocumentSequence {
+  id         String              @id @default(uuid()) @db.Uuid
+  type       ReceiptDocumentType
+  year       Int
+  nextNumber Int                 @default(1) @map("next_number")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([type, year])
+  @@map("receipt_document_sequences")
+}
+
+model CommunicationChannel {
+  id           String                  @id @default(uuid()) @db.Uuid
+  key          CommunicationChannelKey @unique
+  departmentId String?                 @map("department_id") @db.Uuid
+  nameEn       String                  @map("name_en")
+  nameHe       String                  @map("name_he")
+  description  String?                 @db.Text
+
+  department Department?         @relation(fields: [departmentId], references: [id])
+  posts      CommunicationPost[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("communication_channels")
+}
+
+model CommunicationPost {
+  id              String    @id @default(uuid()) @db.Uuid
+  channelId       String    @map("channel_id") @db.Uuid
+  authorId        String    @map("author_id") @db.Uuid
+  title           String
+  body            String    @db.Text
+  relatedJobId    String?   @map("related_job_id") @db.Uuid
+  relatedClientId String?   @map("related_client_id") @db.Uuid
+  pinned          Boolean   @default(false)
+  resolved        Boolean   @default(false)
+
+  channel       CommunicationChannel @relation(fields: [channelId], references: [id])
+  author        User                 @relation(fields: [authorId], references: [id])
+  relatedJob    Job?                 @relation(fields: [relatedJobId], references: [id])
+  relatedClient Client?              @relation(fields: [relatedClientId], references: [id])
+
+  replies     CommunicationReply[]
+  tags        PostTag[]
+  attachments PostAttachment[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([channelId, createdAt(sort: Desc)])
+  @@index([authorId])
+  @@map("communication_posts")
+}
+
+model CommunicationReply {
+  id       String @id @default(uuid()) @db.Uuid
+  postId   String @map("post_id") @db.Uuid
+  authorId String @map("author_id") @db.Uuid
+  body     String @db.Text
+
+  post   CommunicationPost @relation(fields: [postId], references: [id])
+  author User              @relation(fields: [authorId], references: [id])
+
+  attachments ReplyAttachment[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([postId, createdAt])
+  @@map("communication_replies")
+}
+
+model SavedView {
+  id            String         @id @default(uuid()) @db.Uuid
+  userId        String?        @map("user_id") @db.Uuid
+  scope         SavedViewScope
+  name          String
+  filterJson    Json           @map("filter_json")
+  isTeam        Boolean        @default(false) @map("is_team")
+  createdById   String         @map("created_by_user_id") @db.Uuid
+
+  owner     User? @relation("SavedViewOwner", fields: [userId], references: [id])
+  createdBy User  @relation("SavedViewCreator", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId, scope])
+  @@index([isTeam, scope])
+  @@map("saved_views")
+}
+
+model AuditLog {
+  id          String  @id @default(uuid()) @db.Uuid
+  actorUserId String? @map("actor_user_id") @db.Uuid
+  action      String
+  entityType  String  @map("entity_type")
+  entityId    String  @map("entity_id") @db.Uuid
+  diffJson    Json?   @map("diff_json")
+  ipAddress   String? @map("ip_address")
+  userAgent   String? @map("user_agent")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  actor User? @relation(fields: [actorUserId], references: [id])
+
+  @@index([entityType, entityId, createdAt(sort: Desc)])
+  @@index([actorUserId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
+
+model Attachment {
+  id               String               @id @default(uuid()) @db.Uuid
+  storageKey       String               @map("storage_key")
+  fileName         String               @map("file_name")
+  mimeType         String               @map("mime_type")
+  byteSize         Int                  @map("byte_size")
+  uploadedByUserId String               @map("uploaded_by_user_id") @db.Uuid
+  visibility       AttachmentVisibility @default(public_in_org)
+
+  uploadedBy  User              @relation(fields: [uploadedByUserId], references: [id])
+  jobLinks    JobAttachment[]
+  postLinks   PostAttachment[]
+  replyLinks  ReplyAttachment[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("attachments")
+}
+
+model JobAttachment {
+  jobId        String @map("job_id") @db.Uuid
+  attachmentId String @map("attachment_id") @db.Uuid
+
+  job        Job        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  attachment Attachment @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+
+  @@id([jobId, attachmentId])
+  @@map("job_attachments")
+}
+
+model PostAttachment {
+  postId       String @map("post_id") @db.Uuid
+  attachmentId String @map("attachment_id") @db.Uuid
+
+  post       CommunicationPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  attachment Attachment        @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+
+  @@id([postId, attachmentId])
+  @@map("post_attachments")
+}
+
+model ReplyAttachment {
+  replyId      String @map("reply_id") @db.Uuid
+  attachmentId String @map("attachment_id") @db.Uuid
+
+  reply      CommunicationReply @relation(fields: [replyId], references: [id], onDelete: Cascade)
+  attachment Attachment         @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+
+  @@id([replyId, attachmentId])
+  @@map("reply_attachments")
+}
+
+model FeatureFlag {
+  id              String  @id @default(uuid()) @db.Uuid
+  key             String  @unique
+  enabled         Boolean @default(false)
+  description     String? @db.Text
+  updatedByUserId String? @map("updated_by_user_id") @db.Uuid
+
+  updatedBy User? @relation(fields: [updatedByUserId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("feature_flags")
+}

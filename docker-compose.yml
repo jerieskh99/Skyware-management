@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: skyware_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: skyware
+      POSTGRES_PASSWORD: skyware_dev_password
+      POSTGRES_DB: skyware_management
+    ports:
+      # Using 5433 externally to avoid conflict with any existing local Postgres on 5432.
+      # The DATABASE_URL must use port 5433.
+      - "5433:5432"
+    volumes:
+      - skyware_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U skyware -d skyware_management"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  skyware_postgres_data:
+    driver: local

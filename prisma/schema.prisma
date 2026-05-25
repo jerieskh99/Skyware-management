@@ -649,45 +649,54 @@ model Payment {
 }
 
 model ReceiptDocument {
-  id                   String                @id @default(uuid()) @db.Uuid
-  type                 ReceiptDocumentType
-  clientId             String                @map("client_id") @db.Uuid
-  paymentId            String?               @map("payment_id") @db.Uuid
-  documentNumber       Int?                  @map("document_number")
-  documentNumberYear   Int?                  @map("document_number_year")
-  status               ReceiptDocumentStatus @default(draft)
-  issueDate            DateTime              @map("issue_date") @db.Date
-  paymentDate          DateTime?             @map("payment_date") @db.Date
-  descriptionLines     Json                  @default("[]") @map("description_lines")
-  amountBeforeVat      Int?                  @map("amount_before_vat")
-  vatRateBasisPoints   Int                   @default(1800) @map("vat_rate_basis_points")
-  vatAmount            Int?                  @map("vat_amount")
-  totalAmount          Int?                  @map("total_amount")
-  paymentMethod        PaymentMethod?        @map("payment_method")
-  reference            String?
-  currency             Currency              @default(ILS)
-  notes                String?               @db.Text
-  language             String                @default("he")
-  allocationNumber     String?               @map("allocation_number")
-  allocationStatus     AllocationStatus      @default(not_required) @map("allocation_status")
-  allocationObtainedAt DateTime?             @map("allocation_obtained_at")
-  finalizedAt          DateTime?             @map("finalized_at")
-  finalizedByUserId    String?               @map("finalized_by_user_id") @db.Uuid
+  id                    String                @id @default(uuid()) @db.Uuid
+  type                  ReceiptDocumentType
+  clientId              String                @map("client_id") @db.Uuid
+  paymentId             String?               @map("payment_id") @db.Uuid
+  documentNumber        Int?                  @map("document_number")
+  documentNumberYear    Int?                  @map("document_number_year")
+  status                ReceiptDocumentStatus @default(draft)
+  issueDate             DateTime              @map("issue_date") @db.Date
+  paymentDate           DateTime?             @map("payment_date") @db.Date
+  descriptionLines      Json                  @default("[]") @map("description_lines")
+  amountBeforeVat       Int?                  @map("amount_before_vat")
+  vatRateBasisPoints    Int                   @default(1800) @map("vat_rate_basis_points")
+  vatAmount             Int?                  @map("vat_amount")
+  totalAmount           Int?                  @map("total_amount")
+  paymentMethod         PaymentMethod?        @map("payment_method")
+  reference             String?
+  currency              Currency              @default(ILS)
+  notes                 String?               @db.Text
+  language              String                @default("he")
+  allocationNumber      String?               @map("allocation_number")
+  allocationStatus      AllocationStatus      @default(not_required) @map("allocation_status")
+  allocationObtainedAt  DateTime?             @map("allocation_obtained_at")
+  finalizedAt           DateTime?             @map("finalized_at")
+  finalizedByUserId     String?               @map("finalized_by_user_id") @db.Uuid
   /// Rate from `currency` to ILS at finalize moment. Required when finalized
   /// and currency is not ILS. Enforced by check constraint in migration
   /// 20260524000600_receipt_invariants.
-  exchangeRate         Decimal?              @map("exchange_rate") @db.Decimal(18, 6)
+  exchangeRate          Decimal?              @map("exchange_rate") @db.Decimal(18, 6)
   /// On a credit-note row, points to the original receipt being credited.
-  creditedReceiptId    String?               @map("credited_receipt_id") @db.Uuid
+  creditedReceiptId     String?               @map("credited_receipt_id") @db.Uuid
+  /// Snapshot of CompanySettings + line data captured at FINALIZE time
+  /// so future CompanySettings edits do not rewrite historical documents.
+  /// JSON shape mirrors `lib/pdf/snapshot.ts` `ReceiptSnapshot` type.
+  headerSnapshot        Json?                 @map("header_snapshot")
+  /// Cached rendered PDF object key (S3-compatible storage). Drafts are
+  /// re-rendered fresh on each request; finalized rows render once and
+  /// reuse this key.
+  cachedPdfAttachmentId String?               @map("cached_pdf_attachment_id") @db.Uuid
 
-  client          Client            @relation(fields: [clientId], references: [id])
-  finalizedBy     User?             @relation(fields: [finalizedByUserId], references: [id])
-  creditedReceipt ReceiptDocument?  @relation("ReceiptCredits", fields: [creditedReceiptId], references: [id])
-  creditedBy      ReceiptDocument[] @relation("ReceiptCredits")
+  client              Client            @relation(fields: [clientId], references: [id])
+  finalizedBy         User?             @relation(fields: [finalizedByUserId], references: [id])
+  creditedReceipt     ReceiptDocument?  @relation("ReceiptCredits", fields: [creditedReceiptId], references: [id])
+  creditedBy          ReceiptDocument[] @relation("ReceiptCredits")
   /// Optional payment this receipt was issued for. FK enforced at the DB
   /// level by migration 20260525000300. `ON DELETE SET NULL` so deleting a
   /// payment does not cascade into receipts.
-  payment         Payment?          @relation("ReceiptPayment", fields: [paymentId], references: [id], onDelete: SetNull)
+  payment             Payment?          @relation("ReceiptPayment", fields: [paymentId], references: [id], onDelete: SetNull)
+  cachedPdfAttachment Attachment?       @relation("ReceiptCachedPdf", fields: [cachedPdfAttachmentId], references: [id])
 
   sourcePayments Payment[] @relation("PaymentReceipt")
 
@@ -830,10 +839,11 @@ model Attachment {
   uploadedByUserId String               @map("uploaded_by_user_id") @db.Uuid
   visibility       AttachmentVisibility @default(public_in_org)
 
-  uploadedBy User              @relation(fields: [uploadedByUserId], references: [id])
-  jobLinks   JobAttachment[]
-  postLinks  PostAttachment[]
-  replyLinks ReplyAttachment[]
+  uploadedBy       User              @relation(fields: [uploadedByUserId], references: [id])
+  jobLinks         JobAttachment[]
+  postLinks        PostAttachment[]
+  replyLinks       ReplyAttachment[]
+  receiptCachedFor ReceiptDocument[] @relation("ReceiptCachedPdf")
 
   createdAt DateTime @default(now()) @map("created_at")
 

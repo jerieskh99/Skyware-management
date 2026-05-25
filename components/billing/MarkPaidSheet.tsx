@@ -15,6 +15,7 @@ import { PaymentStatusChip } from "./PaymentStatusChip";
 import type { PaymentStatus } from "@prisma/client";
 import { Receipt } from "lucide-react";
 import { useT } from "@/lib/i18n/client";
+import { useToast } from "@/components/ui/toast";
 import { formatCurrency, formatCurrencyILS } from "@/lib/format";
 
 interface Payment {
@@ -54,6 +55,7 @@ const NEXT_STATUSES: Partial<Record<PaymentStatus, string[]>> = {
 export function MarkPaidSheet({ payment, onClose }: Props) {
   const router = useRouter();
   const { t, locale } = useT();
+  const toast = useToast();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [paidDate, setPaidDate] = useState(new Date().toISOString().slice(0, 10));
@@ -61,6 +63,7 @@ export function MarkPaidSheet({ payment, onClose }: Props) {
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
   const [nextStatus, setNextStatus] = useState<string>("paid");
+  const [issueReceipt, setIssueReceipt] = useState(false);
 
   const allowedStatuses = NEXT_STATUSES[payment.status] ?? [];
   const markingPaid = nextStatus === "paid";
@@ -89,6 +92,42 @@ export function MarkPaidSheet({ payment, onClose }: Props) {
       if (!res.ok) {
         const data = await res.json().catch(() => ({})) as { error?: string };
         setError(data.error ?? t("billing.updateFailed"));
+        return;
+      }
+
+      // Optional: issue a receipt draft from this paid payment.
+      if (markingPaid && issueReceipt) {
+        const issueRes = await fetch(
+          `/api/payments/${payment.id}/issue-receipt`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+        if (issueRes.ok) {
+          const data = (await issueRes.json().catch(() => ({}))) as { id?: string };
+          toast.push({
+            tone: "success",
+            title: t("billing.issueReceiptSuccess"),
+          });
+          onClose();
+          if (data.id) {
+            router.push(`/receipts/${data.id}`);
+            router.refresh();
+            return;
+          }
+          router.refresh();
+          return;
+        }
+        const data = (await issueRes.json().catch(() => ({}))) as { error?: string };
+        toast.push({
+          tone: "error",
+          title: t("billing.issueReceiptError"),
+          description: data.error,
+        });
+        // Mark-paid already succeeded; close the sheet and refresh.
+        onClose();
+        router.refresh();
         return;
       }
 
@@ -178,13 +217,21 @@ export function MarkPaidSheet({ payment, onClose }: Props) {
                   <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} disabled={isPending} />
                 </div>
 
-                <div className="flex items-start gap-3 rounded-lg border border-dashed bg-muted/20 p-3">
-                  <Receipt className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                  <div className="text-xs text-muted-foreground">
-                    <p className="font-medium text-foreground">{t("billing.receiptDocument")}</p>
-                    <p>{t("billing.receiptDocumentBody")}</p>
+                <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-dashed bg-muted/20 p-3">
+                  <input
+                    type="checkbox"
+                    checked={issueReceipt}
+                    onChange={(e) => setIssueReceipt(e.target.checked)}
+                    disabled={isPending}
+                    className="mt-0.5 h-4 w-4"
+                  />
+                  <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                    <Receipt className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="text-foreground">
+                      {t("billing.issueReceiptCheckbox")}
+                    </span>
                   </div>
-                </div>
+                </label>
               </>
             )}
 

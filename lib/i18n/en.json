@@ -292,6 +292,9 @@
     "notesOptional": "Notes (optional)",
     "receiptDocument": "Receipt / tax document",
     "receiptDocumentBody": "After saving, you can create a receipt or tax invoice for this payment in Phase 7. Receipt generation is not yet enabled.",
+    "issueReceiptCheckbox": "Issue tax-invoice-receipt draft after marking paid",
+    "issueReceiptSuccess": "Receipt draft created.",
+    "issueReceiptError": "Failed to create receipt draft.",
     "markPaid": "Mark paid",
     "updateStatus": "Update status",
     "paidDateRequired": "Paid date is required.",
@@ -786,5 +789,158 @@
     "colWeek": "Week starting",
     "colOpen": "Open",
     "colDelayed": "Delayed"
+  },
+  "receipts": {
+    "list": {
+      "title": "Receipts and Tax Documents",
+      "subtitle": "Israeli business documents issued to clients.",
+      "empty": "No receipts match your filters.",
+      "complianceBanner": "Drafts only. Finalization is locked until accountant sign-off.",
+      "createDraft": "Create draft",
+      "filters": {
+        "status": "Status",
+        "type": "Type",
+        "year": "Year",
+        "client": "Client",
+        "all": "All"
+      },
+      "cols": {
+        "number": "Document #",
+        "type": "Type",
+        "client": "Client",
+        "issueDate": "Issue date",
+        "total": "Total",
+        "status": "Status",
+        "allocation": "Allocation",
+        "actions": "Actions"
+      },
+      "pagination": {
+        "showing": "Showing",
+        "of": "of",
+        "perPage": "per page"
+      }
+    },
+    "detail": {
+      "back": "Back to receipts",
+      "draftBadge": "DRAFT",
+      "finalizedBadge": "Finalized",
+      "cancelledBadge": "Cancelled",
+      "downloadPdf": "Download PDF",
+      "viewPdf": "View PDF",
+      "refreshPreview": "Refresh preview",
+      "edit": "Edit draft",
+      "finalize": "Finalize",
+      "delete": "Delete draft",
+      "creditNote": "Issue credit note",
+      "requestAllocation": "Request allocation",
+      "cancelledNotice": "This document has been cancelled. It is preserved for audit but is no longer valid.",
+      "credits": {
+        "heading": "Credit notes",
+        "creditedBy": "Credited by",
+        "crediting": "This is a credit note for"
+      },
+      "summary": {
+        "heading": "Document summary",
+        "previewHeading": "PDF preview",
+        "issueDate": "Issue date",
+        "paymentDate": "Payment date",
+        "client": "Client",
+        "type": "Type",
+        "status": "Status",
+        "documentNumber": "Document number",
+        "language": "Language",
+        "currency": "Currency",
+        "exchangeRate": "Exchange rate",
+        "vatRate": "VAT rate",
+        "amountBeforeVat": "Amount before VAT",
+        "vatAmount": "VAT amount",
+        "totalAmount": "Total",
+        "allocationStatus": "Allocation status",
+        "allocationNumber": "Allocation number",
+        "notes": "Notes",
+        "reference": "Reference",
+        "paymentMethod": "Payment method",
+        "linesHeading": "Description lines",
+        "lineDescription": "Description",
+        "lineQuantity": "Qty",
+        "lineUnitPrice": "Unit",
+        "lineTotal": "Line total"
+      }
+    },
+    "draftForm": {
+      "createTitle": "Create draft",
+      "editTitle": "Edit draft",
+      "type": "Document type",
+      "client": "Client",
+      "clientPlaceholder": "Select a client",
+      "issueDate": "Issue date",
+      "paymentDate": "Payment date",
+      "currency": "Currency",
+      "amountBeforeVat": "Amount before VAT",
+      "amountHint": "Stored in minor units (agorot for ILS).",
+      "vatRate": "VAT rate (basis points)",
+      "vatRateHint": "1800 = 18.00%.",
+      "vatAmount": "VAT amount",
+      "total": "Total",
+      "exchangeRate": "Exchange rate",
+      "notes": "Notes",
+      "notesPlaceholder": "Optional internal note.",
+      "description": "Description",
+      "quantity": "Quantity",
+      "unitPrice": "Unit price",
+      "lineTotal": "Line total",
+      "linesHeading": "Description lines",
+      "addLine": "Add line",
+      "removeLine": "Remove line",
+      "save": "Save",
+      "cancel": "Cancel",
+      "atLeastOneLine": "Add at least one description line.",
+      "saveFailed": "Save failed.",
+      "createSuccess": "Draft created.",
+      "updateSuccess": "Draft saved."
+    },
+    "finalize": {
+      "title": "Finalize / סופי",
+      "body": "This will reserve a sequential document number. Once finalized, the document cannot be deleted or cancelled. Use a credit note to correct mistakes. Confirm only if you have accountant approval.",
+      "checkbox": "I have read this and have accountant approval.",
+      "confirm": "Finalize",
+      "cancel": "Cancel",
+      "disabledToast": "Finalization is disabled. The receipt_finalize_enabled flag must be on.",
+      "success": "Receipt finalized."
+    },
+    "creditNote": {
+      "title": "Issue credit note",
+      "body": "A credit note is the legal way to correct or void a finalized tax invoice. A new document will be created with credit-note status, linked to this row.",
+      "confirm": "Issue credit note",
+      "cancel": "Cancel",
+      "success": "Credit note created."
+    },
+    "delete": {
+      "title": "Delete draft?",
+      "body": "Drafts can be deleted permanently. Finalized documents must use a credit note instead.",
+      "confirm": "Delete",
+      "cancel": "Cancel",
+      "success": "Draft deleted."
+    },
+    "allocation": {
+      "notRequired": "Not required",
+      "pending": "Pending",
+      "issued": "Issued",
+      "failed": "Failed",
+      "requestSuccess": "Allocation requested."
+    },
+    "type": {
+      "invoice": "Invoice",
+      "receipt": "Receipt",
+      "tax_invoice": "Tax invoice",
+      "tax_invoice_receipt": "Tax invoice + receipt",
+      "credit_note": "Credit note",
+      "proforma_invoice": "Proforma invoice"
+    },
+    "status": {
+      "draft": "Draft",
+      "finalized": "Finalized",
+      "cancelled": "Cancelled"
+    }
   }
 }

@@ -21,6 +21,37 @@ function setupSequenceUpsert() {
   });
 }
 
+/**
+ * Mock the singleton CompanySettings row required by `finalizeReceipt` to
+ * compose the header snapshot. Use sane internal-testing placeholder values
+ * (Wave 2A schema added `header_snapshot` per implementation_plan.md §5.2).
+ */
+function setupCompanySettings() {
+  prisma.companySettings.findUnique.mockResolvedValueOnce({
+    id: "00000000-0000-0000-0000-000000000001",
+    legalNameEn: "TEST Skyware IT LTD",
+    legalNameHe: "TEST סקייוור איי טי בע\"מ",
+    companyNumber: "TEST-000000000",
+    vatNumber: "TEST-000000000",
+    timezone: "Asia/Jerusalem",
+    defaultVatBasisPoints: 1800,
+    defaultCurrency: "ILS",
+    email: null,
+    phone: null,
+    addressLine1: null,
+    addressLine2: null,
+    city: null,
+    postalCode: null,
+    country: "IL",
+    websiteUrl: null,
+    receiptFooterEn: null,
+    receiptFooterHe: null,
+    updatedByUserId: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+}
+
 describe("finalizeReceipt - validation invariants", () => {
   beforeEach(() => {
     vi.resetAllMocks();
@@ -100,6 +131,7 @@ describe("finalizeReceipt - validation invariants", () => {
       documentNumberYear: null,
     });
     setupSequenceUpsert();
+    setupCompanySettings();
     prisma.receiptDocument.update.mockResolvedValueOnce({
       id: RECEIPT_ID,
       status: "finalized",
@@ -148,6 +180,7 @@ describe("finalizeReceipt - validation invariants", () => {
       documentNumberYear: null,
     });
     setupSequenceUpsert();
+    setupCompanySettings();
     prisma.receiptDocument.update.mockResolvedValueOnce({
       id: RECEIPT_ID,
       status: "finalized",

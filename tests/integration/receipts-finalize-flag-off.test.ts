@@ -69,6 +69,31 @@ describe("POST /api/receipts/[id]/finalize - feature flag off", () => {
       year: 2026,
       nextNumber: 2,
     });
+    // Wave 2A-PDF: finalize composes a snapshot from the singleton
+    // CompanySettings row before writing the update.
+    prisma.companySettings.findUnique.mockResolvedValueOnce({
+      id: "00000000-0000-0000-0000-000000000001",
+      legalNameEn: "TEST Skyware IT LTD",
+      legalNameHe: "TEST סקייוור איי טי בע\"מ",
+      companyNumber: "TEST-000000000",
+      vatNumber: "TEST-000000000",
+      timezone: "Asia/Jerusalem",
+      defaultVatBasisPoints: 1800,
+      defaultCurrency: "ILS",
+      email: null,
+      phone: null,
+      addressLine1: null,
+      addressLine2: null,
+      city: null,
+      postalCode: null,
+      country: "IL",
+      websiteUrl: null,
+      receiptFooterEn: null,
+      receiptFooterHe: null,
+      updatedByUserId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
     prisma.receiptDocument.update.mockResolvedValueOnce({
       id: RECEIPT_ID,
       status: "finalized",

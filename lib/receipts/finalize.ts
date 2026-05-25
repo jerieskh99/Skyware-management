@@ -1,6 +1,8 @@
 import type { Prisma, ReceiptDocument, ReceiptDocumentType } from "@prisma/client";
 import { writeAudit } from "@/lib/audit";
 import { getYearIL } from "@/lib/format";
+import { composeSnapshot } from "@/lib/pdf/snapshot";
+import { SINGLETON_ID as COMPANY_SETTINGS_ID } from "@/lib/company-settings/queries";
 import { ReceiptStateError, ReceiptValidationError } from "./errors";
 
 interface FinalizeInput {
@@ -68,6 +70,20 @@ export async function finalizeReceipt(
 
   const { year, nextNumber } = await reserveNumber(tx, row.type);
 
+  // Snapshot the live CompanySettings into the receipt so future edits to
+  // the company header do not rewrite historical PDFs. See
+  // docs/audit-2026-05-billing/implementation_plan.md §5.2 and
+  // docs/audit-2026-05-billing/asking_an_accountant.md §2.8.
+  const companySettings = await tx.companySettings.findUnique({
+    where: { id: COMPANY_SETTINGS_ID },
+  });
+  if (!companySettings) {
+    throw new ReceiptValidationError(
+      "company settings missing; configure under /admin?tab=company before finalizing",
+    );
+  }
+  const snapshot = composeSnapshot(companySettings);
+
   const finalized = await tx.receiptDocument.update({
     where: { id },
     data: {
@@ -76,6 +92,7 @@ export async function finalizeReceipt(
       documentNumberYear: year,
       finalizedAt: new Date(),
       finalizedByUserId: actorUserId,
+      headerSnapshot: snapshot as unknown as Prisma.InputJsonValue,
     },
   });
 

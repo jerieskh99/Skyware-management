@@ -292,6 +292,9 @@
     "notesOptional": "הערות (אופציונלי)",
     "receiptDocument": "קבלה / מסמך מס",
     "receiptDocumentBody": "לאחר השמירה, ניתן יהיה ליצור קבלה או חשבונית מס עבור תשלום זה ב-Phase 7. הנפקת קבלות טרם הופעלה.",
+    "issueReceiptCheckbox": "צור טיוטת חשבונית מס-קבלה אחרי סימון התשלום",
+    "issueReceiptSuccess": "טיוטת קבלה נוצרה.",
+    "issueReceiptError": "יצירת טיוטת קבלה נכשלה.",
     "markPaid": "סמן כשולם",
     "updateStatus": "עדכן סטטוס",
     "paidDateRequired": "תאריך תשלום הוא שדה חובה.",
@@ -786,5 +789,158 @@
     "colWeek": "שבוע מתחיל",
     "colOpen": "פתוחות",
     "colDelayed": "באיחור"
+  },
+  "receipts": {
+    "list": {
+      "title": "קבלות ומסמכי מס",
+      "subtitle": "מסמכים עסקיים ישראליים המונפקים ללקוחות.",
+      "empty": "אין קבלות התואמות את הסינון.",
+      "complianceBanner": "טיוטות בלבד. הפקה נעולה עד אישור רואה חשבון.",
+      "createDraft": "צור טיוטה",
+      "filters": {
+        "status": "סטטוס",
+        "type": "סוג",
+        "year": "שנה",
+        "client": "לקוח",
+        "all": "הכל"
+      },
+      "cols": {
+        "number": "מספר מסמך",
+        "type": "סוג",
+        "client": "לקוח",
+        "issueDate": "תאריך הנפקה",
+        "total": "סה\"כ",
+        "status": "סטטוס",
+        "allocation": "הקצאה",
+        "actions": "פעולות"
+      },
+      "pagination": {
+        "showing": "מציג",
+        "of": "מתוך",
+        "perPage": "בעמוד"
+      }
+    },
+    "detail": {
+      "back": "חזרה לקבלות",
+      "draftBadge": "טיוטה",
+      "finalizedBadge": "סופי",
+      "cancelledBadge": "מבוטל",
+      "downloadPdf": "הורד PDF",
+      "viewPdf": "הצג PDF",
+      "refreshPreview": "רענן תצוגה מקדימה",
+      "edit": "ערוך טיוטה",
+      "finalize": "סופי",
+      "delete": "מחק טיוטה",
+      "creditNote": "הפק חשבונית זיכוי",
+      "requestAllocation": "בקש מספר הקצאה",
+      "cancelledNotice": "מסמך זה בוטל. נשמר לצרכי ביקורת אך אינו תקף.",
+      "credits": {
+        "heading": "חשבוניות זיכוי",
+        "creditedBy": "מזוכה על-ידי",
+        "crediting": "חשבונית זיכוי עבור"
+      },
+      "summary": {
+        "heading": "סיכום המסמך",
+        "previewHeading": "תצוגה מקדימה",
+        "issueDate": "תאריך הנפקה",
+        "paymentDate": "תאריך תשלום",
+        "client": "לקוח",
+        "type": "סוג",
+        "status": "סטטוס",
+        "documentNumber": "מספר מסמך",
+        "language": "שפה",
+        "currency": "מטבע",
+        "exchangeRate": "שער חליפין",
+        "vatRate": "שיעור מע\"מ",
+        "amountBeforeVat": "סכום לפני מע\"מ",
+        "vatAmount": "סכום מע\"מ",
+        "totalAmount": "סה\"כ",
+        "allocationStatus": "סטטוס הקצאה",
+        "allocationNumber": "מספר הקצאה",
+        "notes": "הערות",
+        "reference": "אסמכתא",
+        "paymentMethod": "אמצעי תשלום",
+        "linesHeading": "שורות תיאור",
+        "lineDescription": "תיאור",
+        "lineQuantity": "כמות",
+        "lineUnitPrice": "מחיר יחידה",
+        "lineTotal": "סה\"כ שורה"
+      }
+    },
+    "draftForm": {
+      "createTitle": "יצירת טיוטה",
+      "editTitle": "עריכת טיוטה",
+      "type": "סוג מסמך",
+      "client": "לקוח",
+      "clientPlaceholder": "בחר לקוח",
+      "issueDate": "תאריך הנפקה",
+      "paymentDate": "תאריך תשלום",
+      "currency": "מטבע",
+      "amountBeforeVat": "סכום לפני מע\"מ",
+      "amountHint": "נשמר באגורות (יחידות מטבע משנה).",
+      "vatRate": "שיעור מע\"מ (נקודות בסיס)",
+      "vatRateHint": "1800 = 18.00%.",
+      "vatAmount": "סכום מע\"מ",
+      "total": "סה\"כ",
+      "exchangeRate": "שער חליפין",
+      "notes": "הערות",
+      "notesPlaceholder": "הערה פנימית אופציונלית.",
+      "description": "תיאור",
+      "quantity": "כמות",
+      "unitPrice": "מחיר יחידה",
+      "lineTotal": "סה\"כ שורה",
+      "linesHeading": "שורות תיאור",
+      "addLine": "הוסף שורה",
+      "removeLine": "הסר שורה",
+      "save": "שמור",
+      "cancel": "ביטול",
+      "atLeastOneLine": "יש להוסיף לפחות שורת תיאור אחת.",
+      "saveFailed": "השמירה נכשלה.",
+      "createSuccess": "טיוטה נוצרה.",
+      "updateSuccess": "הטיוטה נשמרה."
+    },
+    "finalize": {
+      "title": "סופי / Finalize",
+      "body": "פעולה זו תקצה מספר רץ. אחרי סופי, אי אפשר למחוק או לבטל את המסמך. תיקון מתבצע באמצעות חשבונית זיכוי. אשר רק אם יש אישור רואה חשבון.",
+      "checkbox": "קראתי ויש לי אישור רואה חשבון.",
+      "confirm": "אשר הפקה",
+      "cancel": "ביטול",
+      "disabledToast": "הפקה מושבתת. יש להפעיל את דגל receipt_finalize_enabled.",
+      "success": "המסמך הופק."
+    },
+    "creditNote": {
+      "title": "הפקת חשבונית זיכוי",
+      "body": "חשבונית זיכוי היא הדרך החוקית לתקן או לבטל חשבונית מס סופית. ייווצר מסמך חדש בסטטוס זיכוי, מקושר לשורה זו.",
+      "confirm": "הפק חשבונית זיכוי",
+      "cancel": "ביטול",
+      "success": "חשבונית זיכוי נוצרה."
+    },
+    "delete": {
+      "title": "למחוק את הטיוטה?",
+      "body": "ניתן למחוק טיוטות לצמיתות. מסמכים סופיים חייבים להשתמש בחשבונית זיכוי במקום.",
+      "confirm": "מחק",
+      "cancel": "ביטול",
+      "success": "הטיוטה נמחקה."
+    },
+    "allocation": {
+      "notRequired": "לא נדרש",
+      "pending": "ממתין",
+      "issued": "הוקצה",
+      "failed": "נכשל",
+      "requestSuccess": "בקשת ההקצאה נשלחה."
+    },
+    "type": {
+      "invoice": "חשבונית",
+      "receipt": "קבלה",
+      "tax_invoice": "חשבונית מס",
+      "tax_invoice_receipt": "חשבונית מס-קבלה",
+      "credit_note": "חשבונית זיכוי",
+      "proforma_invoice": "חשבונית עסקה"
+    },
+    "status": {
+      "draft": "טיוטה",
+      "finalized": "סופי",
+      "cancelled": "מבוטל"
+    }
   }
 }

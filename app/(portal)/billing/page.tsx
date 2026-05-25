@@ -24,6 +24,8 @@ import { SectionCard } from "@/components/shared/SectionCard";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { getT } from "@/lib/i18n/server";
+import { formatCurrency, formatCurrencyILS, formatDateIL } from "@/lib/format";
+import type { Locale } from "@/lib/i18n";
 
 const VALID_STATUSES = new Set<string>([
   "draft", "sent_to_client", "waiting_for_payment",
@@ -36,14 +38,15 @@ interface Props {
   searchParams: Promise<Record<string, string>>;
 }
 
-function fmtDate(d: string | Date | null) {
+function fmtDate(d: string | Date | null, locale: Locale) {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return formatDateIL(new Date(d), locale);
 }
 
-function fmtAmount(amount: number | null, currency: string) {
+function fmtAmount(amount: number | null, currency: string, locale: Locale) {
   if (amount === null) return "—";
-  return `${amount.toLocaleString()} ${currency}`;
+  if (currency === "ILS") return formatCurrencyILS(amount, locale);
+  return formatCurrency(amount, currency, locale);
 }
 
 export default async function BillingPage({ searchParams }: Props) {
@@ -75,7 +78,14 @@ export default async function BillingPage({ searchParams }: Props) {
     agingEnabled ? getAgingBuckets() : Promise.resolve(null),
   ]);
 
-  const { t } = await getT();
+  const { t, locale } = await getT();
+
+  const sourceTypeLabel = (sourceType: string): string => {
+    if (sourceType === "monthly" || sourceType === "hourly_bank" || sourceType === "one_time") {
+      return t(`payment.sourceType.${sourceType}`);
+    }
+    return sourceType;
+  };
 
   const currentFilters: Record<string, string> = {};
   if (rawStatuses[0]) currentFilters["status"] = rawStatuses[0];
@@ -164,9 +174,9 @@ export default async function BillingPage({ searchParams }: Props) {
                     {p.client.companyName}
                   </Link>
                   <p className="text-xs text-muted-foreground">
-                    {p.sourceMonthly?.serviceName ?? p.sourceType.replace(/_/g, " ")} ·{" "}
-                    {fmtAmount(p.amountPlaceholder, p.currency)}
-                    {p.dueDate && ` · ${t("billing.due")} ${fmtDate(p.dueDate)}`}
+                    {p.sourceMonthly?.serviceName ?? sourceTypeLabel(p.sourceType)} ·{" "}
+                    {fmtAmount(p.amountPlaceholder, p.currency, locale)}
+                    {p.dueDate && ` · ${t("billing.due")} ${fmtDate(p.dueDate, locale)}`}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -216,16 +226,16 @@ export default async function BillingPage({ searchParams }: Props) {
                         </Link>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
-                        {p.sourceMonthly?.serviceName ?? p.sourceType.replace(/_/g, " ")}
+                        {p.sourceMonthly?.serviceName ?? sourceTypeLabel(p.sourceType)}
                       </td>
                       <td className="px-4 py-3 font-mono text-xs">
-                        {fmtAmount(p.amountPlaceholder, p.currency)}
+                        {fmtAmount(p.amountPlaceholder, p.currency, locale)}
                       </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground hidden sm:table-cell">
-                        {fmtDate(p.issuedDate)}
+                        {fmtDate(p.issuedDate, locale)}
                       </td>
                       <td className={`px-4 py-3 text-xs hidden sm:table-cell ${p.status === "overdue" ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
-                        {fmtDate(p.dueDate)}
+                        {fmtDate(p.dueDate, locale)}
                       </td>
                       <td className="px-4 py-3">
                         <PaymentStatusChip status={p.status} />

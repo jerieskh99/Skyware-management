@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, forbidden, badRequest, notFound } from "@/lib/api-utils";
+import {
+  requireAuth,
+  forbidden,
+  badRequest,
+  notFound,
+  unprocessable,
+} from "@/lib/api-utils";
 import { isAdmin } from "@/lib/permissions";
 import { writeAudit } from "@/lib/audit";
 import { getPaymentById } from "@/lib/billing/queries";
+import { isAllowedTransition } from "@/lib/billing/payment-lifecycle";
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -45,6 +52,17 @@ export async function PATCH(req: Request, { params }: Params) {
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) return badRequest(parsed.error.issues);
   const d = parsed.data;
+
+  // Enforce the status transition matrix at the server layer. The UI guards
+  // against bad transitions in MarkPaidSheet, but any direct PATCH must still
+  // pass the matrix in lib/billing/payment-lifecycle.ts.
+  if (d.status && d.status !== existing.status) {
+    if (!isAllowedTransition(existing.status, d.status)) {
+      return unprocessable(
+        `Payment cannot transition from ${existing.status} to ${d.status}`,
+      );
+    }
+  }
 
   if (d.status === "paid" && !d.paidDate) {
     return badRequest([{ message: "paidDate is required when marking a payment as paid." }]);

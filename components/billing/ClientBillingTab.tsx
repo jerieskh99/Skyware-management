@@ -20,6 +20,8 @@ import { PaymentStatusChip } from "./PaymentStatusChip";
 import { MarkPaidSheet } from "./MarkPaidSheet";
 import type { BankBurn } from "@/lib/billing/queries";
 import { useT } from "@/lib/i18n/client";
+import type { Locale } from "@/lib/i18n";
+import { formatCurrency, formatCurrencyILS, formatDateIL } from "@/lib/format";
 import type { MonthlyBillingStatus, HourlyBankStatus, PaymentStatus, Currency } from "@prisma/client";
 import { Plus, Pencil, Trash2, CreditCard, Clock, Zap } from "lucide-react";
 
@@ -100,14 +102,22 @@ interface Props {
   burnEnabled?: boolean;
 }
 
-function fmtDate(d: string | Date | null) {
+function fmtDate(d: string | Date | null, locale: Locale) {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return formatDateIL(new Date(d), locale);
 }
 
-function fmtAmount(amount: number | null, currency: string) {
+function fmtAmount(amount: number | null, currency: string, locale: Locale) {
   if (amount === null) return "—";
-  return `${amount.toLocaleString()} ${currency}`;
+  if (currency === "ILS") return formatCurrencyILS(amount, locale);
+  return formatCurrency(amount, currency, locale);
+}
+
+function sourceTypeLabel(t: (key: string) => string, sourceType: string): string {
+  if (sourceType === "monthly" || sourceType === "hourly_bank" || sourceType === "one_time") {
+    return t(`payment.sourceType.${sourceType}`);
+  }
+  return sourceType;
 }
 
 const selectClass =
@@ -115,6 +125,7 @@ const selectClass =
 
 function MonthlySection({ clientId, items, currency }: { clientId: string; items: MonthlyItem[]; currency: string }) {
   const router = useRouter();
+  const { locale } = useT();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -198,8 +209,8 @@ function MonthlySection({ clientId, items, currency }: { clientId: string; items
               <div className="min-w-0">
                 <p className="font-medium">{item.serviceName}</p>
                 <p className="text-xs text-muted-foreground">
-                  {fmtAmount(item.priceAmountPlaceholder, item.currency)} / {item.billingCycle} · from {fmtDate(item.startDate)}
-                  {item.endDate && ` to ${fmtDate(item.endDate)}`}
+                  {fmtAmount(item.priceAmountPlaceholder, item.currency, locale)} / {item.billingCycle} · from {fmtDate(item.startDate, locale)}
+                  {item.endDate && ` to ${fmtDate(item.endDate, locale)}`}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
@@ -289,7 +300,7 @@ function HourlyBanksSection({
   burnEnabled: boolean;
 }) {
   const router = useRouter();
-  const { t } = useT();
+  const { t, locale } = useT();
   const [open, setOpen] = useState(false);
   const [logUsageBankId, setLogUsageBankId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -398,11 +409,11 @@ function HourlyBanksSection({
             return (
               <div key={bank.id} className="space-y-2 rounded-lg border p-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">Purchased {fmtDate(bank.purchaseDate)}</p>
+                  <p className="text-sm font-medium">Purchased {fmtDate(bank.purchaseDate, locale)}</p>
                   <div className="flex items-center gap-2">
                     {bank.totalPaymentPlaceholder !== null && (
                       <span className="text-xs text-muted-foreground">
-                        {fmtAmount(bank.totalPaymentPlaceholder, bank.currency)}
+                        {fmtAmount(bank.totalPaymentPlaceholder, bank.currency, locale)}
                       </span>
                     )}
                     <Button
@@ -430,6 +441,7 @@ function HourlyBanksSection({
                   alertThresholdPercent={bank.alertThresholdPercent}
                   currency={bank.currency}
                   pricePerHour={bank.pricePerHourPlaceholder}
+                  locale={locale}
                   burn={
                     burnEnabled && burnByBank && burnByBank[bank.id]
                       ? {
@@ -450,7 +462,7 @@ function HourlyBanksSection({
                   </p>
                 )}
                 {bank.expiryDate && (
-                  <p className="text-[11px] text-muted-foreground">Expires {fmtDate(bank.expiryDate)}</p>
+                  <p className="text-[11px] text-muted-foreground">Expires {fmtDate(bank.expiryDate, locale)}</p>
                 )}
               </div>
             );
@@ -540,7 +552,7 @@ function HourlyBanksSection({
         title="Delete hourly bank"
         description={deleteTarget ? (
           <>
-            Delete the bank purchased on {fmtDate(deleteTarget.purchaseDate)}?
+            Delete the bank purchased on {fmtDate(deleteTarget.purchaseDate, locale)}?
             All logged usage will be removed. This cannot be undone.
           </>
         ) : ""}
@@ -554,6 +566,7 @@ function HourlyBanksSection({
 
 function OneTimeSection({ clientId, charges }: { clientId: string; charges: OneTimeCharge[] }) {
   const router = useRouter();
+  const { locale } = useT();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -627,7 +640,7 @@ function OneTimeSection({ clientId, charges }: { clientId: string; charges: OneT
                   {c.job.publicNumber} · {c.jobNameSnapshot}
                 </Link>
                 <p className="text-xs text-muted-foreground">
-                  {fmtAmount(c.priceAmountPlaceholder, c.currency)} · {fmtDate(c.dateCreated)}
+                  {fmtAmount(c.priceAmountPlaceholder, c.currency, locale)} · {fmtDate(c.dateCreated, locale)}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
@@ -702,6 +715,7 @@ function PaymentsSection({
   hourlyBanks: HourlyBank[];
 }) {
   const router = useRouter();
+  const { t, locale } = useT();
   const [activePayment, setActivePayment] = useState<PaymentRow | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -773,11 +787,11 @@ function PaymentsSection({
             <div key={p.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
               <div className="min-w-0">
                 <p className="font-medium">
-                  {p.sourceMonthly?.serviceName ?? p.sourceType.replace(/_/g, " ")}
+                  {p.sourceMonthly?.serviceName ?? sourceTypeLabel(t, p.sourceType)}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {fmtAmount(p.amountPlaceholder, p.currency)} · Issued {fmtDate(p.issuedDate)}
-                  {p.dueDate && ` · Due ${fmtDate(p.dueDate)}`}
+                  {fmtAmount(p.amountPlaceholder, p.currency, locale)} · Issued {fmtDate(p.issuedDate, locale)}
+                  {p.dueDate && ` · Due ${fmtDate(p.dueDate, locale)}`}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
@@ -831,7 +845,7 @@ function PaymentsSection({
                 <select value={sourceId} onChange={(e) => setSourceId(e.target.value)} disabled={isPending} className={selectClass}>
                   <option value="">Not linked</option>
                   {hourlyBanks.map((b) => (
-                    <option key={b.id} value={b.id}>Purchased {fmtDate(b.purchaseDate)}</option>
+                    <option key={b.id} value={b.id}>Purchased {fmtDate(b.purchaseDate, locale)}</option>
                   ))}
                 </select>
               </div>

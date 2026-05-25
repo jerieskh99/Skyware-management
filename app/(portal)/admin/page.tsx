@@ -10,13 +10,15 @@ import { FeatureFlagSection } from "@/components/admin/FeatureFlagSection";
 import { SlaDefaultsSection } from "@/components/admin/SlaDefaultsSection";
 import { CronTriggerSection } from "@/components/admin/CronTriggerSection";
 import { RecurringTemplatesSection } from "@/components/admin/RecurringTemplatesSection";
+import { CompanySettingsForm } from "@/components/admin/CompanySettingsForm";
 import { Shield, Users, Tag, Flag, BookOpen, SlidersHorizontal, Building2, Network, Clock, Repeat } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { getT } from "@/lib/i18n/server";
 import { FALLBACK_PRIORITY_SLA_MINUTES } from "@/lib/sla";
 import { getFeatureFlag } from "@/lib/feature-flags";
 import { listTemplates } from "@/lib/recurring/template-queries";
-import type { JobPriority } from "@prisma/client";
+import { getCompanySettings } from "@/lib/company-settings/queries";
+import type { CompanySettings, JobPriority } from "@prisma/client";
 
 const BASE_TAB_KEYS = [
   { key: "users",   icon: Users },
@@ -68,6 +70,7 @@ export default async function AdminPage({ searchParams }: Props) {
   let recurringDepts: Awaited<ReturnType<typeof getRecurringDepts>> = [];
   let recurringClients: Awaited<ReturnType<typeof getRecurringClients>> = [];
   let recurringUsers: Awaited<ReturnType<typeof getRecurringUsers>> = [];
+  let companySettings: CompanySettings | null = null;
 
   if (tab === "users") {
     [users, roleOptions, deptOptions] = await Promise.all([
@@ -95,6 +98,8 @@ export default async function AdminPage({ searchParams }: Props) {
       getRecurringClients(),
       getRecurringUsers(),
     ]);
+  } else if (tab === "company") {
+    companySettings = await getCompanySettings();
   }
 
   return (
@@ -156,7 +161,9 @@ export default async function AdminPage({ searchParams }: Props) {
 
       {tab === "cron" && <CronTriggerSection />}
 
-      {tab === "company" && <CompanyTab />}
+      {tab === "company" && (
+        <CompanySettingsForm initial={toCompanySettingsDTO(companySettings)} />
+      )}
 
       {tab === "recurring" && (
         <RecurringTemplatesSection
@@ -478,52 +485,36 @@ function OrgTab({ roles, departments }: { roles: OrgRole[]; departments: OrgDept
   );
 }
 
-// ── Company details tab (placeholder) ────────────────────────────────────────
+// ── Company details tab adapter ──────────────────────────────────────────────
 
-function CompanyTab() {
-  const fields = [
-    { label: "Company name (English)", placeholder: "Skyware IT LTD", note: "" },
-    { label: "Company name (Hebrew)", placeholder: "סקייוור אי.טי בע\"מ", note: "" },
-    { label: "Company number (ח.פ. / ע.מ.)", placeholder: "5X-XXXXXXX", note: "Reference only — verify with accountant" },
-    { label: "VAT / Tax number", placeholder: "5XXXXXXXX", note: "Reference only — verify with accountant" },
-    { label: "Registered address", placeholder: "123 Example St, Haifa, Israel", note: "" },
-    { label: "Phone", placeholder: "+972-X-XXXXXXX", note: "" },
-    { label: "Email", placeholder: "billing@example.com", note: "" },
-  ];
-
-  return (
-    <div className="space-y-5">
-      <div className="rounded-lg border border-amber-200 bg-amber-50/40 px-4 py-3 text-sm text-amber-800">
-        <p className="font-medium">Needs accountant verification</p>
-        <p className="mt-0.5 text-xs text-amber-700">
-          Company details are used as headers in receipt/tax documents (Phase 7). All values must be verified
-          by an Israeli accountant before receipts are finalized. Do not enter unverified legal information.
-        </p>
-      </div>
-
-      <div className="rounded-lg border border-dashed bg-muted/20 p-4 text-sm text-muted-foreground">
-        Company details storage is not yet implemented. These fields will be saved to a{" "}
-        <code className="rounded bg-muted px-1 font-mono text-xs">CompanySettings</code> table in a future pass.
-        For now, enter your company details directly in the receipt template when Phase 7 is configured.
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        {fields.map(({ label, placeholder, note }) => (
-          <div key={label} className="space-y-1.5">
-            <label className="text-sm font-medium text-muted-foreground">{label}</label>
-            <input
-              disabled
-              placeholder={placeholder}
-              className="flex h-10 w-full rounded-md border border-input bg-muted px-3 text-sm text-muted-foreground placeholder:text-muted-foreground/50 cursor-not-allowed"
-            />
-            {note && <p className="text-[11px] text-amber-600">{note}</p>}
-          </div>
-        ))}
-      </div>
-
-      <p className="text-xs text-muted-foreground">
-        Logo and stamp upload will be added when the company settings table is implemented.
-      </p>
-    </div>
-  );
+/**
+ * Adapt the Prisma CompanySettings row to the DTO shape consumed by
+ * <CompanySettingsForm/>. When the singleton has not been seeded yet we
+ * pass an empty object; the form fills sensible defaults (timezone =
+ * Asia/Jerusalem, defaultVatBasisPoints = 1800, defaultCurrency = ILS,
+ * country = IL).
+ */
+function toCompanySettingsDTO(
+  row: CompanySettings | null,
+): React.ComponentProps<typeof CompanySettingsForm>["initial"] {
+  if (!row) return {};
+  return {
+    legalNameEn: row.legalNameEn,
+    legalNameHe: row.legalNameHe,
+    companyNumber: row.companyNumber,
+    vatNumber: row.vatNumber,
+    timezone: row.timezone,
+    defaultVatBasisPoints: row.defaultVatBasisPoints,
+    defaultCurrency: row.defaultCurrency,
+    email: row.email,
+    phone: row.phone,
+    addressLine1: row.addressLine1,
+    addressLine2: row.addressLine2,
+    city: row.city,
+    postalCode: row.postalCode,
+    country: row.country,
+    websiteUrl: row.websiteUrl,
+    receiptFooterEn: row.receiptFooterEn,
+    receiptFooterHe: row.receiptFooterHe,
+  };
 }

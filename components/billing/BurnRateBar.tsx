@@ -1,9 +1,14 @@
+import { formatCurrency, formatCurrencyILS } from "@/lib/format";
+import type { Locale } from "@/lib/i18n";
+
 interface Props {
   totalMinutes: number | null;
   usedMinutes: number;
   alertThresholdPercent: number;
   currency: string;
   pricePerHour: number | null;
+  /** Optional locale for currency formatting. Defaults to "he". */
+  locale?: Locale;
   /**
    * Optional burn-rate projection. When present, an additional one-line row is
    * appended showing avg minutes/month and projected months remaining. Pass
@@ -40,6 +45,7 @@ export function BurnRateBar({
   currency,
   pricePerHour,
   burn,
+  locale = "he",
 }: Props) {
   if (totalMinutes === null) {
     return (
@@ -84,7 +90,11 @@ export function BurnRateBar({
         <span>Used: {fmt(usedMinutes)}</span>
         {pricePerHour !== null && (
           <span>
-            ~{currency} {Math.round((usedMinutes / 60) * pricePerHour).toLocaleString()} used
+            ~{
+              currency === "ILS"
+                ? formatCurrencyILS(Math.round((usedMinutes / 60) * pricePerHour), locale)
+                : formatCurrency(Math.round((usedMinutes / 60) * pricePerHour), currency, locale)
+            } used
           </span>
         )}
         {isLow && (

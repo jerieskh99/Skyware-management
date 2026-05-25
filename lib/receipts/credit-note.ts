@@ -43,7 +43,13 @@ export async function issueCreditNote(
       vatRateBasisPoints: source.vatRateBasisPoints,
       vatAmount: negate(source.vatAmount),
       totalAmount: negate(source.totalAmount),
+      // Carry both `currency` AND `exchangeRate` from source. The credit note
+      // must net out the original at the same FX rate; otherwise the
+      // `receipt_finalized_exchange_rate_chk` constraint blocks the finalize.
+      // See docs/audit-2026-05-billing/receipts_tax_documents_audit.md §15
+      // and docs/audit-2026-05-billing/asking_an_accountant.md §2.6.
       currency: source.currency,
+      exchangeRate: source.exchangeRate,
       language: source.language,
       creditedReceiptId: source.id,
     },

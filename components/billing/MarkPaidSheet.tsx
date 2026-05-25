@@ -15,6 +15,7 @@ import { PaymentStatusChip } from "./PaymentStatusChip";
 import type { PaymentStatus } from "@prisma/client";
 import { Receipt } from "lucide-react";
 import { useT } from "@/lib/i18n/client";
+import { formatCurrency, formatCurrencyILS } from "@/lib/format";
 
 interface Payment {
   id: string;
@@ -52,7 +53,7 @@ const NEXT_STATUSES: Partial<Record<PaymentStatus, string[]>> = {
 
 export function MarkPaidSheet({ payment, onClose }: Props) {
   const router = useRouter();
-  const { t } = useT();
+  const { t, locale } = useT();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [paidDate, setPaidDate] = useState(new Date().toISOString().slice(0, 10));
@@ -112,9 +113,18 @@ export function MarkPaidSheet({ payment, onClose }: Props) {
         <div className="space-y-1 rounded-lg border bg-muted/30 px-4 py-3 text-sm">
           <p className="font-medium">{payment.client.companyName}</p>
           <p className="text-muted-foreground">
-            {payment.sourceMonthly?.serviceName ?? payment.sourceType.replace("_", " ")}
+            {payment.sourceMonthly?.serviceName ??
+              (payment.sourceType === "monthly" ||
+              payment.sourceType === "hourly_bank" ||
+              payment.sourceType === "one_time"
+                ? t(`payment.sourceType.${payment.sourceType}`)
+                : payment.sourceType)}
             {payment.amountPlaceholder != null &&
-              ` · ${payment.amountPlaceholder.toLocaleString()} ${payment.currency}`}
+              ` · ${
+                payment.currency === "ILS"
+                  ? formatCurrencyILS(payment.amountPlaceholder, locale)
+                  : formatCurrency(payment.amountPlaceholder, payment.currency, locale)
+              }`}
           </p>
         </div>
 

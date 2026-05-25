@@ -176,7 +176,37 @@ async function main() {
       },
     });
   }
-  console.log(`  Demo users OK (password: "${DEMO_PASSWORD_PLAIN}" — change before pilot)`);
+  console.log(`  Demo users OK (password: "${DEMO_PASSWORD_PLAIN}" - change before pilot)`);
+
+  // ---- CompanySettings singleton (TEST placeholder values) ----
+  // A fresh DB should render the receipts/PDF pipeline without an admin
+  // pre-setup. Every visible string carries a TEST marker so it can never
+  // be mistaken for a production company profile.
+  // Replace via /admin?tab=company before any real-money usage.
+  await prisma.companySettings.upsert({
+    where: { id: "00000000-0000-0000-0000-000000000001" },
+    update: {},
+    create: {
+      id: "00000000-0000-0000-0000-000000000001",
+      legalNameEn: "Skyware IT LTD (TEST - replace before production)",
+      legalNameHe: "סקייוור איי טי בעמ (טסט - להחליף לפני הפקה)",
+      companyNumber: "TEST-000000000",
+      vatNumber: "TEST-000000000",
+      timezone: "Asia/Jerusalem",
+      defaultVatBasisPoints: 1800,
+      defaultCurrency: "ILS",
+      email: "test@skyware-it.example",
+      phone: "+972-0-0000000",
+      addressLine1: "Replace before production",
+      city: "Tel Aviv",
+      postalCode: "0000000",
+      country: "IL",
+      websiteUrl: null,
+      receiptFooterEn: "TEST receipts. Not a legal document until accountant sign-off.",
+      receiptFooterHe: "מסמכי טסט. אינם מסמך חוקי עד אישור רואה חשבון.",
+    },
+  });
+  console.log("  CompanySettings (TEST values) OK");
 
   console.log("Seed complete.");
 }

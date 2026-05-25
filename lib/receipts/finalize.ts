@@ -1,5 +1,6 @@
 import type { Prisma, ReceiptDocument, ReceiptDocumentType } from "@prisma/client";
 import { writeAudit } from "@/lib/audit";
+import { getYearIL } from "@/lib/format";
 import { ReceiptStateError, ReceiptValidationError } from "./errors";
 
 interface FinalizeInput {
@@ -29,6 +30,27 @@ export async function finalizeReceipt(
   if (!row) throw new ReceiptStateError("receipt not found");
   if (row.status !== "draft") {
     throw new ReceiptStateError("must be draft");
+  }
+
+  // VAT rate consistency: vatAmount must equal round(before * rate / 10000)
+  // within +/- one minor unit (agorot) for legitimate rounding. The DB-level
+  // `receipt_finalized_vat_sum_chk` only verifies the additive identity; this
+  // application-layer guard verifies the multiplicative one. See
+  // docs/audit-2026-05-billing/receipts_tax_documents_audit.md §7.4 and
+  // docs/audit-2026-05-billing/asking_an_accountant.md §2.7.
+  if (
+    row.amountBeforeVat != null &&
+    row.vatAmount != null &&
+    row.vatRateBasisPoints != null
+  ) {
+    const expectedVat = Math.round(
+      (row.amountBeforeVat * row.vatRateBasisPoints) / 10000,
+    );
+    if (Math.abs(expectedVat - row.vatAmount) > 1) {
+      throw new ReceiptValidationError(
+        `vat amount inconsistent with rate: expected ${expectedVat} got ${row.vatAmount}`,
+      );
+    }
   }
 
   if (
@@ -85,7 +107,11 @@ async function reserveNumber(
   tx: Prisma.TransactionClient,
   type: ReceiptDocumentType,
 ): Promise<{ year: number; nextNumber: number }> {
-  const year = new Date().getFullYear();
+  // Read year in Asia/Jerusalem so a UTC-hosted server filing a finalize at
+  // 01:30 IST on Jan 1 records the row under the new local year, not the
+  // previous UTC year. See docs/audit-2026-05-billing/receipts_tax_documents_audit.md
+  // (bug "reserveNumber uses local TZ year") and asking_an_accountant.md §2.4.
+  const year = getYearIL(new Date());
 
   const seq = await tx.receiptDocumentSequence.upsert({
     where: { type_year: { type, year } },

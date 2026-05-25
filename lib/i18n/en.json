@@ -185,6 +185,11 @@
       "paid": "Paid",
       "cancelled": "Cancelled",
       "overdue": "Overdue"
+    },
+    "sourceType": {
+      "monthly": "Monthly retainer",
+      "hourly_bank": "Hourly bank",
+      "one_time": "One-time"
     }
   },
   "department": {
@@ -588,6 +593,53 @@
           "label": "Client health snapshots",
           "description": "Compute weekly per-client KPI snapshots and upsert one row per client per ISO week. Idempotent. No-op when client_health_snapshots_enabled is off."
         }
+      }
+    },
+    "company": {
+      "save": "Save",
+      "saved": "Company details saved.",
+      "saveFailed": "Failed to save company details.",
+      "sections": {
+        "identity": "Identity",
+        "tax": "Tax registration",
+        "address": "Registered address",
+        "receiptFooter": "Receipt footer",
+        "defaults": "Defaults"
+      },
+      "sectionHints": {
+        "identity": "Legal name and contact details. These appear in receipt headers.",
+        "tax": "Israeli Tax Authority IDs. Required before issuing tax invoices.",
+        "address": "Registered business address. Appears in receipt headers.",
+        "receiptFooter": "Short legal/notes line that prints at the foot of every receipt PDF.",
+        "defaults": "Timezone, VAT rate, and default currency used when creating new receipts."
+      },
+      "fields": {
+        "legalNameEn": "Legal name (English)",
+        "legalNameHe": "Legal name (Hebrew)",
+        "email": "Email",
+        "phone": "Phone",
+        "websiteUrl": "Website",
+        "companyNumber": "Company number (ח.פ. / ע.מ.)",
+        "vatNumber": "VAT number",
+        "addressLine1": "Address line 1",
+        "addressLine2": "Address line 2",
+        "city": "City",
+        "postalCode": "Postal code",
+        "country": "Country code (ISO 2)",
+        "receiptFooterEn": "Receipt footer (English)",
+        "receiptFooterHe": "Receipt footer (Hebrew)",
+        "timezone": "Timezone",
+        "defaultVatBasisPoints": "Default VAT (basis points)",
+        "defaultVatBasisPointsHint": "Stored as basis points. 1800 = 18.00%.",
+        "defaultCurrency": "Default currency"
+      },
+      "validation": {
+        "emailInvalid": "Enter a valid email address.",
+        "urlInvalid": "Website must start with http:// or https://.",
+        "companyNumberInvalid": "Company number must start with a digit and contain only digits, spaces, dashes, dots, or slashes.",
+        "vatNumberInvalid": "VAT number must start with a digit and contain only digits, spaces, dashes, dots, or slashes.",
+        "vatBpOutOfRange": "VAT basis points must be an integer between 0 and 10000.",
+        "countryInvalid": "Country must be a 2-letter ISO code."
       }
     },
     "recurring": {

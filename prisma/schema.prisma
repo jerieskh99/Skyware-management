@@ -185,6 +185,18 @@ enum SavedViewVisibility {
   team
 }
 
+/// ISO 3166-1 alpha-2 country code. Only IL is supported today; `OTHER`
+/// (Postgres value `_other`) is a reserved placeholder so future country
+/// profiles can be added without a schema migration. The Prisma client
+/// surface uses `OTHER` because Prisma rejects leading underscores in enum
+/// variants; the underlying DB value stays `_other` so it sorts last and is
+/// obviously reserved. `lib/compliance/country.ts` throws when the active
+/// CompanySettings row resolves to `OTHER`.
+enum CountryCode {
+  IL
+  OTHER @map("_other")
+}
+
 // ===== Models =====
 
 model Department {
@@ -584,22 +596,35 @@ model OneTimeJobCharge {
 }
 
 model Payment {
-  id                String            @id @default(uuid()) @db.Uuid
-  clientId          String            @map("client_id") @db.Uuid
-  sourceType        PaymentSourceType @map("source_type")
-  sourceMonthlyId   String?           @map("source_monthly_id") @db.Uuid
-  sourceHourlyId    String?           @map("source_hourly_id") @db.Uuid
-  amountPlaceholder Int?              @map("amount_placeholder")
-  currency          Currency          @default(ILS)
-  issuedDate        DateTime          @map("issued_date") @db.Date
-  dueDate           DateTime?         @map("due_date") @db.Date
-  paidDate          DateTime?         @map("paid_date") @db.Date
-  status            PaymentStatus     @default(draft)
-  method            PaymentMethod?
-  reference         String?
-  linkedReceiptId   String?           @map("linked_receipt_id") @db.Uuid
-  notes             String?           @db.Text
-  createdByUserId   String            @map("created_by_user_id") @db.Uuid
+  id                   String            @id @default(uuid()) @db.Uuid
+  clientId             String            @map("client_id") @db.Uuid
+  sourceType           PaymentSourceType @map("source_type")
+  sourceMonthlyId      String?           @map("source_monthly_id") @db.Uuid
+  sourceHourlyId       String?           @map("source_hourly_id") @db.Uuid
+  amountPlaceholder    Int?              @map("amount_placeholder")
+  /// VAT split fields, added in migration 20260525000200. All nullable; the
+  /// legacy `amountPlaceholder` (now treated as the gross total when the
+  /// split is absent) stays for existing rows. New writes should populate
+  /// `amountBeforeVat` + `vatAmount` + `totalAmount` + `vatRateBasisPoints`.
+  amountBeforeVat      Int?              @map("amount_before_vat")
+  vatAmount            Int?              @map("vat_amount")
+  totalAmount          Int?              @map("total_amount")
+  /// VAT rate stored as basis points (e.g. 1800 = 18.00%). Snapshot at
+  /// payment-issue time so historical rates survive a profile change.
+  vatRateBasisPoints   Int?              @map("vat_rate_basis_points")
+  /// Rate from `currency` to ILS at issue moment. Symmetry with
+  /// ReceiptDocument.exchangeRate. Nullable for ILS rows.
+  currencyExchangeRate Decimal?          @map("currency_exchange_rate") @db.Decimal(18, 6)
+  currency             Currency          @default(ILS)
+  issuedDate           DateTime          @map("issued_date") @db.Date
+  dueDate              DateTime?         @map("due_date") @db.Date
+  paidDate             DateTime?         @map("paid_date") @db.Date
+  status               PaymentStatus     @default(draft)
+  method               PaymentMethod?
+  reference            String?
+  linkedReceiptId      String?           @map("linked_receipt_id") @db.Uuid
+  notes                String?           @db.Text
+  createdByUserId      String            @map("created_by_user_id") @db.Uuid
 
   client        Client              @relation(fields: [clientId], references: [id])
   sourceMonthly MonthlyBillingItem? @relation(fields: [sourceMonthlyId], references: [id])
@@ -609,6 +634,10 @@ model Payment {
 
   linkedJobs     Job[]              @relation("JobLinkedPayment")
   oneTimeCharges OneTimeJobCharge[] @relation("OtcPayment")
+  /// Back-relation for ReceiptDocument.payment (FK on receipt_documents.payment_id,
+  /// added in migration 20260525000300). One payment can have multiple receipts
+  /// (e.g. invoice plus separate receipt plus credit note).
+  receipts       ReceiptDocument[]  @relation("ReceiptPayment")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -655,6 +684,10 @@ model ReceiptDocument {
   finalizedBy     User?             @relation(fields: [finalizedByUserId], references: [id])
   creditedReceipt ReceiptDocument?  @relation("ReceiptCredits", fields: [creditedReceiptId], references: [id])
   creditedBy      ReceiptDocument[] @relation("ReceiptCredits")
+  /// Optional payment this receipt was issued for. FK enforced at the DB
+  /// level by migration 20260525000300. `ON DELETE SET NULL` so deleting a
+  /// payment does not cascade into receipts.
+  payment         Payment?          @relation("ReceiptPayment", fields: [paymentId], references: [id], onDelete: SetNull)
 
   sourcePayments Payment[] @relation("PaymentReceipt")
 
@@ -895,26 +928,28 @@ model SlaDefaults {
 model CompanySettings {
   /// Application enforces a single row by always using this id; backed by a
   /// CHECK constraint in migration 20260524000800_company_settings_singleton.
-  id                    String   @id @default("00000000-0000-0000-0000-000000000001") @db.Uuid
-  legalNameEn           String?  @map("legal_name_en")
-  legalNameHe           String?  @map("legal_name_he")
-  companyNumber         String?  @map("company_number")
-  vatNumber             String?  @map("vat_number")
-  timezone              String   @default("Asia/Jerusalem")
+  id                    String      @id @default("00000000-0000-0000-0000-000000000001") @db.Uuid
+  legalNameEn           String?     @map("legal_name_en")
+  legalNameHe           String?     @map("legal_name_he")
+  companyNumber         String?     @map("company_number")
+  vatNumber             String?     @map("vat_number")
+  timezone              String      @default("Asia/Jerusalem")
   /// VAT rate stored as basis points (e.g. 1800 = 18.00%).
-  defaultVatBasisPoints Int      @default(1800) @map("default_vat_basis_points")
-  defaultCurrency       Currency @default(ILS) @map("default_currency")
+  defaultVatBasisPoints Int         @default(1800) @map("default_vat_basis_points")
+  defaultCurrency       Currency    @default(ILS) @map("default_currency")
   email                 String?
   phone                 String?
-  addressLine1          String?  @map("address_line1")
-  addressLine2          String?  @map("address_line2")
+  addressLine1          String?     @map("address_line1")
+  addressLine2          String?     @map("address_line2")
   city                  String?
-  postalCode            String?  @map("postal_code")
-  country               String   @default("IL")
-  websiteUrl            String?  @map("website_url")
-  receiptFooterEn       String?  @map("receipt_footer_en") @db.Text
-  receiptFooterHe       String?  @map("receipt_footer_he") @db.Text
-  updatedByUserId       String?  @map("updated_by_user_id") @db.Uuid
+  postalCode            String?     @map("postal_code")
+  /// Country profile selector. Drives the IL VAT rules in
+  /// `lib/compliance/country.ts`. Default IL; `_OTHER` is reserved.
+  country               CountryCode @default(IL)
+  websiteUrl            String?     @map("website_url")
+  receiptFooterEn       String?     @map("receipt_footer_en") @db.Text
+  receiptFooterHe       String?     @map("receipt_footer_he") @db.Text
+  updatedByUserId       String?     @map("updated_by_user_id") @db.Uuid
 
   updatedBy User? @relation("UpdatedCompanySettings", fields: [updatedByUserId], references: [id])
 

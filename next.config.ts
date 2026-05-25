@@ -25,6 +25,10 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "4mb",
     },
   },
+  // Puppeteer ships Node-only deps (fs, child_process, ws). If Next.js tries
+  // to bundle it into the server bundle, webpack fails to resolve. Mark it
+  // as external so it loads from node_modules at runtime in the API route.
+  serverExternalPackages: ["puppeteer", "puppeteer-core", "@puppeteer/browsers"],
   images: {
     remotePatterns: [],
   },

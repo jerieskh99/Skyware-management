@@ -178,6 +178,64 @@ async function main() {
   }
   console.log(`  Demo users OK (password: "${DEMO_PASSWORD_PLAIN}" - change before pilot)`);
 
+  // ---- Real Skyware IT clients (imported from skyward-it-elevate/src/data/clients.ts) ----
+  // Names and websites only. Contact details, tax IDs, billing terms, and
+  // engagement history are intentionally NOT imported and must be filled
+  // in per-client by admin.
+  const ceo = await prisma.user.findUnique({ where: { username: "admin.ceo" } });
+  if (ceo) {
+    // Websites verified 2026-05-25 against live HTTP + web search. URLs from
+    // skyward-it-elevate/src/data/clients.ts that were dead, parked, or
+    // squatted were replaced with the correct corporate or descriptive URL.
+    const realClients: Array<{ companyName: string; website: string | null; note?: string }> = [
+      // EMMS source URL (emms.org.il) refused connection. Replaced with the
+      // official Nazareth Hospital site (nazhosp.com) per Wikipedia + the
+      // Nazareth Trust.
+      { companyName: "EMMS - The Nazareth Hospital", website: "https://nazhosp.com" },
+      { companyName: "Enercon Technologies",         website: "https://www.enercon.co.il" },
+      // Source URL (babcom.co.il) refused connection. Replaced with
+      // babcomcenters.com confirmed by D&B and the company LinkedIn page.
+      { companyName: "Babcom Centers",                website: "https://www.babcomcenters.com" },
+      // Source URL (infinya.co.il) refused at fetch time but is the real
+      // corporate domain for Infinya Ltd (formerly Hadera Paper) per D&B.
+      { companyName: "Infinya",                       website: "https://www.infinya.co.il" },
+      // Novomedic has no dedicated site; medtechnica.co.il hosts the project page.
+      { companyName: "Novomedic - Sakhnin Medical",   website: "https://medtechnica.co.il/solution/novomedic-medical-surgical-center-sachnin/" },
+      { companyName: "Tsofen High-Tech",              website: "https://www.tsofen.org" },
+      { companyName: "Optima Design Automation",      website: "https://www.optima-da.com" },
+      { companyName: "Zatout Engineering",            website: "https://zatoutgroup.com" },
+      // Corrected from "Miterelli Group" to the real legal name "Mitrelli Group".
+      { companyName: "Mitrelli Group",                website: "https://mitrelli.com" },
+      // passportcard.com is the real corporate site; current fetch returns 403
+      // behind Cloudflare bot protection but the domain is correct.
+      { companyName: "PassportCard",                  website: "https://www.passportcard.com" },
+      { companyName: "Amalnet",                       website: "https://www.amalnet.k12.il" },
+      { companyName: "Mybaby",                        website: "https://www.mybaby.co.il" },
+      // bassemdabbah.com is now owned by an unrelated US logistics company.
+      // The Israeli Bassem Dabbah Ltd has no public corporate website per
+      // D&B; admin should fill in any updated contact later.
+      { companyName: "Bassem Dabbah",                 website: null, note: "Israeli meat distribution company. No public corporate website." },
+    ];
+    for (const c of realClients) {
+      const existing = await prisma.client.findFirst({ where: { companyName: c.companyName } });
+      if (!existing) {
+        const noteParts: string[] = [];
+        if (c.website) noteParts.push(`Website: ${c.website}`);
+        if (c.note) noteParts.push(c.note);
+        await prisma.client.create({
+          data: {
+            companyName: c.companyName,
+            notes: noteParts.length > 0 ? noteParts.join("\n") : null,
+            status: "active",
+            createdByUserId: ceo.id,
+            billingAccount: { create: { defaultCurrency: "ILS" } },
+          },
+        });
+      }
+    }
+    console.log(`  Real clients OK (${realClients.length} entries)`);
+  }
+
   // ---- CompanySettings singleton (TEST placeholder values) ----
   // A fresh DB should render the receipts/PDF pipeline without an admin
   // pre-setup. Every visible string carries a TEST marker so it can never

@@ -1,4 +1,8 @@
-import puppeteer, { type Browser } from "puppeteer";
+// Puppeteer is loaded via a dynamic import inside `getBrowser()` so the
+// Next.js webpack server bundler never tries to walk its Node-only dep tree
+// (fs, child_process, ws). The `import type` is erased at compile time and
+// only the type information survives.
+import type { Browser } from "puppeteer";
 import {
   WATERMARK_TEXT_BILINGUAL,
   isCleanProductionIssuance,
@@ -22,7 +26,14 @@ let _browser: Browser | null = null;
 
 async function getBrowser(): Promise<Browser> {
   if (_browser) return _browser;
-  _browser = await puppeteer.launch({
+  // Dynamic import so webpack does not attempt to bundle puppeteer at build
+  // time. Combined with `serverExternalPackages` in next.config.ts this
+  // double-locks the avoidance: even if a future Next.js version stops
+  // honoring the externals list, the dynamic import still defers resolution
+  // to Node runtime, where the symlink at node_modules/puppeteer works.
+  const puppeteerModule = await import("puppeteer");
+  const launch = puppeteerModule.default?.launch ?? puppeteerModule.launch;
+  _browser = await launch({
     headless: true,
     // `--no-sandbox` is required on most Linux CI hosts where the calling
     // user does not have CAP_SYS_ADMIN; harmless on macOS dev.

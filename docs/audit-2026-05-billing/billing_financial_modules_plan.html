@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Billing, Receipts and Financial Documents - Israel V1 Plan</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --ink: #0b1220;
+    --ink-muted: #475569;
+    --ink-soft: #64748b;
+    --line: #e2e8f0;
+    --accent: #0b62b6;
+    --accent-soft: #dbeafe;
+    --warn: #b45309;
+    --warn-soft: #fef3c7;
+    --crit: #b91c1c;
+    --crit-soft: #fee2e2;
+    --ok: #15803d;
+    --ok-soft: #dcfce7;
+    --il: #0034a0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1220;
+      --surface: #0f172a;
+      --ink: #e2e8f0;
+      --ink-muted: #cbd5e1;
+      --ink-soft: #94a3b8;
+      --line: #1e293b;
+      --accent: #60a5fa;
+      --accent-soft: #1e3a8a;
+      --warn: #f59e0b;
+      --warn-soft: #422006;
+      --crit: #f87171;
+      --crit-soft: #450a0a;
+      --ok: #4ade80;
+      --ok-soft: #052e16;
+      --il: #93c5fd;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .deck { max-width: 1120px; margin: 0 auto; padding: 24px 24px 96px; }
+  .hud {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(8px);
+  }
+  .brand { font-weight: 600; letter-spacing: 0.2px; display: flex; align-items: center; gap: 10px; }
+  .il-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--accent-soft); color: var(--il);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600;
+    border: 1px solid var(--line);
+  }
+  .meta { font-size: 13px; color: var(--ink-soft); }
+  .controls { display: flex; gap: 8px; align-items: center; }
+  .controls button {
+    background: transparent; color: var(--ink-muted);
+    border: 1px solid var(--line); padding: 6px 10px; border-radius: 6px;
+    font-size: 13px; cursor: pointer;
+  }
+  .controls button:hover { color: var(--ink); border-color: var(--accent); }
+  .pill {
+    display: inline-block; padding: 2px 10px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent);
+    font-size: 12px; font-weight: 500;
+  }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); }
+  .pill.crit { background: var(--crit-soft); color: var(--crit); }
+  .pill.ok { background: var(--ok-soft); color: var(--ok); }
+  .slide {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 36px 40px;
+    margin-bottom: 28px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    scroll-margin-top: 80px;
+  }
+  .slide header {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+    border-bottom: 1px solid var(--line); padding-bottom: 14px; margin-bottom: 22px;
+  }
+  .slide header h2 { margin: 0; font-size: 26px; font-weight: 600; letter-spacing: -0.01em; }
+  .slide header .sub { margin: 4px 0 0; color: var(--ink-soft); font-size: 14px; }
+  .slide header .num { font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .lede { font-size: 17px; color: var(--ink-muted); margin: 0 0 14px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  .card {
+    background: var(--bg); border: 1px solid var(--line);
+    border-radius: 10px; padding: 18px;
+  }
+  .card h3 { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
+  .card .num-big {
+    font-size: 28px; font-weight: 600; color: var(--ink); letter-spacing: -0.02em;
+  }
+  .card .label { color: var(--ink-soft); font-size: 13px; }
+  .card p { margin: 6px 0 0; color: var(--ink-muted); font-size: 14px; }
+  ul, ol { padding-left: 22px; margin: 0 0 12px; }
+  li { margin-bottom: 6px; color: var(--ink-muted); }
+  li strong { color: var(--ink); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 12px; }
+  thead th {
+    text-align: left; background: var(--bg); color: var(--ink-soft);
+    padding: 10px 12px; border-bottom: 1px solid var(--line);
+    font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  tbody td {
+    padding: 10px 12px; border-bottom: 1px solid var(--line);
+    vertical-align: top; color: var(--ink-muted);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  code, .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: var(--bg); color: var(--ink);
+    padding: 1px 6px; border-radius: 4px; font-size: 13px;
+  }
+  .callout {
+    background: var(--accent-soft); color: var(--accent);
+    border-left: 4px solid var(--accent); padding: 14px 18px;
+    border-radius: 6px; margin: 16px 0; font-weight: 500;
+  }
+  .callout.warn { background: var(--warn-soft); color: var(--warn); border-left-color: var(--warn); }
+  .callout.crit { background: var(--crit-soft); color: var(--crit); border-left-color: var(--crit); }
+  .callout.ok { background: var(--ok-soft); color: var(--ok); border-left-color: var(--ok); }
+  .section-h {
+    font-size: 13px; font-weight: 600; color: var(--ink-soft);
+    text-transform: uppercase; letter-spacing: 0.06em; margin: 18px 0 8px;
+  }
+  .phase-block {
+    background: var(--bg); border: 1px solid var(--line);
+    border-radius: 10px; padding: 18px;
+  }
+  .phase-block h3 { margin: 0 0 8px; font-size: 16px; display: flex; align-items: center; gap: 10px; }
+  .phase-block .meta { color: var(--ink-soft); font-size: 13px; margin-bottom: 10px; }
+  .timeline { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .footer { color: var(--ink-soft); font-size: 13px; text-align: center; padding: 24px 0 8px; }
+  .nav-list {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; list-style: none; padding: 0;
+  }
+  .nav-list a {
+    color: var(--ink-muted); text-decoration: none; font-size: 14px;
+    padding: 6px 8px; border-radius: 6px; border: 1px solid transparent;
+  }
+  .nav-list a:hover { background: var(--bg); border-color: var(--line); color: var(--ink); }
+  cite { color: var(--ink-soft); font-style: normal; font-size: 12px; }
+  @media (max-width: 900px) {
+    .grid-2, .grid-3, .grid-4, .timeline { grid-template-columns: 1fr; }
+    .deck { padding: 16px; }
+    .slide { padding: 24px 20px; }
+  }
+  @media print {
+    .hud { display: none; }
+    .slide { page-break-after: always; box-shadow: none; border-color: #ccc; }
+  }
+</style>
+</head>
+<body>
+<div class="deck">
+
+  <div class="hud" role="navigation">
+    <div class="brand">
+      Billing, Receipts, Financial Documents - Israel V1
+      <span class="il-chip">IL active</span>
+    </div>
+    <div class="meta">Audit: 2026-05-25. Status: <span class="pill warn">Awaiting approval</span></div>
+    <div class="controls">
+      <button type="button" onclick="window.print()">Print</button>
+      <button type="button" id="toggleNav">Slides</button>
+    </div>
+  </div>
+
+  <nav id="navList" class="slide" hidden>
+    <header>
+      <div><h2>Contents</h2><p class="sub">12 slides plus this index.</p></div>
+    </header>
+    <ul class="nav-list">
+      <li><a href="#s1">1. Current state</a></li>
+      <li><a href="#s2">2. Main problems found</a></li>
+      <li><a href="#s3">3. Israel compliance pillars</a></li>
+      <li><a href="#s4">4. What stays (MVP preserved)</a></li>
+      <li><a href="#s5">5. Product and UX direction</a></li>
+      <li><a href="#s6">6. Backend, frontend, schema plan</a></li>
+      <li><a href="#s7">7. Document and PDF work</a></li>
+      <li><a href="#s8">8. Country toggle architecture</a></li>
+      <li><a href="#s9">9. Tests and QA gates</a></li>
+      <li><a href="#s10">10. Phased roadmap</a></li>
+      <li><a href="#s11">11. Risks and tradeoffs</a></li>
+      <li><a href="#s12">12. Approval checkpoint</a></li>
+    </ul>
+  </nav>
+
+  <!-- 1. Current state -->
+  <section class="slide" id="s1">
+    <header>
+      <div><h2>Current state summary</h2><p class="sub">Three modules. One functional. Two placeholders. Backend partially ready.</p></div>
+      <div class="num">01 / 12</div>
+    </header>
+
+    <p class="lede">
+      Phase 1, 2, and 3 already delivered the audit-defined scope for the
+      wider portal. For Billing/Receipts/Financial Documents specifically,
+      <code>/billing</code> is functional; <code>/receipts</code> backend
+      invariants are in place but the UI is a placeholder; and
+      <code>/financial-documents</code> is decorative with no model and
+      no API.
+    </p>
+
+    <div class="grid-4">
+      <div class="card"><div class="label">Billing UI</div><div class="num-big">Working</div><p>11 routes, uniform API shape, aging buckets, burn-rate.</p></div>
+      <div class="card"><div class="label">Receipts UI</div><div class="num-big">Stub</div><p>Backend invariants shipped, 4 of 12 endpoints exist, no PDF, no list.</p></div>
+      <div class="card"><div class="label">Financial Docs UI</div><div class="num-big">Stub</div><p>449-line placeholder, no model, no API, no tests.</p></div>
+      <div class="card"><div class="label">Tests</div><div class="num-big">354</div><p>Across 64 files. Clean baseline.</p></div>
+    </div>
+
+    <h3 class="section-h">What ships already</h3>
+    <ul>
+      <li><strong>Billing:</strong> 11 admin-only API routes, Payment with seven statuses, monthly/hourly/one-time categories, aging buckets, hourly-bank burn-rate, saved views, skeletons, toast surface.</li>
+      <li><strong>Receipts:</strong> schema invariants (VAT sum check, exchange-rate check), finalize/cancel/credit-note/allocation domain functions, atomic numbering via <code>ReceiptDocumentSequence</code>, <code>receipt_finalize_enabled</code> flag default false.</li>
+      <li><strong>Financial Documents:</strong> a placeholder page describing 7 categories and 5-step intended workflow.</li>
+      <li><strong>CompanySettings:</strong> singleton row + edit API + form component, but the form is orphaned (zero callers).</li>
+      <li><strong>S3 attachment storage:</strong> presigned upload/download, validators, uploader UI - ready to be reused by Financial Documents.</li>
+    </ul>
+  </section>
+
+  <!-- 2. Main problems found -->
+  <section class="slide" id="s2">
+    <header>
+      <div><h2>Main problems found</h2><p class="sub">Cited from six per-module audits in <code>docs/audit-2026-05-billing/</code>.</p></div>
+      <div class="num">02 / 12</div>
+    </header>
+
+    <table>
+      <thead><tr><th style="width:4%">#</th><th>Problem</th><th style="width:18%">Module</th><th style="width:12%">Severity</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><strong>No way to create a receipt.</strong> Backend invariants ship; create / list / get / pdf / from-payment endpoints absent.</td><td>Receipts</td><td><span class="pill crit">Critical</span></td></tr>
+        <tr><td>2</td><td><strong>No PDF render pipeline.</strong> No template, no Hebrew font, no renderer. Finalize cannot deliver a document.</td><td>Receipts</td><td><span class="pill crit">Critical</span></td></tr>
+        <tr><td>3</td><td><strong><code>attachments_enabled</code> flag missing from fixtures</strong> despite every attachment route reading it. Blocks any upload feature.</td><td>Attachments / FinDocs</td><td><span class="pill crit">Critical</span></td></tr>
+        <tr><td>4</td><td><strong>No <code>FinancialDocument</code> model.</strong> Page is decorative; no upload path exists.</td><td>Financial Documents</td><td><span class="pill crit">Critical</span></td></tr>
+        <tr><td>5</td><td><strong>Allocation thresholds wrong elsewhere on the web.</strong> Current: NIS 10K from 2026-01-01, NIS 5K from 2026-06-01 (VAT Implementation Order 01/2025).</td><td>Israel compliance</td><td><span class="pill warn">High</span></td></tr>
+        <tr><td>6</td><td><strong>CompanySettings row never seeded.</strong> A fresh DB renders empty receipts.</td><td>Schema</td><td><span class="pill warn">High</span></td></tr>
+        <tr><td>7</td><td><strong>CompanySettingsForm orphaned.</strong> Built in Phase 3, not wired into the admin tab.</td><td>UX</td><td><span class="pill warn">High</span></td></tr>
+        <tr><td>8</td><td><strong>Credit note does not copy <code>exchangeRate</code> for non-ILS source.</strong> Finalize will fail with a check-constraint error.</td><td>Receipts</td><td><span class="pill warn">High</span></td></tr>
+        <tr><td>9</td><td><strong>No guard against double credit-noting.</strong> Schema allows N credit notes against the same source.</td><td>Receipts</td><td><span class="pill warn">High</span></td></tr>
+        <tr><td>10</td><td><strong><code>reserveNumber</code> uses local TZ year.</strong> A UTC host at midnight IST renders the wrong year in document numbers.</td><td>Receipts</td><td><span class="pill warn">High</span></td></tr>
+        <tr><td>11</td><td><strong><code>receipt_documents.payment_id</code> has no FK.</strong> Orphan references possible.</td><td>Schema</td><td><span class="pill warn">High</span></td></tr>
+        <tr><td>12</td><td><strong>Payment lacks VAT split fields.</strong> Reconciliation with Receipt will be lossy.</td><td>Billing</td><td><span class="pill warn">High</span></td></tr>
+        <tr><td>13</td><td><strong>Hebrew UI not honored on Billing surface.</strong> Status chips, source-type labels, dates, and currency symbol are English-hardcoded.</td><td>UX</td><td><span class="pill">Medium</span></td></tr>
+        <tr><td>14</td><td><strong>No overdue sweeper.</strong> <code>status=overdue</code> is set only manually.</td><td>Billing</td><td><span class="pill">Medium</span></td></tr>
+        <tr><td>15</td><td><strong>Payment status transition matrix not enforced server-side.</strong> Only the MarkPaidSheet enforces; raw PATCH bypasses.</td><td>Billing</td><td><span class="pill">Medium</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 3. Israel compliance pillars -->
+  <section class="slide" id="s3">
+    <header>
+      <div><h2>Israel compliance pillars (cited)</h2><p class="sub">Authoritative findings from <code>israel_compliance_audit.md</code>. Citations inline; full URL list at the end of that document.</p></div>
+      <div class="num">03 / 12</div>
+    </header>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>VAT and rates</h3>
+        <ul>
+          <li>Standard VAT rate <strong>18%</strong> in 2026. <cite>(IL VAT Law; budget 12/2025)</cite></li>
+          <li>Zero-rated and exempt categories apply per the VAT Law; IT services to Israeli clients = standard rate. <cite>(VAT Law)</cite></li>
+          <li>Store as basis points (1800 = 18.00%) - matches current schema.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Allocation numbers (מספרי הקצאה)</h3>
+        <ul>
+          <li><strong>NIS 10,000</strong> (incl. VAT) threshold from <strong>2026-01-01</strong>. <cite>(VAT Implementation Order 01/2025)</cite></li>
+          <li><strong>NIS 5,000</strong> from <strong>2026-06-01</strong>. <cite>(same)</cite></li>
+          <li>Applies to tax invoices and combined tax-invoice-receipts.</li>
+          <li>SHAAM API: OAuth2 user-restricted, JSON, sandbox URL published. Auth expires every 3 months.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Documents and numbering</h3>
+        <ul>
+          <li>Six document types map cleanly to the existing <code>ReceiptDocumentType</code> enum.</li>
+          <li>Sequential numbering per type and year. Reservation must be atomic (already implemented via <code>ReceiptDocumentSequence</code>).</li>
+          <li><strong>Cancellation of a finalized tax invoice is not legal.</strong> Only credit notes correct it. Must be blocked at DB and route.</li>
+          <li>Annual reset vs continuous numbering: <strong>unverified, accountant must confirm</strong>.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Reporting and retention</h3>
+        <ul>
+          <li>PCN874 threshold drops to <strong>NIS 500K</strong> turnover from 2026 (was 2.5M). Build PCN874-ready data, defer the filer.</li>
+          <li>Retention: per Bookkeeping Order; <strong>accountant must confirm exact years</strong>.</li>
+          <li>PDF/A vs any non-mutable PDF: <strong>unverified, accountant must confirm</strong>.</li>
+          <li>Language: Hebrew document primary; optional English alongside.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      The compliance audit explicitly flags items as "unverified, needs
+      accountant review". The accountant gate in Section 7 of the plan
+      consolidates these. The implementation will NOT invent values.
+    </div>
+  </section>
+
+  <!-- 4. What stays -->
+  <section class="slide" id="s4">
+    <header>
+      <div><h2>Preserved from the MVP</h2><p class="sub">Concepts and shapes that do not change. Only their depth changes.</p></div>
+      <div class="num">04 / 12</div>
+    </header>
+
+    <div class="grid-2">
+      <div>
+        <h3 class="section-h">Billing</h3>
+        <ul>
+          <li>Three categories: Monthly, Hourly Bank, One-Time Job.</li>
+          <li>Payment status set: <code>draft, sent_to_client, waiting_for_payment, partially_paid, paid, cancelled, overdue</code>.</li>
+          <li>Mark-paid handoff with create-receipt step.</li>
+          <li>Aging buckets and hourly-bank burn-rate already shipped.</li>
+        </ul>
+        <h3 class="section-h">Receipts</h3>
+        <ul>
+          <li>Six document types (<code>invoice, receipt, tax_invoice, tax_invoice_receipt, credit_note, proforma_invoice</code>).</li>
+          <li>Three statuses (<code>draft, finalized, cancelled</code>).</li>
+          <li>Allocation status enum.</li>
+          <li>Sequential numbering per type per year.</li>
+          <li>Per-document <code>currency</code> and <code>exchangeRate</code>.</li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="section-h">Financial Documents</h3>
+        <ul>
+          <li>Page concept and the seven document categories.</li>
+          <li>Compliance hold posture; flag default off.</li>
+          <li>Five-step intended workflow (upload, classify, link, review, archive).</li>
+        </ul>
+        <h3 class="section-h">Cross-cutting</h3>
+        <ul>
+          <li>Audit log on every mutation.</li>
+          <li>Feature flag pattern (admin enables per ring).</li>
+          <li><code>receipt_finalize_enabled</code> default-false posture stays.</li>
+          <li>Uniform API shape (auth, role, Zod, transaction, audit).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout ok">Preservation rule: when in doubt, keep. Improvements rearrange, harden, and extend.</div>
+  </section>
+
+  <!-- 5. Product / UX direction -->
+  <section class="slide" id="s5">
+    <header>
+      <div><h2>Product and UX direction</h2><p class="sub">Three modules become understandable to a Hebrew-first admin.</p></div>
+      <div class="num">05 / 12</div>
+    </header>
+
+    <div class="grid-3">
+      <div class="card">
+        <h3>Naming and IA</h3>
+        <ul>
+          <li>Sidebar makes the three roles distinct: <strong>Billing</strong> (money owed to us), <strong>Receipts</strong> (we issue), <strong>Financial Documents</strong> (we receive).</li>
+          <li>Country chip in the admin header.</li>
+          <li>Client billing tab split into 4 files per existing pattern (file is 936 lines today).</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Hebrew-first polish</h3>
+        <ul>
+          <li>Status chips, source-type labels, currency symbol <code>&#8362;</code>, and dates Asia/Jerusalem-aware.</li>
+          <li>Replace <code>en-GB</code> shortcut with locale-aware <code>Intl.NumberFormat</code> and <code>Intl.DateTimeFormat</code>.</li>
+          <li>RTL pass on every new screen.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Receipts UX V1</h3>
+        <ul>
+          <li>List with filters (status, type, year, client).</li>
+          <li>Draft create form with type, client, lines, VAT-rate, currency.</li>
+          <li>Finalize button with accountant warning + confirm.</li>
+          <li>PDF preview + download.</li>
+          <li>Credit-note button on finalized rows.</li>
+          <li>Allocation-number status pill.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Backend / Frontend / Schema -->
+  <section class="slide" id="s6">
+    <header>
+      <div><h2>Backend, frontend, schema plan</h2><p class="sub">Concrete deltas per layer.</p></div>
+      <div class="num">06 / 12</div>
+    </header>
+
+    <div class="grid-3">
+      <div class="phase-block">
+        <h3>Schema <span class="pill">DB</span></h3>
+        <ul>
+          <li>Seed singleton <code>CompanySettings</code>.</li>
+          <li>Add <code>CountryCode</code> enum; switch <code>country</code> to enum.</li>
+          <li>Add Payment VAT split: <code>amount_before_vat</code>, <code>vat_amount</code>, <code>total_amount</code>, <code>vat_rate_basis_points</code>, <code>currency_exchange_rate</code>.</li>
+          <li>Add FK on <code>receipt_documents.payment_id</code>.</li>
+          <li>Add Payment polymorphism check constraint.</li>
+          <li>Partial unique index "one credit note per source".</li>
+          <li>DB trigger blocking <code>finalized -> cancelled</code>.</li>
+          <li>New <code>FinancialDocument</code> + <code>FinancialDocumentAttachment</code> models.</li>
+        </ul>
+      </div>
+      <div class="phase-block">
+        <h3>Backend <span class="pill">API</span></h3>
+        <ul>
+          <li><code>POST/GET/PATCH /api/receipts</code>, <code>/api/receipts/[id]/pdf</code>, <code>/api/payments/[id]/issue-receipt</code>.</li>
+          <li>Bug fixes: credit-note copies <code>exchangeRate</code> + <code>currency</code>; <code>reserveNumber</code> Asia/Jerusalem; VAT rate consistency check.</li>
+          <li>Enforce Payment status transition matrix at PATCH.</li>
+          <li>Overdue sweeper cron (reuses Phase 3 cron infra).</li>
+          <li><code>FinancialDocument</code> CRUD endpoints with presign + S3.</li>
+          <li>Allocation skeleton uses real Israeli thresholds via country profile.</li>
+        </ul>
+      </div>
+      <div class="phase-block">
+        <h3>Frontend <span class="pill">UI</span></h3>
+        <ul>
+          <li>Real <code>/receipts</code> list + detail + PDF preview.</li>
+          <li>Real <code>/financial-documents</code> upload + list + filter + detail drawer.</li>
+          <li>Re-link orphan <code>CompanySettingsForm</code>.</li>
+          <li>Edit dialogs for monthly items / hourly banks / one-time charges.</li>
+          <li>Country chip in admin header.</li>
+          <li>Hebrew / Asia/Jerusalem polish across Billing.</li>
+          <li>Split <code>ClientBillingTab.tsx</code> into 4 files.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. Document / PDF -->
+  <section class="slide" id="s7">
+    <header>
+      <div><h2>Document, PDF, and template work</h2><p class="sub">A working tax invoice and credit note in Hebrew - the V1 visible artifact.</p></div>
+      <div class="num">07 / 12</div>
+    </header>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Choices</h3>
+        <ul>
+          <li><strong>Renderer:</strong> Puppeteer (headless Chromium). HTML/CSS source; supports Hebrew RTL.</li>
+          <li><strong>Hebrew font:</strong> Heebo (Open Font License), embedded.</li>
+          <li><strong>Template:</strong> React component rendered server-side, behind <code>lib/pdf/render.ts</code> seam for future swap.</li>
+          <li><strong>Header snapshot:</strong> stored as JSON on the finalized receipt so future CompanySettings edits do not rewrite history.</li>
+          <li><strong>Caching:</strong> render once on finalize, store PDF as an <code>Attachment</code>, serve cached on download.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Template required content</h3>
+        <ul>
+          <li>Legal name + VAT number + address (from CompanySettings snapshot).</li>
+          <li>Document type label in Hebrew (חשבונית מס וכו') and English.</li>
+          <li>Sequential document number + year.</li>
+          <li>Issue date (and payment date for receipts).</li>
+          <li>Client name + tax ID + address.</li>
+          <li>Lines: description, quantity, unit price, VAT rate, line total.</li>
+          <li>Subtotal, VAT, total. Currency code. Exchange rate when non-ILS.</li>
+          <li>Allocation number when present (above threshold).</li>
+          <li>Footer block from CompanySettings (Hebrew + English).</li>
+          <li>Page numbers, accountant disclaimer when in draft.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout">
+      Accountant must review a rendered sample of: a draft, a finalized
+      tax invoice, a credit note, before the flag is flipped on in
+      production.
+    </div>
+  </section>
+
+  <!-- 8. Country toggle -->
+  <section class="slide" id="s8">
+    <header>
+      <div><h2>Country toggle architecture</h2><p class="sub">Israel-only live. Future countries pluggable, blocked at runtime.</p></div>
+      <div class="num">08 / 12</div>
+    </header>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Schema</h3>
+        <ul>
+          <li>New <code>CountryCode</code> enum: <code>IL</code>, <code>_OTHER</code>.</li>
+          <li><code>CompanySettings.country</code> typed as enum (was free-form String).</li>
+          <li>Migration: cast existing value <code>"IL"</code> to enum; default <code>IL</code>.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Code</h3>
+        <ul>
+          <li><code>lib/compliance/country.ts</code>: <code>getCountryProfile(code)</code> returns interface.</li>
+          <li>Interface fields: <code>defaultVatBasisPoints</code>, <code>requiresAllocation(amount, type)</code>, <code>documentLanguageDefault</code>, <code>numberingResetAnnually</code>, <code>retentionYears</code>, document type catalog.</li>
+          <li>Receipts and Financial Documents read defaults through this profile.</li>
+          <li>Only <code>IL</code> implemented; <code>_OTHER</code> throws with a clear message.</li>
+          <li>Country chip in admin header pulls the active country.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout">
+      The country toggle is an architectural seam, not a sales feature.
+      It exists so future country work lands without scattering Israeli
+      assumptions across the codebase.
+    </div>
+  </section>
+
+  <!-- 9. Tests and QA gates -->
+  <section class="slide" id="s9">
+    <header>
+      <div><h2>Tests and QA gates</h2><p class="sub">Per-wave ship gate plus a final accountant gate.</p></div>
+      <div class="num">09 / 12</div>
+    </header>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Per-wave ship gate</h3>
+        <ol>
+          <li><code>pnpm typecheck && pnpm lint && pnpm test</code> all green.</li>
+          <li>Each new route has a contract test (happy + permission denial).</li>
+          <li>Each new table migration applies on a fresh DB; seed runs clean.</li>
+          <li>Every new UI string in both <code>en.json</code> and <code>he.json</code> (parity test enforces).</li>
+          <li>A reviewer has read the PR and signed off in writing.</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h3>Accountant gate (Wave 5)</h3>
+        <ol>
+          <li>Render a draft invoice, a finalized tax invoice, a credit note. Accountant reads each PDF.</li>
+          <li>Sandbox SHAAM call returns a fake allocation number end to end.</li>
+          <li>Field list on a tax invoice matches the Bookkeeping Order list.</li>
+          <li>Numbering policy (annual reset vs continuous) is set per accountant guidance.</li>
+          <li>Retention period stored on CompanySettings; sweeper deferred or staffed.</li>
+        </ol>
+      </div>
+    </div>
+
+    <h3 class="section-h">Test types planned</h3>
+    <ul>
+      <li><strong>Unit:</strong> VAT math, threshold logic, header snapshot composer, country profile loader, format helpers, sequence year boundary.</li>
+      <li><strong>Contract:</strong> every new endpoint (receipts CRUD, issue-receipt, allocation, financial-documents CRUD).</li>
+      <li><strong>Integration:</strong> mocked SHAAM client; mocked S3; mocked Puppeteer renderer.</li>
+      <li><strong>E2E smoke:</strong> draft -> finalize -> PDF -> credit note (with the flag temporarily on in a test fixture).</li>
+      <li><strong>i18n parity:</strong> existing test continues to enforce key sets match.</li>
+    </ul>
+  </section>
+
+  <!-- 10. Roadmap -->
+  <section class="slide" id="s10">
+    <header>
+      <div><h2>Phased roadmap</h2><p class="sub">5 waves. Each gated. ~2-3 calendar weeks total.</p></div>
+      <div class="num">10 / 12</div>
+    </header>
+
+    <div class="timeline">
+      <div class="phase-block">
+        <h3>Wave 0 <span class="pill warn">2 days</span></h3>
+        <p class="meta">Compliance gate prep (operational, not code).</p>
+        <ul>
+          <li>Print compliance audit + template mock; hand to accountant.</li>
+          <li>Sign-off list items 1-9.</li>
+          <li>SHAAM portal enrollment timeline.</li>
+        </ul>
+      </div>
+      <div class="phase-block">
+        <h3>Wave 1 <span class="pill">3-5 days</span></h3>
+        <p class="meta">Foundations + critical bugs.</p>
+        <ul>
+          <li>Add missing <code>attachments_enabled</code> fixture.</li>
+          <li>Seed <code>CompanySettings</code>.</li>
+          <li>Re-link <code>CompanySettingsForm</code>.</li>
+          <li>Country enum + profile + Israel profile + format helpers.</li>
+          <li>Receipts bug fixes (TZ, exchangeRate copy, VAT rate check, double credit-note guard, DB cancel-block).</li>
+          <li>Payment VAT split fields + status transition enforcement + polymorphism check.</li>
+          <li>i18n + format pass on Billing.</li>
+        </ul>
+      </div>
+      <div class="phase-block">
+        <h3>Wave 2 <span class="pill ok">5-7 days</span></h3>
+        <p class="meta">Receipts V1.</p>
+        <ul>
+          <li>Missing CRUD endpoints.</li>
+          <li><code>issue-receipt</code> wired from MarkPaidSheet.</li>
+          <li>List + detail pages, finalize confirm, credit-note button.</li>
+          <li>PDF pipeline (Puppeteer, Heebo, template, snapshot).</li>
+          <li>Allocation threshold via country profile.</li>
+          <li>Tests: unit + contract + smoke.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="timeline" style="margin-top:16px">
+      <div class="phase-block">
+        <h3>Wave 3 <span class="pill ok">3-5 days</span></h3>
+        <p class="meta">Financial Documents V1.</p>
+        <ul>
+          <li><code>FinancialDocument</code> schema + endpoints.</li>
+          <li><code>AttachmentUploader</code> parent-kind extension.</li>
+          <li>Page: upload + list + filter + detail drawer + reviewed toggle.</li>
+          <li>Link picker (client, payment, receipt).</li>
+        </ul>
+      </div>
+      <div class="phase-block">
+        <h3>Wave 4 <span class="pill">1-2 days</span></h3>
+        <p class="meta">Country toggle UI + polish.</p>
+        <ul>
+          <li>Country chip in header.</li>
+          <li>Cross-module deep links.</li>
+          <li>Hebrew RTL pass on new pages.</li>
+          <li>Split <code>ClientBillingTab.tsx</code>.</li>
+        </ul>
+      </div>
+      <div class="phase-block">
+        <h3>Wave 5 <span class="pill warn">operational</span></h3>
+        <p class="meta">Accountant flip + pilot smoke.</p>
+        <ul>
+          <li>Accountant verifies rendered samples.</li>
+          <li>Admin flips <code>receipt_finalize_enabled</code> true in prod.</li>
+          <li>Pilot one low-value real invoice end-to-end.</li>
+          <li>Document rollback (flag false).</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. Risks -->
+  <section class="slide" id="s11">
+    <header>
+      <div><h2>Risks and tradeoffs</h2><p class="sub">Each risk has a mitigation. Top three are pilot-blocking.</p></div>
+      <div class="num">11 / 12</div>
+    </header>
+
+    <table>
+      <thead><tr><th>#</th><th>Risk</th><th>L</th><th>I</th><th>Mitigation</th></tr></thead>
+      <tbody>
+        <tr><td>R1</td><td>Allocation thresholds change mid-year</td><td>High</td><td>Med</td><td>Thresholds live in the IL country profile; one-file edit.</td></tr>
+        <tr><td>R2</td><td>Puppeteer cold-start cost</td><td>Med</td><td>Med</td><td>Cache PDF on finalize as an Attachment; reuse.</td></tr>
+        <tr><td>R3</td><td>Hebrew font missing glyphs</td><td>Low</td><td>Med</td><td>Embed Heebo; fallback to system Hebrew; test rare characters.</td></tr>
+        <tr><td>R4</td><td>SHAAM 3-month auth lapses unnoticed</td><td>Med</td><td>High</td><td>Nightly cron checks; failure raises a notification to admins.</td></tr>
+        <tr><td>R5</td><td>Accountant takes longer than 2 days</td><td>High</td><td>Low</td><td>Wave 5 is operational; code waves do not block.</td></tr>
+        <tr><td>R6</td><td>DB trigger differences dev vs prod Postgres</td><td>Low</td><td>Med</td><td>CI runs Postgres 16; trigger applied via raw-SQL migration.</td></tr>
+        <tr><td>R7</td><td>Backfilling <code>linkedReceiptId</code> on old payments</td><td>Low</td><td>Low</td><td>New writes only; no backfill in V1.</td></tr>
+        <tr><td>R8</td><td>Credit-note duplicate guard blocks legit re-issue</td><td>Low</td><td>Med</td><td>Override path documented; not built in V1.</td></tr>
+        <tr><td>R9</td><td>Country toggle adds friction for IL-only changes</td><td>Low</td><td>Low</td><td>IL profile is a TS module; single-file edits.</td></tr>
+        <tr><td>R10</td><td>Puppeteer not allowed on host</td><td>Med</td><td>Med</td><td>Run renderer in a dedicated worker; <code>lib/pdf/render.ts</code> seam swaps to React-PDF.</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="section-h">Top three tradeoffs</h3>
+    <ul>
+      <li><strong>Compliance correctness vs velocity.</strong> Wave 0 cannot be shortcut. Accountant gate is real.</li>
+      <li><strong>Scope vs polish.</strong> V1 ships allocation skeleton not real SHAAM call. The skeleton is wired correctly so the upgrade is small.</li>
+      <li><strong>Speed vs flexibility.</strong> Puppeteer is fast to ship; React-PDF is faster at runtime. Start with Puppeteer behind a seam.</li>
+    </ul>
+  </section>
+
+  <!-- 12. Approval -->
+  <section class="slide" id="s12">
+    <header>
+      <div><h2>Approval checkpoint</h2><p class="sub">Implementation has not started. Awaiting approval.</p></div>
+      <div class="num">12 / 12</div>
+    </header>
+
+    <div class="callout crit">
+      No code, schema, or runtime configuration has been changed in this
+      audit. Approval unlocks Wave 0 (operational) and Wave 1 (foundations
+      + critical bug fixes). Subsequent waves re-decided at each gate.
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>What you are approving</h3>
+        <ul>
+          <li>The 5-wave structure totaling 2-3 calendar weeks.</li>
+          <li>Wave 0 + Wave 1 scope verbatim.</li>
+          <li>Israel-only V1 active country.</li>
+          <li>Country toggle as architectural seam (no live second country).</li>
+          <li>Receipt finalize flag stays default false until accountant gate.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>What is re-decided later</h3>
+        <ul>
+          <li>Wave 2 scope at Wave 1 exit.</li>
+          <li>Real SHAAM API integration timing.</li>
+          <li>OCR / LLM ingestion for Financial Documents.</li>
+          <li>PCN874 filer.</li>
+          <li>Multi-country live profiles.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 class="section-h">Audit artifacts (all in <code>docs/audit-2026-05-billing/</code>)</h3>
+    <table>
+      <thead><tr><th>File</th><th>Owner</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>israel_compliance_audit.md</code></td><td>Compliance research</td><td>Authoritative facts + cited sources + accountant checklist</td></tr>
+        <tr><td><code>billing_audit.md</code></td><td>Billing module</td><td>11 routes, lib, UI, bug list</td></tr>
+        <tr><td><code>receipts_tax_documents_audit.md</code></td><td>Receipts module</td><td>Schema, domain, gaps, PDF needs</td></tr>
+        <tr><td><code>financial_documents_audit.md</code></td><td>Financial Documents</td><td>Placeholder state, proposed model, dependencies</td></tr>
+        <tr><td><code>database_schema_audit.md</code></td><td>DB schema</td><td>Field-by-field, constraints, country toggle, FinDoc proposal</td></tr>
+        <tr><td><code>ux_product_audit.md</code></td><td>UX</td><td>IA, forms, status, RTL, V1 checklists</td></tr>
+        <tr><td><code>implementation_plan.md</code></td><td>PM</td><td>Phased plan with sizes and exit checklists</td></tr>
+        <tr><td><code>billing_financial_modules_plan.html</code></td><td>PM</td><td>This deck</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout ok">
+      Reply <strong>approve</strong> to start Wave 0 + Wave 1. Reply
+      <strong>approve with changes</strong> + list. Reply <strong>hold</strong> to ask
+      questions first.
+    </div>
+  </section>
+
+  <div class="footer">
+    Skyware Internal Management Portal. Billing / Receipts / Financial Documents Plan, 2026-05-25.
+    Israel V1. Single-file HTML deck for screen and print.
+  </div>
+</div>
+
+<script>
+  (function () {
+    var slides = Array.prototype.slice.call(document.querySelectorAll('section.slide'));
+    var navList = document.getElementById('navList');
+    var toggleBtn = document.getElementById('toggleNav');
+    toggleBtn.addEventListener('click', function () {
+      var hidden = navList.hasAttribute('hidden');
+      if (hidden) {
+        navList.removeAttribute('hidden');
+        navList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        navList.setAttribute('hidden', '');
+      }
+    });
+    function currentIndex() {
+      var y = window.scrollY + 100;
+      for (var i = slides.length - 1; i >= 0; i -= 1) {
+        if (slides[i].offsetTop <= y) return i;
+      }
+      return 0;
+    }
+    function scrollToSlide(i) {
+      if (i < 0 || i >= slides.length) return;
+      slides[i].scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    document.addEventListener('keydown', function (e) {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+      var i = currentIndex();
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); scrollToSlide(i + 1); }
+      else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); scrollToSlide(i - 1); }
+      else if (e.key === 'Home') { e.preventDefault(); scrollToSlide(0); }
+      else if (e.key === 'End') { e.preventDefault(); scrollToSlide(slides.length - 1); }
+    });
+  })();
+</script>
+</body>
+</html>

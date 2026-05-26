@@ -828,6 +828,8 @@
       "downloadPdf": "הורד PDF",
       "viewPdf": "הצג PDF",
       "refreshPreview": "רענן תצוגה מקדימה",
+      "openInNewTab": "פתח בכרטיסייה חדשה",
+      "previewUnsupported": "הדפדפן לא יכול להציג את ה-PDF כאן. הורד אותו כדי לצפות.",
       "edit": "ערוך טיוטה",
       "finalize": "סופי",
       "delete": "מחק טיוטה",

@@ -5,7 +5,10 @@ import type { NextConfig } from "next";
 // which is complex to implement safely. See docs/production-readiness.md.
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "X-Frame-Options", value: "DENY" },
+  // SAMEORIGIN (not DENY) so the receipts detail page can embed its own
+  // /api/receipts/[id]/pdf response in an iframe preview. Cross-origin
+  // embedding is still blocked, which is the real clickjacking threat.
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
   { key: "X-XSS-Protection", value: "1; mode=block" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {

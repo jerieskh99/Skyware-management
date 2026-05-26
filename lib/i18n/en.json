@@ -828,6 +828,8 @@
       "downloadPdf": "Download PDF",
       "viewPdf": "View PDF",
       "refreshPreview": "Refresh preview",
+      "openInNewTab": "Open in new tab",
+      "previewUnsupported": "Your browser cannot render this PDF inline. Download it to view.",
       "edit": "Edit draft",
       "finalize": "Finalize",
       "delete": "Delete draft",

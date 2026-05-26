@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Knowledge System Plan - Approval Deck</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --ink: #0b1220;
+    --ink-muted: #475569;
+    --ink-soft: #64748b;
+    --line: #e2e8f0;
+    --accent: #6d28d9;
+    --accent-soft: #ede9fe;
+    --warn: #b45309;
+    --warn-soft: #fef3c7;
+    --crit: #b91c1c;
+    --crit-soft: #fee2e2;
+    --ok: #15803d;
+    --ok-soft: #dcfce7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1220;
+      --surface: #0f172a;
+      --ink: #e2e8f0;
+      --ink-muted: #cbd5e1;
+      --ink-soft: #94a3b8;
+      --line: #1e293b;
+      --accent: #a78bfa;
+      --accent-soft: #4c1d95;
+      --warn: #f59e0b;
+      --warn-soft: #422006;
+      --crit: #f87171;
+      --crit-soft: #450a0a;
+      --ok: #4ade80;
+      --ok-soft: #052e16;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .deck { max-width: 1120px; margin: 0 auto; padding: 24px 24px 96px; }
+  .hud {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(8px);
+  }
+  .brand { font-weight: 600; letter-spacing: 0.2px; }
+  .meta { font-size: 13px; color: var(--ink-soft); }
+  .controls { display: flex; gap: 8px; align-items: center; }
+  .controls button {
+    background: transparent; color: var(--ink-muted);
+    border: 1px solid var(--line); padding: 6px 10px; border-radius: 6px;
+    font-size: 13px; cursor: pointer;
+  }
+  .controls button:hover { color: var(--ink); border-color: var(--accent); }
+  .pill {
+    display: inline-block; padding: 2px 10px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent);
+    font-size: 12px; font-weight: 500;
+  }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); }
+  .pill.crit { background: var(--crit-soft); color: var(--crit); }
+  .pill.ok { background: var(--ok-soft); color: var(--ok); }
+  .slide {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 36px 40px;
+    margin-bottom: 28px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    scroll-margin-top: 80px;
+  }
+  .slide header {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+    border-bottom: 1px solid var(--line); padding-bottom: 14px; margin-bottom: 22px;
+  }
+  .slide header h2 { margin: 0; font-size: 26px; font-weight: 600; letter-spacing: -0.01em; }
+  .slide header .sub { margin: 4px 0 0; color: var(--ink-soft); font-size: 14px; }
+  .slide header .num { font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .lede { font-size: 17px; color: var(--ink-muted); margin: 0 0 14px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  .card {
+    background: var(--bg); border: 1px solid var(--line);
+    border-radius: 10px; padding: 18px;
+  }
+  .card h3 { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
+  .card .num-big { font-size: 28px; font-weight: 600; color: var(--ink); letter-spacing: -0.02em; }
+  .card .label { color: var(--ink-soft); font-size: 13px; }
+  .card p { margin: 6px 0 0; color: var(--ink-muted); font-size: 14px; }
+  ul, ol { padding-left: 22px; margin: 0 0 12px; }
+  li { margin-bottom: 6px; color: var(--ink-muted); }
+  li strong { color: var(--ink); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 12px; }
+  thead th {
+    text-align: left; background: var(--bg); color: var(--ink-soft);
+    padding: 10px 12px; border-bottom: 1px solid var(--line);
+    font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  tbody td {
+    padding: 10px 12px; border-bottom: 1px solid var(--line);
+    vertical-align: top; color: var(--ink-muted);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--bg); padding: 1px 6px; border-radius: 4px; font-size: 13px; }
+  .callout { background: var(--accent-soft); color: var(--accent); border-left: 4px solid var(--accent); padding: 14px 18px; border-radius: 6px; margin: 16px 0; font-weight: 500; }
+  .callout.warn { background: var(--warn-soft); color: var(--warn); border-left-color: var(--warn); }
+  .callout.crit { background: var(--crit-soft); color: var(--crit); border-left-color: var(--crit); }
+  .callout.ok { background: var(--ok-soft); color: var(--ok); border-left-color: var(--ok); }
+  .section-h { font-size: 13px; font-weight: 600; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.06em; margin: 18px 0 8px; }
+  .phase-block { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
+  .phase-block h3 { margin: 0 0 8px; font-size: 16px; display: flex; align-items: center; gap: 10px; }
+  .phase-block .meta { color: var(--ink-soft); font-size: 13px; margin-bottom: 10px; }
+  .timeline { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .nav-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; list-style: none; padding: 0; }
+  .nav-list a { color: var(--ink-muted); text-decoration: none; font-size: 14px; padding: 6px 8px; border-radius: 6px; border: 1px solid transparent; }
+  .nav-list a:hover { background: var(--bg); border-color: var(--line); color: var(--ink); }
+  .footer { color: var(--ink-soft); font-size: 13px; text-align: center; padding: 24px 0 8px; }
+  .flowbox { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 14px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; line-height: 1.5; overflow-x: auto; white-space: pre; color: var(--ink); }
+  @media (max-width: 900px) {
+    .grid-2, .grid-3, .grid-4, .timeline { grid-template-columns: 1fr; }
+    .deck { padding: 16px; }
+    .slide { padding: 24px 20px; }
+  }
+  @media print {
+    .hud { display: none; }
+    .slide { page-break-after: always; box-shadow: none; border-color: #ccc; }
+  }
+</style>
+</head>
+<body>
+<div class="deck">
+
+  <div class="hud" role="navigation">
+    <div class="brand">Knowledge System Plan</div>
+    <div class="meta">Sprint: 10-day planning. Status: <span class="pill warn">Awaiting approval</span></div>
+    <div class="controls">
+      <button type="button" onclick="window.print()">Print</button>
+      <button type="button" id="toggleNav">Slides</button>
+    </div>
+  </div>
+
+  <nav id="navList" class="slide" hidden>
+    <header><div><h2>Contents</h2><p class="sub">15 slides plus this index.</p></div></header>
+    <ul class="nav-list">
+      <li><a href="#s1">1. Current state</a></li>
+      <li><a href="#s2">2. Product vision</a></li>
+      <li><a href="#s3">3. User workflows</a></li>
+      <li><a href="#s4">4. Task-to-knowledge flow</a></li>
+      <li><a href="#s5">5. External reference flow</a></li>
+      <li><a href="#s6">6. Review and approval</a></li>
+      <li><a href="#s7">7. Database / schema</a></li>
+      <li><a href="#s8">8. UX direction</a></li>
+      <li><a href="#s9">9. Search and discoverability</a></li>
+      <li><a href="#s10">10. Permissions and security</a></li>
+      <li><a href="#s11">11. MVP scope</a></li>
+      <li><a href="#s12">12. 10-day sprint findings</a></li>
+      <li><a href="#s13">13. Implementation roadmap</a></li>
+      <li><a href="#s14">14. Risks and tradeoffs</a></li>
+      <li><a href="#s15">15. Approval</a></li>
+    </ul>
+  </nav>
+
+  <section class="slide" id="s1">
+    <header><div><h2>Current state</h2><p class="sub">What shipped in Phase 3 §5.6.</p></div><div class="num">01 / 15</div></header>
+    <p class="lede">The Knowledge tab today is thin CRUD with tags and FTS in global search. Six gaps stand between today and the user's goal of "a reviewed company memory system."</p>
+    <div class="grid-4">
+      <div class="card"><div class="label">Routes</div><div class="num-big">8</div><p>GET/POST/PATCH/DELETE plus publish/archive + tags</p></div>
+      <div class="card"><div class="label">Models</div><div class="num-big">2</div><p>Article + ArticleTag</p></div>
+      <div class="card"><div class="label">Statuses today</div><div class="num-big">3</div><p>draft, published, archived</p></div>
+      <div class="card"><div class="label">Tests</div><div class="num-big">31</div><p>5 files; no PATCH/DELETE/archive/e2e coverage</p></div>
+    </div>
+    <h3 class="section-h">Six gaps versus the goal</h3>
+    <ul>
+      <li><strong>No review workflow.</strong> Author publishes directly.</li>
+      <li><strong>No link to Job.</strong> Internal lessons cannot reference their source task.</li>
+      <li><strong>No external-reference shape.</strong> No source, URL, verified date, reliability.</li>
+      <li><strong>No AI structuring step.</strong> No seam, no dry-run, no gates.</li>
+      <li><strong>No revision history.</strong> Edits overwrite. No diff.</li>
+      <li><strong>No freshness sweep.</strong> Stale articles erode trust silently.</li>
+    </ul>
+  </section>
+
+  <section class="slide" id="s2">
+    <header><div><h2>Product vision</h2><p class="sub">Useful company memory. Reviewed lessons. Reviewed external references.</p></div><div class="num">02 / 15</div></header>
+    <p class="lede">A worker who solved a problem yesterday should be able to make tomorrow's worker 10 minutes faster. A worker who found a great external doc should be able to keep the team from re-finding it.</p>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Yes</h3>
+        <ul>
+          <li>Reviewed internal lessons sourced from completed jobs.</li>
+          <li>Reviewed external references (links, RFCs, vendor docs).</li>
+          <li>Type-aware editor (6 kinds).</li>
+          <li>Reliability tier for every article.</li>
+          <li>Freshness pill + sweep.</li>
+          <li>Optional LLM structuring as advisory aid.</li>
+          <li>Audit trail on every state change.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>No</h3>
+        <ul>
+          <li>Not a customer-facing wiki.</li>
+          <li>Not a marketing CMS.</li>
+          <li>Not a personal notebook.</li>
+          <li>Not the SOP system-of-record for the accountant.</li>
+          <li>Not a chat archive.</li>
+          <li>Not a CRM for "notes about people".</li>
+          <li>Not a doc generator that writes by itself.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" id="s3">
+    <header><div><h2>User workflows</h2><p class="sub">Four personas. Four jobs-to-be-done.</p></div><div class="num">03 / 15</div></header>
+    <table>
+      <thead><tr><th>Persona</th><th>Job to be done</th><th>Touchpoints</th></tr></thead>
+      <tbody>
+        <tr><td>Employee author (post-task)</td><td>Capture how I solved this before I forget</td><td>/my-jobs/[id] (status reviewed), MarkDoneSheet checkbox</td></tr>
+        <tr><td>Employee author (external)</td><td>Save a useful link with my reading notes</td><td>/knowledge/new/external</td></tr>
+        <tr><td>Employee reader</td><td>Find the answer to my current problem in under 60 seconds</td><td>/knowledge list + global search</td></tr>
+        <tr><td>Admin reviewer</td><td>Keep low-quality or risky articles from going public</td><td>/knowledge/review inbox</td></tr>
+      </tbody>
+    </table>
+    <h3 class="section-h">Article types (6)</h3>
+    <p><code>internal_task_lesson</code> · <code>external_reference</code> · <code>how_to_guide</code> · <code>troubleshooting_note</code> · <code>architecture_decision</code> · <code>process_policy_note</code></p>
+  </section>
+
+  <section class="slide" id="s4">
+    <header><div><h2>Task-to-knowledge flow</h2><p class="sub">From a reviewed job to a published article.</p></div><div class="num">04 / 15</div></header>
+    <div class="flowbox">Job moves to status=reviewed
+  -> [optional] checkbox in MarkDoneSheet: prefill draft now
+  -> button on /my-jobs/[id]: "Create knowledge article from this job"
+       -> opens /knowledge/new with kind=internal_task_lesson
+       -> sourceJobId, sourceWorkReportId pre-set
+       -> author writes Problem / Cause / Fix / Verification
+       -> [optional] click "Structure with assistant" (dry-run V1)
+       -> Submit for review
+  -> Reviewer queue: admin reads, comments, approves
+  -> Publish
+  -> Appears in /knowledge list + global search scope
+  -> Cross-link visible from the source job's detail page</div>
+    <div class="callout">Author cannot be reviewer. Server-side guard. Same job's assignee remains the author by default; admin reviews.</div>
+  </section>
+
+  <section class="slide" id="s5">
+    <header><div><h2>External reference flow</h2><p class="sub">Paste a URL. Add notes. Review. Publish.</p></div><div class="num">05 / 15</div></header>
+    <div class="flowbox">Employee finds a useful link
+  -> Click "+ Add external reference" on /knowledge
+  -> /knowledge/new/external form:
+       URL, externalSource (vendor name), summary, whyItMatters,
+       tags, reliability tier (defaults to single_source)
+  -> Canonical URL hashed (SHA-256). Duplicate -> show existing.
+  -> Submit for review
+  -> Reviewer queue: senior employee or admin reviews
+       -> Approves or requests changes (cap 2 cycles)
+  -> Publish
+  -> Last verified stamp = approval time
+  -> Freshness sweep (180-day default per type) notifies reviewer
+       when the article goes stale; never auto-acts.</div>
+    <div class="callout warn">V1 ships without auto-fetching the page title (SSRF risk needs more design). Author types the title. V2 enables auto-fetch behind a flag.</div>
+  </section>
+
+  <section class="slide" id="s6">
+    <header><div><h2>Review and approval workflow</h2><p class="sub">Six statuses. Nine transitions.</p></div><div class="num">06 / 15</div></header>
+    <div class="flowbox">draft  ----submit----> pending_review
+draft  --AI structure-> ai_structured  ----submit----> pending_review
+pending_review ---approve---> approved ---publish---> published
+pending_review ---request-changes---> draft  (cycle counter ++)
+approved ---un-approve---> pending_review     (admin only)
+published ---archive---> archived               (admin only; comment)
+archived ---un-archive---> draft                (admin only)
+published ---rescind---> archived (410 Gone)    (admin; legal/safety)</div>
+    <h3 class="section-h">Reviewer rules</h3>
+    <ul>
+      <li>Author cannot be reviewer of own revision.</li>
+      <li>Cycle cap = 2 (changes requested). Admin arbitrates after.</li>
+      <li>SLA: pending_review for &gt; 5 working days triggers a soft prod via notification.</li>
+      <li>Approve and publish are distinct buttons. Mirrors receipts pattern.</li>
+    </ul>
+  </section>
+
+  <section class="slide" id="s7">
+    <header><div><h2>Database / schema plan</h2><p class="sub">5 forward-only migrations. Existing rows keep working.</p></div><div class="num">07 / 15</div></header>
+    <div class="grid-2">
+      <div class="card">
+        <h3>New enums</h3>
+        <ul>
+          <li><code>KnowledgeArticleType</code> (6 values)</li>
+          <li>Status enum widened to 6 (additive)</li>
+          <li><code>KnowledgeReliabilityTier</code> (4)</li>
+          <li><code>KnowledgeArticleReviewStatus</code> (4)</li>
+          <li><code>KnowledgeArticleReferenceKind</code> (4)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>New models</h3>
+        <ul>
+          <li><code>KnowledgeArticleRevision</code> (per-version body + author)</li>
+          <li><code>KnowledgeArticleReview</code> (one row per review cycle)</li>
+          <li><code>KnowledgeArticleReference</code> (cross-links)</li>
+        </ul>
+        <h3 style="margin-top:12px;">Article additions</h3>
+        <ul>
+          <li><code>kind</code>, <code>sourceJobId</code>, <code>externalUrl</code>, <code>externalUrlHash</code></li>
+          <li><code>lastVerifiedAt</code>, <code>lastVerifiedByUserId</code></li>
+          <li><code>reliabilityTier</code>, <code>summary</code>, <code>whyItMatters</code></li>
+          <li><code>aiStructuredSnapshot</code>, <code>rawInputSnapshot</code></li>
+          <li><code>currentVersion</code>, <code>lastReviewedAt</code>, <code>reviewerUserId</code></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" id="s8">
+    <header><div><h2>UX direction</h2><p class="sub">11 routes. Reviewer inbox. Side-by-side diffs. Hebrew RTL.</p></div><div class="num">08 / 15</div></header>
+    <table>
+      <thead><tr><th>Route</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>/knowledge</code></td><td>List with filters (kind, status, tag, author, my, needs-review)</td></tr>
+        <tr><td><code>/knowledge/new</code></td><td>Create draft (kind-aware editor)</td></tr>
+        <tr><td><code>/knowledge/new/external</code></td><td>External reference full-page form</td></tr>
+        <tr><td><code>/knowledge/[slug]</code></td><td>Detail with metadata sidebar + related</td></tr>
+        <tr><td><code>/knowledge/[slug]/edit</code></td><td>Edit draft or approved-pending-publish</td></tr>
+        <tr><td><code>/knowledge/[slug]/revisions</code></td><td>Version history + diff</td></tr>
+        <tr><td><code>/knowledge/[slug]/ai</code></td><td>AI structuring opt-in modal (dry-run V1)</td></tr>
+        <tr><td><code>/knowledge/review</code></td><td>Reviewer queue (inbox tabs)</td></tr>
+      </tbody>
+    </table>
+    <h3 class="section-h">17 net-new components</h3>
+    <p><code>ReliabilityTierBadge</code> · <code>ArticleKindChip</code> · <code>ReviewQueueRow</code> · <code>AiStructureDialog</code> · <code>VerifiedFreshnessPill</code> · <code>RelatedArticleList</code> · <code>ArticleEditor*</code> (refactor into per-kind sub-forms) · plus 10 more (per <code>knowledge_ux_plan.md</code> §11).</p>
+  </section>
+
+  <section class="slide" id="s9">
+    <header><div><h2>Search, tags, and discoverability</h2><p class="sub">Extend the existing FTS scope.</p></div><div class="num">09 / 15</div></header>
+    <div class="grid-2">
+      <div class="card">
+        <h3>FTS</h3>
+        <ul>
+          <li>Existing trigram indexes on title + body stay.</li>
+          <li>Add coverage to summary + external_source.</li>
+          <li>Visibility filter respects new <code>department_only</code>.</li>
+          <li>Ranking boost: recent + verified + same-department.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Discovery surfaces</h3>
+        <ul>
+          <li>Knowledge scope chip in <code>GlobalSearch</code> (already exists).</li>
+          <li>Reader-side filters: kind, tag, type, reliability tier.</li>
+          <li>Author-side filters: my drafts, my reviews, needs review.</li>
+          <li>Related articles via <code>KnowledgeArticleReference</code>.</li>
+          <li>Embeddings + semantic search deferred to Phase 3.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" id="s10">
+    <header><div><h2>Permissions and security</h2><p class="sub">12 threats. 27 actions x 4 roles. LLM behind three gates.</p></div><div class="num">10 / 15</div></header>
+    <table>
+      <thead><tr><th>#</th><th>Threat</th><th>Mitigation</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Prompt injection in worker writeup</td><td>Redaction pre-pass + reviewer always sees original</td></tr>
+        <tr><td>2</td><td>Secret leak in published article</td><td>Editor-time scanner (9 regex patterns) + reviewer warn + weekly re-scan</td></tr>
+        <tr><td>3</td><td>SSRF via auto-fetch external URL</td><td>V1 manual title; V2 server-side fetch with allowlist</td></tr>
+        <tr><td>4</td><td>XSS via raw HTML in Markdown</td><td>Server-side sanitizer (allowlist tags + attrs)</td></tr>
+        <tr><td>5</td><td>Draft data crosses department boundary</td><td>Default <code>department_only</code> for internal_task_lesson</td></tr>
+        <tr><td>6</td><td>Author approves own revision</td><td>Server-side same-actor guard</td></tr>
+        <tr><td>7</td><td>Vendor data leakage via LLM call</td><td>Three gates + redaction + dry-run default</td></tr>
+      </tbody>
+    </table>
+    <h3 class="section-h">Three-gate LLM posture (mirrors receipts)</h3>
+    <ul>
+      <li><code>knowledge_ai_structuring_enabled</code> flag (default false)</li>
+      <li><code>ALLOW_KNOWLEDGE_AI</code> env (default unset)</li>
+      <li><code>knowledge_ai_provider_verified</code> flag (default false)</li>
+    </ul>
+    <div class="callout warn">Any false = dry-run mode (deterministic local transform). Real LLM call blocked until all three pass.</div>
+  </section>
+
+  <section class="slide" id="s11">
+    <header><div><h2>MVP scope (V1)</h2><p class="sub">Foundations + flows + review + freshness. No real LLM call.</p></div><div class="num">11 / 15</div></header>
+    <div class="grid-3">
+      <div class="phase-block">
+        <h3>Database</h3>
+        <ul>
+          <li>5 forward-only migrations</li>
+          <li>Status enum widened to 6</li>
+          <li>3 new tables</li>
+          <li>11 new columns</li>
+          <li>3 new indexes</li>
+        </ul>
+      </div>
+      <div class="phase-block">
+        <h3>API + lib</h3>
+        <ul>
+          <li>~10 new endpoints</li>
+          <li>State machine + author-as-reviewer guard</li>
+          <li>AI structuring seam (dry-run only)</li>
+          <li>Secrets scanner</li>
+          <li>Audit on every state change</li>
+          <li>2 cron jobs (freshness, link health)</li>
+        </ul>
+      </div>
+      <div class="phase-block">
+        <h3>UI</h3>
+        <ul>
+          <li>4 new pages</li>
+          <li>17 new components</li>
+          <li>Sanitized Markdown body render</li>
+          <li>Task-to-knowledge entry points</li>
+          <li>External-reference form with dedup</li>
+          <li>i18n + Hebrew RTL pass</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" id="s12">
+    <header><div><h2>10-day simulated sprint findings</h2><p class="sub">Decisions made. Open items deferred. See <code>knowledge_sprint_audit.md</code> for the diary.</p></div><div class="num">12 / 15</div></header>
+    <table>
+      <thead><tr><th>Day</th><th>Output</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Charter + current-state intake; preserve schema, no big-bang rewrite</td></tr>
+        <tr><td>2</td><td>4 personas + 7 anti-personas; reliability tier universal with type-defaults</td></tr>
+        <tr><td>3</td><td>Two creation funnels (task-to-knowledge + external) locked; URL hash dedup</td></tr>
+        <tr><td>4</td><td>5 forward-only migrations; revision history is a separate table</td></tr>
+        <tr><td>5</td><td>State machine: 7 forward + 2 backward transitions; cycle cap 2</td></tr>
+        <tr><td>6</td><td>LLM seam ships V1 dry-run; three-gate posture; redaction pre-pass</td></tr>
+        <tr><td>7</td><td>UX: 11 routes + 17 net-new components; reviewer inbox pattern</td></tr>
+        <tr><td>8</td><td>12 threats; permissions matrix 27 actions x 4 roles</td></tr>
+        <tr><td>9</td><td>Editorial rubric + freshness sweep (notify-only) + 129 unit assertions</td></tr>
+        <tr><td>10</td><td>Plan consolidation + roadmap + approval deck</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="slide" id="s13">
+    <header><div><h2>Implementation roadmap</h2><p class="sub">V1 ships now. V2 + V3 framed.</p></div><div class="num">13 / 15</div></header>
+    <div class="timeline">
+      <div class="phase-block">
+        <h3>V1 <span class="pill warn">Foundations + flows</span></h3>
+        <p class="meta">15-20 engineering days (1 eng) / 8-10 calendar days (2 eng parallel).</p>
+        <ul>
+          <li>Schema migrations</li>
+          <li>Review state machine + endpoints</li>
+          <li>Two creation funnels</li>
+          <li>Sanitized Markdown render</li>
+          <li>AI structuring seam (dry-run)</li>
+          <li>Freshness + link-health cron</li>
+          <li>129 unit tests + 13 integration + 5 component + 1 e2e</li>
+        </ul>
+      </div>
+      <div class="phase-block">
+        <h3>V2 <span class="pill">After pilot feedback</span></h3>
+        <p class="meta">6-8 engineering days.</p>
+        <ul>
+          <li>Auto-fetch external title (SSRF-guarded)</li>
+          <li>Senior-employee reviewer role</li>
+          <li>Attachments on articles (reuse S3 layer)</li>
+          <li>Real LLM call (gates flip true)</li>
+          <li>LLM-grader against rubric (warn-only)</li>
+          <li>Per-author monthly LLM cost quota</li>
+          <li>Saved searches</li>
+        </ul>
+      </div>
+      <div class="phase-block">
+        <h3>V3 <span class="pill ok">Longer term</span></h3>
+        <p class="meta">Strategic, not promised in this plan.</p>
+        <ul>
+          <li>Multi-language bodies (he/en/ar)</li>
+          <li>Semantic search via embeddings</li>
+          <li>Article analytics (privacy-aware)</li>
+          <li>Auto-suggest related via embeddings</li>
+          <li>Customer-facing knowledge subset (separate compliance review)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" id="s14">
+    <header><div><h2>Risks and tradeoffs</h2><p class="sub">12 risks. Each has a mitigation. Top 3 are pilot-shaping.</p></div><div class="num">14 / 15</div></header>
+    <table>
+      <thead><tr><th>#</th><th>Risk</th><th>L</th><th>I</th><th>Mitigation</th></tr></thead>
+      <tbody>
+        <tr><td>R1</td><td>Reviewer queue overflows</td><td>High</td><td>High</td><td>3-day prod, 5-day escalation, pause submissions if &gt; 30% stuck &gt; 7d</td></tr>
+        <tr><td>R2</td><td>Secret leak in published article</td><td>Med</td><td>High</td><td>Regex scanner + reviewer warn + weekly re-scan</td></tr>
+        <tr><td>R3</td><td>Prompt injection from worker writeup</td><td>Med</td><td>Med</td><td>Redaction pre-pass + reviewer sees original</td></tr>
+        <tr><td>R4</td><td>External link rot</td><td>High</td><td>Low</td><td>Weekly link-health cron + freshness pill</td></tr>
+        <tr><td>R5</td><td>AI structuring breaks worker voice</td><td>Med</td><td>Low</td><td>Side-by-side diff; per-section accept</td></tr>
+        <tr><td>R6</td><td>Duplicate external references</td><td>Med</td><td>Low</td><td>URL canonicalization + SHA-256 + partial unique</td></tr>
+        <tr><td>R7</td><td>Author-as-reviewer accident</td><td>Low</td><td>Med</td><td>Server guard rejects same actor</td></tr>
+        <tr><td>R8</td><td>Stale articles erode trust</td><td>High</td><td>Med</td><td>Freshness sweep + reliability downgrade on overdue verify</td></tr>
+        <tr><td>R9</td><td>Cross-dept visibility leak</td><td>Low</td><td>Med</td><td>Default <code>department_only</code> for internal_task_lesson</td></tr>
+        <tr><td>R10</td><td>Search ranking confusion (FTS bias)</td><td>Med</td><td>Low</td><td>Boost recent + verified + same-dept; monitor</td></tr>
+        <tr><td>R11</td><td>Mobile editor unusable</td><td>Med</td><td>Low</td><td>Banner recommends desktop; reader works on mobile</td></tr>
+        <tr><td>R12</td><td>Markdown XSS via raw HTML</td><td>Med</td><td>High</td><td>Server-side sanitizer (allowlist tags + attrs)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="slide" id="s15">
+    <header><div><h2>Approval</h2><p class="sub">Implementation has not started. Awaiting approval.</p></div><div class="num">15 / 15</div></header>
+    <div class="callout crit">No code, schema, or runtime configuration has been changed in this sprint. Approval unlocks V1 only. V2 and V3 are re-decided at the V1 exit gate.</div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>What you are approving</h3>
+        <ul>
+          <li>V1 scope: foundations + flows + review + freshness.</li>
+          <li>5 forward-only migrations.</li>
+          <li>Two creation funnels.</li>
+          <li>AI structuring in DRY-RUN mode only.</li>
+          <li>Three-gate posture for the real LLM call.</li>
+          <li>Reviewer queue + 5-day SLA + cycle cap 2.</li>
+          <li>Sanitized Markdown rendering.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>What is re-decided later</h3>
+        <ul>
+          <li>LLM vendor + budget.</li>
+          <li>Senior-employee reviewer role.</li>
+          <li>Auto-fetch external page title.</li>
+          <li>Embeddings-based search.</li>
+          <li>Multi-language bodies.</li>
+          <li>Customer-facing knowledge portal.</li>
+        </ul>
+      </div>
+    </div>
+    <h3 class="section-h">How to approve</h3>
+    <ol>
+      <li>Read <code>knowledge_implementation_plan.md</code> §3.</li>
+      <li>Skim <code>knowledge_review_workflow.md</code> §1 (state machine).</li>
+      <li>Glance at <code>knowledge_security_permissions_audit.md</code> §11 (gates).</li>
+      <li>Reply <strong>approve</strong>, <strong>approve with changes</strong>, or <strong>hold</strong>.</li>
+    </ol>
+    <h3 class="section-h">Artifacts (all in <code>docs/knowledge-sprint-2026-05/</code>)</h3>
+    <table>
+      <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>knowledge_sprint_audit.md</code></td><td>10-day team diary</td></tr>
+        <tr><td><code>knowledge_tab_current_state_audit.md</code></td><td>What shipped today (588 lines)</td></tr>
+        <tr><td><code>knowledge_product_strategy.md</code></td><td>Vision + JTBD + metrics (600 lines)</td></tr>
+        <tr><td><code>knowledge_review_workflow.md</code></td><td>State machine + reviewer rules (604 lines)</td></tr>
+        <tr><td><code>knowledge_database_schema_plan.md</code></td><td>Migrations + indexes (1080 lines)</td></tr>
+        <tr><td><code>knowledge_ux_plan.md</code></td><td>Pages + components + accessibility (1299 lines)</td></tr>
+        <tr><td><code>knowledge_security_permissions_audit.md</code></td><td>Threats + matrix + gates (876 lines)</td></tr>
+        <tr><td><code>knowledge_quality_control_plan.md</code></td><td>DoD + rubric + tests + freshness (608 lines)</td></tr>
+        <tr><td><code>knowledge_implementation_plan.md</code></td><td>Phased roadmap</td></tr>
+        <tr><td><code>knowledge_system_plan.html</code></td><td>This deck</td></tr>
+      </tbody>
+    </table>
+    <div class="callout ok">Awaiting your call. If approved, V1 starts on the next working day.</div>
+  </section>
+
+  <div class="footer">Skyware Internal Management Portal. Knowledge System Planning Sprint, 2026-05-26.</div>
+</div>
+
+<script>
+  (function () {
+    var slides = Array.prototype.slice.call(document.querySelectorAll('section.slide'));
+    var navList = document.getElementById('navList');
+    var toggleBtn = document.getElementById('toggleNav');
+    toggleBtn.addEventListener('click', function () {
+      var hidden = navList.hasAttribute('hidden');
+      if (hidden) { navList.removeAttribute('hidden'); navList.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      else { navList.setAttribute('hidden', ''); }
+    });
+    function currentIndex() {
+      var y = window.scrollY + 100;
+      for (var i = slides.length - 1; i >= 0; i -= 1) {
+        if (slides[i].offsetTop <= y) return i;
+      }
+      return 0;
+    }
+    function scrollToSlide(i) {
+      if (i < 0 || i >= slides.length) return;
+      slides[i].scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    document.addEventListener('keydown', function (e) {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+      var i = currentIndex();
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); scrollToSlide(i + 1); }
+      else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); scrollToSlide(i - 1); }
+      else if (e.key === 'Home') { e.preventDefault(); scrollToSlide(0); }
+      else if (e.key === 'End') { e.preventDefault(); scrollToSlide(slides.length - 1); }
+    });
+  })();
+</script>
+</body>
+</html>

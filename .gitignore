@@ -17,7 +17,10 @@ dist/
 .env.production.local
 
 # Prisma
-prisma/migrations/**/migration.sql
+# DO NOT ignore migration SQL files. They MUST be committed so production
+# deploys can run `prisma migrate deploy` deterministically.
+# (Previous rule `prisma/migrations/**/migration.sql` was a bug that
+#  silently dropped every migration across phases 1-4 + Knowledge P1.)
 
 # Docker
 docker-compose.override.yml

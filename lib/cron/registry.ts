@@ -28,6 +28,16 @@ export const CRON_JOBS: CronJobMeta[] = [
     description:
       "Compute weekly per-client KPI snapshots (open jobs, delayed jobs, hours consumed, outstanding payments, projected months remaining) and upsert one row per (clientId, ISO-week). Idempotent. No-op when client_health_snapshots_enabled is off.",
   },
+  {
+    key: "knowledge-freshness",
+    label: "Knowledge - freshness sweep",
+    description: "Notifies reviewers of articles overdue for re-verification per kind.",
+  },
+  {
+    key: "knowledge-link-health",
+    label: "Knowledge - external link health",
+    description: "HEAD-checks external_reference URLs and notifies on broken links.",
+  },
 ];
 
 export function findCronJob(key: string): CronJobMeta | undefined {

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Knowledge Phase 1 - Engineering Summary</title>
+<style>
+  :root {
+    --bg:#f6f7f9; --surface:#ffffff; --ink:#0b1220; --ink-2:#475569; --ink-3:#64748b;
+    --line:#e2e8f0; --line-2:#f4f5f7; --brand:#0f766e; --brand-soft:#ccfbf1;
+    --warn:#b45309; --warn-soft:#fef3c7; --crit:#b91c1c; --crit-soft:#fee2e2;
+    --ok:#15803d; --ok-soft:#dcfce7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0b1220; --surface:#0f172a; --ink:#e2e8f0; --ink-2:#cbd5e1; --ink-3:#94a3b8;
+      --line:#1e293b; --line-2:#0f172a; --brand:#2dd4bf; --brand-soft:#134e4a;
+      --warn:#f59e0b; --warn-soft:#422006; --crit:#f87171; --crit-soft:#450a0a;
+      --ok:#4ade80; --ok-soft:#052e16;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,Arial,sans-serif; font-size:16px; line-height:1.55; }
+  .deck { max-width:1080px; margin:0 auto; padding:24px 24px 96px; }
+  .hud { position:sticky; top:0; z-index:10; display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:var(--surface); border:1px solid var(--line); border-radius:10px; margin-bottom:24px; backdrop-filter:blur(8px); }
+  .brand { font-weight:600; }
+  .meta { font-size:13px; color:var(--ink-3); }
+  .pill { display:inline-block; padding:2px 10px; border-radius:999px; background:var(--brand-soft); color:var(--brand); font-size:12px; font-weight:500; }
+  .pill.warn { background:var(--warn-soft); color:var(--warn); }
+  .pill.ok { background:var(--ok-soft); color:var(--ok); }
+  .pill.crit { background:var(--crit-soft); color:var(--crit); }
+  .slide { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:36px 40px; margin-bottom:28px; box-shadow:0 1px 2px rgba(15,23,42,0.04); scroll-margin-top:80px; }
+  .slide header { display:flex; align-items:baseline; justify-content:space-between; gap:16px; border-bottom:1px solid var(--line); padding-bottom:14px; margin-bottom:22px; }
+  .slide header h2 { margin:0; font-size:26px; font-weight:600; letter-spacing:-0.01em; }
+  .slide header .sub { margin:4px 0 0; color:var(--ink-3); font-size:14px; }
+  .num { font-size:12px; color:var(--ink-3); font-variant-numeric: tabular-nums; }
+  .lede { font-size:17px; color:var(--ink-2); margin:0 0 14px; }
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+  .grid-3 { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; }
+  .grid-4 { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
+  .card { background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:18px; }
+  .card h3 { margin:0 0 8px; font-size:15px; font-weight:600; }
+  .card .num-big { font-size:28px; font-weight:600; }
+  .card .label { color:var(--ink-3); font-size:13px; }
+  .card p { margin:6px 0 0; color:var(--ink-2); font-size:14px; }
+  ul, ol { padding-left:22px; margin:0 0 12px; }
+  li { margin-bottom:6px; color:var(--ink-2); }
+  li strong { color:var(--ink); }
+  table { width:100%; border-collapse:collapse; font-size:14px; margin-bottom:12px; }
+  thead th { text-align:left; background:var(--bg); color:var(--ink-3); padding:10px 12px; border-bottom:1px solid var(--line); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; }
+  tbody td { padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top; color:var(--ink-2); }
+  code { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; background:var(--bg); padding:1px 6px; border-radius:4px; font-size:13px; }
+  .callout { background:var(--brand-soft); color:var(--brand); border-left:4px solid var(--brand); padding:14px 18px; border-radius:6px; margin:16px 0; font-weight:500; }
+  .callout.warn { background:var(--warn-soft); color:var(--warn); border-left-color:var(--warn); }
+  .callout.crit { background:var(--crit-soft); color:var(--crit); border-left-color:var(--crit); }
+  .callout.ok { background:var(--ok-soft); color:var(--ok); border-left-color:var(--ok); }
+  .section-h { font-size:13px; font-weight:600; color:var(--ink-3); text-transform:uppercase; letter-spacing:0.06em; margin:18px 0 8px; }
+  .footer { text-align:center; color:var(--ink-3); font-size:13px; padding:24px 0 8px; }
+  @media (max-width:900px) { .grid-2,.grid-3,.grid-4 { grid-template-columns:1fr; } .deck { padding:16px; } .slide { padding:24px 20px; } }
+  @media print { .hud { display:none; } .slide { page-break-after:always; border-color:#ccc; box-shadow:none; } }
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="hud">
+    <div class="brand">Knowledge Phase 1 - Engineering Summary</div>
+    <div class="meta">2026-05-27. <span class="pill ok">All gates passed</span></div>
+    <div><button type="button" onclick="window.print()" style="background:transparent;color:var(--ink-2);border:1px solid var(--line);padding:6px 10px;border-radius:6px;font-size:13px;cursor:pointer">Print</button></div>
+  </div>
+
+  <section class="slide">
+    <header><div><h2>Phase 1 ships</h2><p class="sub">15-20 engineering days planned. Delivered.</p></div><div class="num">01 / 8</div></header>
+    <p class="lede">All four waves landed: DB schema + 5 migrations; lib (state machine + validators + secrets + Markdown + AI dry-run); API (12 routes + 2 cron); UI (8 pages + 22 components + Hebrew RTL). Plus 254 new tests across 23 new files.</p>
+    <div class="grid-4">
+      <div class="card"><div class="label">Tests</div><div class="num-big">748</div><p>+254 over baseline (494)</p></div>
+      <div class="card"><div class="label">Test files</div><div class="num-big">105</div><p>+23 over baseline (82)</p></div>
+      <div class="card"><div class="label">Migrations</div><div class="num-big">5</div><p>Forward-only, identity-mapped on existing rows</p></div>
+      <div class="card"><div class="label">New deps</div><div class="num-big">0</div><p>Hand-rolled Markdown sanitizer</p></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <header><div><h2>Layers landed</h2><p class="sub">Wave-by-wave inventory.</p></div><div class="num">02 / 8</div></header>
+    <div class="grid-3">
+      <div class="card"><h3>Wave 1 - Database</h3><ul><li>5 migrations under <code>prisma/migrations/20260527001000..001400</code></li><li>4 new enums + 3 widened</li><li>16 new columns on <code>knowledge_articles</code></li><li>3 new tables: revisions, reviews, references</li><li>4 indexes + 2 trigram FTS extensions</li><li>2 CHECK constraints</li></ul></div>
+      <div class="card"><h3>Wave 2A - Library</h3><ul><li>12 new <code>lib/knowledge/*.ts</code> modules</li><li>State machine: 9 transitions</li><li>Secrets scanner: 9 patterns + 200-cap</li><li>URL canonicalizer + SHA-256</li><li>Validators per kind</li><li>Markdown allowlist sanitizer</li><li>AI structuring dry-run + 3-gate</li><li>Permissions matrix</li><li>Notification triggers (4 kinds)</li></ul></div>
+      <div class="card"><h3>Wave 2B - API + cron</h3><ul><li>12 knowledge routes (new + extended)</li><li>2 cron endpoints (freshness + link-health)</li><li>Cron registry extended</li><li>Rate-limit on AI route (5/hr/IP)</li><li>49 new integration tests</li></ul></div>
+      <div class="card"><h3>Wave 2C - Frontend</h3><ul><li>8 new/modified pages</li><li>22 net-new components</li><li>Sanitized Markdown render</li><li>Task-to-knowledge entry points</li><li>Sidebar review badge (polls 60s)</li><li>175 i18n keys per locale</li><li>Full Hebrew RTL pass</li></ul></div>
+      <div class="card"><h3>Wave 3 - QA + product fix</h3><ul><li>5 component .tsx tests (first in repo)</li><li>1 e2e happy-path spec</li><li>7 product-asked fixes from Wave 2C TODOs</li><li>List select widened</li><li>Reviewer queue Unassigned tab fixed server-side</li><li>PATCH schema widened with state guards</li><li>Default reliability tier resolver</li></ul></div>
+      <div class="card"><h3>Documentation</h3><ul><li>7 markdown audits + reviews</li><li>2 HTML presentations</li><li>Engineering audit signed</li><li>Security review signed</li><li>QA test report signed</li><li>Product review notes signed</li></ul></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <header><div><h2>Architecture conformance</h2><p class="sub">Same patterns as receipts module; no exceptions.</p></div><div class="num">03 / 8</div></header>
+    <table>
+      <thead><tr><th>Pattern</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>Uniform API shape (auth -> role gate -> Zod -> transaction -> writeAudit)</td><td><span class="pill ok">Yes</span></td></tr>
+        <tr><td>Permissions in <code>lib/knowledge/permissions.ts</code>, reused from routes</td><td><span class="pill ok">Yes</span></td></tr>
+        <tr><td>State machine enforced server-side</td><td><span class="pill ok">Yes</span></td></tr>
+        <tr><td>Author-as-reviewer rejected server-side</td><td><span class="pill ok">Yes</span></td></tr>
+        <tr><td>Audit on every state change (15 action codes)</td><td><span class="pill ok">Yes</span></td></tr>
+        <tr><td>Notifications inside the mutation transaction</td><td><span class="pill ok">Yes</span></td></tr>
+        <tr><td>Rate-limit on the AI route</td><td><span class="pill ok">5/hr/IP</span></td></tr>
+        <tr><td>Feature flag default false</td><td><span class="pill ok">Yes</span></td></tr>
+        <tr><td>3-gate LLM posture (mirrors receipts)</td><td><span class="pill ok">Yes</span></td></tr>
+        <tr><td>Sanitized Markdown on the server</td><td><span class="pill ok">Yes</span></td></tr>
+        <tr><td>Cron infrastructure reused from Phase 3</td><td><span class="pill ok">Yes</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="slide">
+    <header><div><h2>What product asked to change</h2><p class="sub">PdM + PdD + KM review across Wave 3.</p></div><div class="num">04 / 8</div></header>
+    <ul>
+      <li>Add <code>GET /api/knowledge/pending-review-count</code> so the sidebar badge stops 404'ing.</li>
+      <li>Widen <code>ARTICLE_LIST_SELECT</code> so list rows render kind + reliability + freshness natively.</li>
+      <li>Reviewer queue Unassigned tab filters server-side instead of approximating.</li>
+      <li>PATCH Zod schema widened with kind, reliabilityTier, externalSource, externalUrl + state-machine guards.</li>
+      <li>Default reliability tier per kind resolved server-side when client omits it.</li>
+      <li>AI structuring returns <code>{ error: "ai_ineligible_kind" }</code> for the 3 non-eligible kinds.</li>
+      <li>Article -> source-job link uses the correct route variant with <code>from=</code> param.</li>
+    </ul>
+    <div class="callout ok">All 7 changes landed in Wave 3. The 748-test suite stayed green.</div>
+  </section>
+
+  <section class="slide">
+    <header><div><h2>Test coverage</h2><p class="sub">Unit + integration + component + e2e.</p></div><div class="num">05 / 8</div></header>
+    <div class="grid-4">
+      <div class="card"><div class="label">Unit assertions added</div><div class="num-big">158</div></div>
+      <div class="card"><div class="label">Integration tests added</div><div class="num-big">49</div></div>
+      <div class="card"><div class="label">Component .tsx tests</div><div class="num-big">32</div></div>
+      <div class="card"><div class="label">E2E specs</div><div class="num-big">1</div></div>
+    </div>
+    <h3 class="section-h">Coverage matrix</h3>
+    <table>
+      <thead><tr><th>Surface</th><th>Happy</th><th>Edge</th><th>Attack/abuse</th></tr></thead>
+      <tbody>
+        <tr><td>Article create</td><td>yes</td><td>yes</td><td>XSS, oversized, missing kind</td></tr>
+        <tr><td>AI structuring</td><td>yes</td><td>ineligible kind</td><td>rate-limit, redaction</td></tr>
+        <tr><td>Review queue</td><td>yes</td><td>yes</td><td>same-actor, max-cycles</td></tr>
+        <tr><td>Publish</td><td>yes</td><td>wrong state</td><td>non-admin</td></tr>
+        <tr><td>Archive / Rescind</td><td>yes</td><td>wrong state</td><td>non-admin</td></tr>
+        <tr><td>External URL handling</td><td>dedup</td><td>canonical sort</td><td>javascript: rejected</td></tr>
+        <tr><td>RTL render</td><td>manual + parity test</td><td>-</td><td>-</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="slide">
+    <header><div><h2>Security posture</h2><p class="sub">12 threats. All mitigated or explicitly deferred.</p></div><div class="num">06 / 8</div></header>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Locks in place</h3>
+        <ul>
+          <li>Feature flag default false; surface 404s when off</li>
+          <li>3-gate AI: flag + env + provider-verified flag</li>
+          <li>AI is dry-run only in V1; real LLM path throws</li>
+          <li>Author cannot review own work (server-side)</li>
+          <li>Markdown sanitized server-side; <code>javascript:</code> rejected</li>
+          <li>URL canonicalize + SHA-256 dedup</li>
+          <li>Audit on every state change</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Deferred (with rationale)</h3>
+        <ul>
+          <li>SSRF-guarded title auto-fetch -> V2 with allowlist</li>
+          <li>Real LLM call -> V2 after vendor verification</li>
+          <li>Field-level encryption for <code>raw_input_snapshot</code> -> not required by current data class</li>
+          <li>Senior-employee reviewer role -> V2 product decision</li>
+          <li><code>department_only</code> visibility value -> V2</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <header><div><h2>Deployment posture</h2><p class="sub">Deploy is safe today. Nothing user-visible flips unless an admin asks.</p></div><div class="num">07 / 8</div></header>
+    <ul>
+      <li><code>knowledge_articles_enabled</code> default <strong>false</strong>. Surface 404s when off.</li>
+      <li><code>knowledge_ai_structuring_enabled</code> default <strong>false</strong>. AI route 503s when off.</li>
+      <li>Migrations are forward-only and identity-mapped on existing rows.</li>
+      <li>No new env vars required for V1 deploy.</li>
+      <li>Cron registry exposes 2 new jobs; admin "Run now" UI inherits automatically.</li>
+    </ul>
+    <div class="callout">To enable for a pilot ring: flip the master flag on for 2 reviewer users; rest of the org sees nothing.</div>
+  </section>
+
+  <section class="slide">
+    <header><div><h2>Ready for CEO review</h2><p class="sub">Engineering signs off. Security signs off. QA signs off. Product signs off.</p></div><div class="num">08 / 8</div></header>
+    <table>
+      <thead><tr><th>Reviewer</th><th>Verdict</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td>Production Engineering Lead</td><td><span class="pill ok">Approved</span></td><td><code>phase_1_engineering_audit.md</code></td></tr>
+        <tr><td>Senior Architect</td><td><span class="pill ok">Approved</span></td><td>same</td></tr>
+        <tr><td>QA Engineer</td><td><span class="pill ok">Approved</span></td><td><code>phase_1_qa_test_report.md</code></td></tr>
+        <tr><td>Evaluation Engineer</td><td><span class="pill ok">Approved</span></td><td>same</td></tr>
+        <tr><td>Security Engineer</td><td><span class="pill ok">Approved</span></td><td><code>phase_1_security_review.md</code></td></tr>
+        <tr><td>Product Manager</td><td><span class="pill ok">Approved</span></td><td><code>phase_1_product_review_notes.md</code></td></tr>
+        <tr><td>Product Designer</td><td><span class="pill ok">Approved</span></td><td>same</td></tr>
+        <tr><td>Knowledge Management Specialist</td><td><span class="pill ok">Approved</span></td><td>same</td></tr>
+      </tbody>
+    </table>
+    <div class="callout ok"><strong>Phase 1 is ready for CEO review.</strong></div>
+  </section>
+
+  <div class="footer">Skyware Internal Management Portal - Knowledge System Phase 1 Engineering Summary - 2026-05-27</div>
+</div>
+</body>
+</html>

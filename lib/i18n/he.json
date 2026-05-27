@@ -17,6 +17,7 @@
     "statistics": "סטטיסטיקה",
     "myStatistics": "הסטטיסטיקה שלי",
     "knowledge": "מאגר ידע",
+    "knowledgeReview": "סקירת ידע",
     "agent": "מרכז אוטומציה",
     "agentShort": "מרכז סוכן",
     "admin": "פאנל ניהול",
@@ -143,6 +144,7 @@
     "showClosed": "הצג סגורות",
     "markDone": "סמן כהושלם",
     "markDoneSubmit": "שלח וסמן כהושלם",
+    "createKnowledgeFromJob": "צור מאמר ידע מהמשימה הזו",
     "submitting": "שולח...",
     "summary": "סיכום",
     "summaryPlaceholder": "תאר מה בוצע...",
@@ -175,6 +177,14 @@
       "linkedPayment": "תשלום מקושר",
       "relatedPosts": "פוסטים קשורים"
     }
+  },
+  "markDone": {
+    "createKnowledgeArticleCheckbox": "צור מאמר ידע מהמשימה הזו",
+    "createKnowledgeArticleHint": "שומר לקח פנימי מקושר למשימה ופותח אותו אחרי השליחה.",
+    "createKnowledgeArticleSuccess": "מאמר ידע נוצר."
+  },
+  "myJobs": {
+    "createKnowledgeArticleButton": "צור מאמר ידע מהמשימה הזו"
   },
   "payment": {
     "status": {
@@ -769,6 +779,217 @@
       "titleRequired": "כותרת היא שדה חובה.",
       "bodyRequired": "תוכן הוא שדה חובה.",
       "saveFailed": "שמירת המאמר נכשלה."
+    },
+    "list": {
+      "title": "מאגר ידע",
+      "subtitle": "לקחים, מדריכים, הפניות חיצוניות והנחיות.",
+      "empty": "אין מאמרים תואמים.",
+      "noMatch": "אין מאמרים התואמים את החיפוש.",
+      "complianceBanner": "מאגר הידע כבוי. הפעל את הדגל במנהל > דגלי תכונות כדי לאפשר.",
+      "addInternal": "הוסף מאמר פנימי",
+      "addExternal": "הוסף הפניה חיצונית",
+      "filters": {
+        "kind": "סוג",
+        "status": "סטטוס",
+        "tag": "תגית",
+        "q": "חיפוש מאמרים...",
+        "mine": "שלי",
+        "needsReview": "ממתין לסקירה",
+        "all": "הכל",
+        "savedViews": "מהיר"
+      },
+      "cols": {
+        "title": "כותרת",
+        "kind": "סוג",
+        "status": "סטטוס",
+        "reliability": "אמינות",
+        "lastVerified": "אומת לאחרונה",
+        "author": "מחבר",
+        "updatedAt": "עודכן"
+      }
+    },
+    "detail": {
+      "back": "חזרה למאגר",
+      "edit": "עריכה",
+      "submitReview": "שלח לסקירה",
+      "runAi": "הפעל AI לארגון",
+      "review": "החלטה",
+      "publish": "פרסם",
+      "archive": "ארכיון",
+      "rescind": "ביטול פרסום",
+      "reVerify": "אמת מחדש",
+      "unApprove": "בטל אישור",
+      "unArchive": "החזר מארכיון",
+      "delete": "מחק טיוטה",
+      "fromJob": "ממשימה {publicNumber}",
+      "whyItMattersHeading": "למה זה חשוב",
+      "summary": {
+        "title": "כותרת",
+        "body": "תוכן",
+        "metadataHeading": "מטא-נתונים",
+        "sourceJobLink": "משימת מקור",
+        "relatedHeading": "מאמרים קשורים",
+        "relatedEmpty": "אין עדיין מאמרים קשורים.",
+        "reliability": "אמינות",
+        "freshness": "טריות",
+        "author": "מחבר",
+        "reviewer": "סוקר",
+        "lastVerifiedBy": "אומת על ידי",
+        "created": "נוצר",
+        "updated": "עודכן",
+        "externalSource": "מקור חיצוני",
+        "neverVerified": "לא אומת מעולם",
+        "verifiedAgo": "אומת לפני {days} ימים"
+      }
+    },
+    "new": {
+      "title": "מאמר חדש",
+      "subtitle": "בחר סוג מאמר וכתוב את הטיוטה הראשונה.",
+      "fields": {
+        "title": "כותרת",
+        "body": "תוכן",
+        "summary": "תקציר",
+        "whyItMatters": "למה זה חשוב",
+        "whyItMattersPlaceholder": "משפט או שניים. לא חובה אך מועיל.",
+        "kind": "סוג",
+        "reliability": "אמינות",
+        "tags": "תגיות"
+      }
+    },
+    "newExternal": {
+      "title": "הוסף הפניה חיצונית",
+      "subtitle": "שמור קישור למקור חיצוני עם תקציר קצר.",
+      "urlRequired": "כתובת URL היא שדה חובה.",
+      "urlInvalid": "כתובת ה-URL חייבת להתחיל ב-http:// או https://.",
+      "summaryRequired": "תקציר נדרש להפניות חיצוניות.",
+      "dedupToast": "כתובת URL זו כבר קיימת במאגר.",
+      "fields": {
+        "url": "כתובת URL",
+        "externalSource": "שם המקור",
+        "externalSourcePlaceholder": "למשל Microsoft Docs, ספק ידע"
+      }
+    },
+    "edit": {
+      "title": "עריכת מאמר"
+    },
+    "review": {
+      "title": "סקירת ידע",
+      "subtitle": "תיבת מאמרים הממתינים להחלטת סוקר.",
+      "tabs": {
+        "unassigned": "לא שובץ",
+        "mine": "שלי",
+        "all": "הכל",
+        "closed": "סגור"
+      },
+      "empty": "אין מאמרים בתור.",
+      "decideButton": "החלט",
+      "decideTitle": "החלטה על המאמר",
+      "submitDecision": "שלח החלטה",
+      "commentRequired": "נדרשת הערה כאשר מבקשים שינויים או דוחים.",
+      "decision": {
+        "label": "החלטה",
+        "approve": "אשר",
+        "approved": "אשר",
+        "approveHelp": "המאמר עומד בסטנדרט. מוכן לפרסום.",
+        "approvedHelp": "המאמר עומד בסטנדרט. מוכן לפרסום.",
+        "approvedSuccess": "אושר.",
+        "requestChanges": "בקש שינויים",
+        "changes_requested": "בקש שינויים",
+        "changes_requestedHelp": "על המחבר לתקן ולשלוח שוב.",
+        "changes_requestedSuccess": "התבקשו שינויים.",
+        "reject": "דחה",
+        "rejected": "דחה",
+        "rejectedHelp": "לא מתאים למאגר.",
+        "rejectedSuccess": "נדחה.",
+        "comment": "הערה",
+        "commentPlaceholder": "נדרשת בעת בקשת שינויים או דחייה."
+      }
+    },
+    "ai": {
+      "title": "סקירת ארגון AI",
+      "confirmTitle": "להפעיל ארגון AI?",
+      "confirmBody": "פעולה זו תפיק גרסה מאורגנת של הטיוטה. אתה תחליט אם לקבל אותה.",
+      "accept": "אשר את השינויים",
+      "reject": "דחה",
+      "acceptSuccess": "ארגון AI הוחל.",
+      "drySetNote": "ארגון AI רץ במצב יבש. שום דבר לא מתפרסם עד שתאשר כאן.",
+      "empty": "אין עדיין תוצאת ארגון AI. הפעל ארגון AI מדף המאמר תחילה.",
+      "sideBySideHeading": {
+        "original": "מקור",
+        "structured": "מאורגן"
+      }
+    },
+    "revisions": {
+      "title": "גרסאות",
+      "empty": "אין עדיין גרסאות.",
+      "versionLabel": "גרסה {n}",
+      "viewAll": "היסטוריית גרסאות"
+    },
+    "actions": {
+      "submitReviewConfirmTitle": "לשלוח לסקירה?",
+      "submitReviewConfirmBody": "הסוקרים יראו את המאמר בתור שלהם. לא תוכל לערוך עד סגירת הסקירה.",
+      "submitReviewSuccess": "נשלח לסקירה.",
+      "publishConfirmTitle": "לפרסם את המאמר?",
+      "publishConfirmBody": "מאמרים מפורסמים גלויים לכל בעלי הגישה לפורטל.",
+      "publishSuccess": "המאמר פורסם.",
+      "archiveConfirmTitle": "להעביר לארכיון?",
+      "archiveConfirmBody": "מאמרים בארכיון לא מופיעים בחיפוש וברשימות. שמורים לצורכי ביקורת.",
+      "archiveSuccess": "המאמר הועבר לארכיון.",
+      "rescindConfirmTitle": "לבטל פרסום?",
+      "rescindConfirmBody": "ביטול פרסום הוא ארכיון מחמיר: המאמר יורד עם סיבה מתועדת.",
+      "rescindNoteLabel": "סיבת הביטול",
+      "rescindNotePlaceholder": "מדוע המאמר מבוטל?",
+      "rescindNoteRequired": "נדרשת סיבה.",
+      "rescindSuccess": "פרסום המאמר בוטל.",
+      "reVerifyConfirmTitle": "לסמן כעדכני?",
+      "reVerifyConfirmBody": "מעדכן את חותמת האימות לאחרונה. כל מי שאימת בפועל מאמר מפורסם יכול לרענן.",
+      "reVerifySuccess": "האימות רוענן.",
+      "unApproveConfirmTitle": "לבטל אישור?",
+      "unApproveConfirmBody": "המאמר חוזר לסקירה. הסוקר הקודם מוסר.",
+      "unApproveSuccess": "הוחזר לסקירה.",
+      "unArchiveConfirmTitle": "להחזיר מארכיון?",
+      "unArchiveConfirmBody": "המאמר חוזר למצב טיוטה כדי שהמחבר יוכל להמשיך לעבוד עליו.",
+      "unArchiveSuccess": "המאמר הוחזר לטיוטה.",
+      "runAiSuccess": "ארגון AI הופעל.",
+      "deleteSuccess": "הטיוטה נמחקה.",
+      "deleteConfirmTitle": "למחוק את הטיוטה?",
+      "deleteConfirmBody": "ניתן למחוק טיוטות לצמיתות. מאמרים מפורסמים משתמשים בארכיון או בביטול פרסום."
+    },
+    "kinds": {
+      "internal_task_lesson": "לקח ממשימה פנימית",
+      "external_reference": "הפניה חיצונית",
+      "how_to_guide": "מדריך \"איך\"",
+      "troubleshooting_note": "פתרון בעיות",
+      "architecture_decision": "החלטת ארכיטקטורה",
+      "process_policy_note": "תהליך / מדיניות"
+    },
+    "statuses": {
+      "draft": "טיוטה",
+      "ai_structured": "אורגן ב-AI",
+      "pending_review": "ממתין לסקירה",
+      "approved": "אושר",
+      "published": "פורסם",
+      "archived": "בארכיון"
+    },
+    "reliability": {
+      "verified": "מאומת",
+      "verifiedHelp": "אומת בנפרד על ידי לפחות שני מהנדסים בכירים.",
+      "validated": "תוקף",
+      "validatedHelp": "נסקר ונחשב נכון, אך רק על ידי מאמת אחד.",
+      "single_source": "מקור יחיד",
+      "single_sourceHelp": "ממקור אחד. יש לטפל בזהירות.",
+      "anecdotal": "אנקדוטלי",
+      "anecdotalHelp": "כתיבת עובד. שימושי אך לא מאומת."
+    },
+    "errors": {
+      "notAuthor": "רק המחבר יכול לערוך את הטיוטה.",
+      "notReviewer": "לא הוקצית לסקור את המאמר.",
+      "sameActor": "מחברים אינם יכולים לסקור את עבודתם.",
+      "stateInvalid": "פעולה זו אינה מותרת במצב הנוכחי.",
+      "duplicateUrl": "כתובת URL זו כבר קיימת במאגר."
+    },
+    "common": {
+      "version": "גרסה"
     }
   },
   "clientHealth": {

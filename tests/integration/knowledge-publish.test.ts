@@ -33,26 +33,19 @@ describe("POST /api/knowledge/[slug]/publish", () => {
   it("sets status=published and stamps publishedAt when previously null", async () => {
     mockAuthAs(makeAdminSession({ id: "admin-1" }));
 
-    // Slug lookup outside the transaction.
-    prisma.knowledgeArticle.findUnique
-      .mockResolvedValueOnce({ id: "art-1" }) // slug lookup in route
-      .mockResolvedValueOnce({ id: "art-1", status: "draft", publishedAt: null });
+    // V1 publish requires the article to be in 'approved' status.
+    prisma.knowledgeArticle.findUnique.mockResolvedValueOnce({
+      id: "art-1",
+      status: "approved",
+      publishedAt: null,
+    });
 
     prisma.knowledgeArticle.update.mockResolvedValueOnce({
       id: "art-1",
       slug: "vpn-howto",
       title: "VPN",
-      body: "...",
-      summary: null,
       status: "published",
-      visibility: "internal",
       publishedAt: new Date("2026-05-24T12:00:00Z"),
-      updatedAt: new Date(),
-      createdAt: new Date(),
-      author: { id: "admin-1", displayName: "Admin" },
-      lastEditedBy: { id: "admin-1", displayName: "Admin" },
-      relatedClient: null,
-      tags: [],
     });
 
     prisma.auditLog.create.mockResolvedValueOnce({ id: "a-1" });
@@ -71,7 +64,7 @@ describe("POST /api/knowledge/[slug]/publish", () => {
     const auditCall = prisma.auditLog.create.mock.calls[0]?.[0] as {
       data: { action: string; entityId: string };
     };
-    expect(auditCall.data.action).toBe("knowledge.published");
+    expect(auditCall.data.action).toBe("knowledge.article.published");
     expect(auditCall.data.entityId).toBe("art-1");
   });
 
@@ -79,29 +72,18 @@ describe("POST /api/knowledge/[slug]/publish", () => {
     mockAuthAs(makeAdminSession({ id: "admin-1" }));
 
     const firstPublished = new Date("2026-04-01T08:00:00Z");
-    prisma.knowledgeArticle.findUnique
-      .mockResolvedValueOnce({ id: "art-2" })
-      .mockResolvedValueOnce({
-        id: "art-2",
-        status: "draft",
-        publishedAt: firstPublished,
-      });
+    prisma.knowledgeArticle.findUnique.mockResolvedValueOnce({
+      id: "art-2",
+      status: "approved",
+      publishedAt: firstPublished,
+    });
 
     prisma.knowledgeArticle.update.mockResolvedValueOnce({
       id: "art-2",
       slug: "x",
       title: "x",
-      body: "x",
-      summary: null,
       status: "published",
-      visibility: "internal",
       publishedAt: firstPublished,
-      updatedAt: new Date(),
-      createdAt: new Date(),
-      author: { id: "admin-1", displayName: "Admin" },
-      lastEditedBy: { id: "admin-1", displayName: "Admin" },
-      relatedClient: null,
-      tags: [],
     });
     prisma.auditLog.create.mockResolvedValueOnce({ id: "a-2" });
 
@@ -111,6 +93,18 @@ describe("POST /api/knowledge/[slug]/publish", () => {
       data: { publishedAt: Date };
     };
     expect(updateCall.data.publishedAt).toEqual(firstPublished);
+  });
+
+  it("rejects publish from a non-approved status with 422", async () => {
+    mockAuthAs(makeAdminSession({ id: "admin-1" }));
+    prisma.knowledgeArticle.findUnique.mockResolvedValueOnce({
+      id: "art-3",
+      status: "draft",
+      publishedAt: null,
+    });
+    const res = await POST(makeRequest("draft-art"), makeParams("draft-art"));
+    expect(res.status).toBe(422);
+    expect(prisma.knowledgeArticle.update).not.toHaveBeenCalled();
   });
 
   it("returns 404 when the slug does not exist", async () => {

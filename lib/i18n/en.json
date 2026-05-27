@@ -17,6 +17,7 @@
     "statistics": "Statistics",
     "myStatistics": "My Statistics",
     "knowledge": "Knowledge",
+    "knowledgeReview": "Knowledge review",
     "agent": "Agent Control Center",
     "agentShort": "Agent Center",
     "admin": "Admin Panel",
@@ -143,6 +144,7 @@
     "showClosed": "Show closed",
     "markDone": "Mark job done",
     "markDoneSubmit": "Submit and mark done",
+    "createKnowledgeFromJob": "Create knowledge article from this job",
     "submitting": "Submitting...",
     "summary": "Summary",
     "summaryPlaceholder": "Describe what was done...",
@@ -175,6 +177,14 @@
       "linkedPayment": "Linked payment",
       "relatedPosts": "Related posts"
     }
+  },
+  "markDone": {
+    "createKnowledgeArticleCheckbox": "Create a knowledge article from this job",
+    "createKnowledgeArticleHint": "Saves an internal lesson tied to this job and opens it after submission.",
+    "createKnowledgeArticleSuccess": "Knowledge article created."
+  },
+  "myJobs": {
+    "createKnowledgeArticleButton": "Create knowledge article from this job"
   },
   "payment": {
     "status": {
@@ -769,6 +779,217 @@
       "titleRequired": "Title is required.",
       "bodyRequired": "Body is required.",
       "saveFailed": "Failed to save the article."
+    },
+    "list": {
+      "title": "Knowledge",
+      "subtitle": "Lessons, runbooks, external references, and policy notes.",
+      "empty": "No articles match.",
+      "noMatch": "No articles match your search.",
+      "complianceBanner": "Knowledge articles are disabled. Toggle the flag in Admin > Feature Flags to enable.",
+      "addInternal": "Add internal article",
+      "addExternal": "Add external reference",
+      "filters": {
+        "kind": "Kind",
+        "status": "Status",
+        "tag": "Tag",
+        "q": "Search articles...",
+        "mine": "My contributions",
+        "needsReview": "Needs review",
+        "all": "All",
+        "savedViews": "Quick"
+      },
+      "cols": {
+        "title": "Title",
+        "kind": "Kind",
+        "status": "Status",
+        "reliability": "Reliability",
+        "lastVerified": "Last verified",
+        "author": "Author",
+        "updatedAt": "Updated"
+      }
+    },
+    "detail": {
+      "back": "Back to knowledge",
+      "edit": "Edit",
+      "submitReview": "Submit for review",
+      "runAi": "Run AI structure",
+      "review": "Decide review",
+      "publish": "Publish",
+      "archive": "Archive",
+      "rescind": "Rescind",
+      "reVerify": "Re-verify",
+      "unApprove": "Un-approve",
+      "unArchive": "Un-archive",
+      "delete": "Delete draft",
+      "fromJob": "From job {publicNumber}",
+      "whyItMattersHeading": "Why it matters",
+      "summary": {
+        "title": "Title",
+        "body": "Body",
+        "metadataHeading": "Metadata",
+        "sourceJobLink": "Source job",
+        "relatedHeading": "Related articles",
+        "relatedEmpty": "No related articles yet.",
+        "reliability": "Reliability",
+        "freshness": "Freshness",
+        "author": "Author",
+        "reviewer": "Reviewer",
+        "lastVerifiedBy": "Last verified by",
+        "created": "Created",
+        "updated": "Updated",
+        "externalSource": "External source",
+        "neverVerified": "Never verified",
+        "verifiedAgo": "Verified {days}d ago"
+      }
+    },
+    "new": {
+      "title": "New article",
+      "subtitle": "Pick the article kind and write the first draft.",
+      "fields": {
+        "title": "Title",
+        "body": "Body",
+        "summary": "Summary",
+        "whyItMatters": "Why it matters",
+        "whyItMattersPlaceholder": "One or two sentences. Optional but useful.",
+        "kind": "Kind",
+        "reliability": "Reliability",
+        "tags": "Tags"
+      }
+    },
+    "newExternal": {
+      "title": "Add external reference",
+      "subtitle": "Save a link to an external source with a short summary.",
+      "urlRequired": "URL is required.",
+      "urlInvalid": "URL must start with http:// or https://.",
+      "summaryRequired": "Summary is required for external references.",
+      "dedupToast": "This URL is already in the knowledge base.",
+      "fields": {
+        "url": "URL",
+        "externalSource": "Source name",
+        "externalSourcePlaceholder": "e.g. Microsoft Docs, vendor KB"
+      }
+    },
+    "edit": {
+      "title": "Edit article"
+    },
+    "review": {
+      "title": "Knowledge review",
+      "subtitle": "Inbox of articles waiting for a reviewer decision.",
+      "tabs": {
+        "unassigned": "Unassigned",
+        "mine": "Mine",
+        "all": "All",
+        "closed": "Closed"
+      },
+      "empty": "No articles in this queue.",
+      "decideButton": "Decide",
+      "decideTitle": "Decide on this article",
+      "submitDecision": "Submit decision",
+      "commentRequired": "A comment is required when requesting changes or rejecting.",
+      "decision": {
+        "label": "Decision",
+        "approve": "Approve",
+        "approved": "Approve",
+        "approveHelp": "The article meets the bar. Ready to publish.",
+        "approvedHelp": "The article meets the bar. Ready to publish.",
+        "approvedSuccess": "Approved.",
+        "requestChanges": "Request changes",
+        "changes_requested": "Request changes",
+        "changes_requestedHelp": "Author should revise and resubmit.",
+        "changes_requestedSuccess": "Changes requested.",
+        "reject": "Reject",
+        "rejected": "Reject",
+        "rejectedHelp": "Not appropriate for the knowledge base.",
+        "rejectedSuccess": "Rejected.",
+        "comment": "Comment",
+        "commentPlaceholder": "Required when requesting changes or rejecting."
+      }
+    },
+    "ai": {
+      "title": "AI structure review",
+      "confirmTitle": "Run AI structure?",
+      "confirmBody": "This generates a structured version of your draft. You decide whether to accept the changes.",
+      "accept": "Accept these changes",
+      "reject": "Reject",
+      "acceptSuccess": "AI structure applied.",
+      "drySetNote": "AI structuring runs in dry-set mode. Nothing is published until you accept here.",
+      "empty": "No AI structuring snapshot yet. Run AI structure from the article detail page first.",
+      "sideBySideHeading": {
+        "original": "Original",
+        "structured": "Structured"
+      }
+    },
+    "revisions": {
+      "title": "Revisions",
+      "empty": "No revisions yet.",
+      "versionLabel": "Version {n}",
+      "viewAll": "Revision history"
+    },
+    "actions": {
+      "submitReviewConfirmTitle": "Submit for review?",
+      "submitReviewConfirmBody": "Reviewers will see this article in their queue. You will not be able to edit until the review closes.",
+      "submitReviewSuccess": "Submitted for review.",
+      "publishConfirmTitle": "Publish this article?",
+      "publishConfirmBody": "Published articles are visible to everyone with portal access.",
+      "publishSuccess": "Article published.",
+      "archiveConfirmTitle": "Archive this article?",
+      "archiveConfirmBody": "Archived articles drop out of search and listings. They are preserved for audit.",
+      "archiveSuccess": "Article archived.",
+      "rescindConfirmTitle": "Rescind this article?",
+      "rescindConfirmBody": "Rescinding is a stronger archive: the article is taken down with a documented reason.",
+      "rescindNoteLabel": "Rescission reason",
+      "rescindNotePlaceholder": "Why is this article being rescinded?",
+      "rescindNoteRequired": "A reason is required.",
+      "rescindSuccess": "Article rescinded.",
+      "reVerifyConfirmTitle": "Mark as still applicable?",
+      "reVerifyConfirmBody": "Bumps the last-verified timestamp to now. Anyone can re-verify a published article they have actually re-checked.",
+      "reVerifySuccess": "Verification refreshed.",
+      "unApproveConfirmTitle": "Un-approve this article?",
+      "unApproveConfirmBody": "The article returns to pending review. The previous reviewer is unassigned.",
+      "unApproveSuccess": "Returned to pending review.",
+      "unArchiveConfirmTitle": "Un-archive this article?",
+      "unArchiveConfirmBody": "The article returns to draft so authors can pick it back up.",
+      "unArchiveSuccess": "Article returned to draft.",
+      "runAiSuccess": "AI structuring started.",
+      "deleteSuccess": "Draft deleted.",
+      "deleteConfirmTitle": "Delete this draft?",
+      "deleteConfirmBody": "Drafts can be deleted permanently. Published articles use archive or rescind instead."
+    },
+    "kinds": {
+      "internal_task_lesson": "Internal task lesson",
+      "external_reference": "External reference",
+      "how_to_guide": "How-to guide",
+      "troubleshooting_note": "Troubleshooting note",
+      "architecture_decision": "Architecture decision",
+      "process_policy_note": "Process / policy note"
+    },
+    "statuses": {
+      "draft": "Draft",
+      "ai_structured": "AI structured",
+      "pending_review": "Pending review",
+      "approved": "Approved",
+      "published": "Published",
+      "archived": "Archived"
+    },
+    "reliability": {
+      "verified": "Verified",
+      "verifiedHelp": "Independently verified by at least two senior engineers.",
+      "validated": "Validated",
+      "validatedHelp": "Reviewed and considered correct, but only one validator.",
+      "single_source": "Single source",
+      "single_sourceHelp": "Drawn from one source. Treat with care.",
+      "anecdotal": "Anecdotal",
+      "anecdotalHelp": "Worker writeup. Useful, but unverified."
+    },
+    "errors": {
+      "notAuthor": "Only the author can edit this draft.",
+      "notReviewer": "You are not assigned to review this article.",
+      "sameActor": "Authors cannot review their own work.",
+      "stateInvalid": "This action is not allowed in the current state.",
+      "duplicateUrl": "This URL is already in the knowledge base."
+    },
+    "common": {
+      "version": "Version"
     }
   },
   "clientHealth": {

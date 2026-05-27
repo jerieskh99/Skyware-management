@@ -12,6 +12,7 @@ import { JobSlaBar } from "@/components/jobs/JobSlaBar";
 import { JobTimeline } from "@/components/jobs/JobTimeline";
 import { JobTagChips } from "@/components/jobs/JobTagChips";
 import { JobTransitionButtons } from "@/components/jobs/JobTransitionButtons";
+import { CreateKnowledgeFromJobButton } from "@/components/jobs/CreateKnowledgeFromJobButton";
 import { JobDetailTabs, type JobDetailTabKey } from "@/components/jobs/JobDetailTabs";
 import { JobOverviewTab } from "@/components/jobs/JobOverviewTab";
 import { JobTimelineTab } from "@/components/jobs/JobTimelineTab";
@@ -52,13 +53,18 @@ export default async function JobDetailPage({ params, searchParams }: Props) {
   const backLabel = FROM_LABELS[from] ?? "My Jobs";
   const backHref = FROM_HREFS[from] ?? "/my-jobs";
 
-  const [job, tabsEnabled] = await Promise.all([
+  const [job, tabsEnabled, knowledgeEnabled] = await Promise.all([
     getJobForUser(user, id),
     getFeatureFlag("job_detail_tabs_enabled"),
+    getFeatureFlag("knowledge_articles_enabled"),
   ]);
   if (!job) notFound();
 
   const admin = isAdmin(user);
+  const showCreateKnowledge =
+    knowledgeEnabled &&
+    job.status === "reviewed" &&
+    (admin || job.assignedEmployeeId === user.id);
   const requestedTab = sp["tab"];
   const activeTab: JobDetailTabKey = VALID_TABS.includes(
     requestedTab as JobDetailTabKey
@@ -174,6 +180,11 @@ export default async function JobDetailPage({ params, searchParams }: Props) {
               currentUserId={user.id}
               isAdmin={admin}
             />
+            {showCreateKnowledge && (
+              <div className="pt-2">
+                <CreateKnowledgeFromJobButton jobId={job.id} />
+              </div>
+            )}
           </section>
 
           <Separator />

@@ -71,6 +71,9 @@ function buildPrismaMock() {
     recurringJobTemplate: modelStub(),
     knowledgeArticle: modelStub(),
     knowledgeArticleTag: modelStub(),
+    knowledgeArticleRevision: modelStub(),
+    knowledgeArticleReview: modelStub(),
+    knowledgeArticleReference: modelStub(),
     clientHealthSnapshot: modelStub(),
     $transaction: vi.fn(async (arg: unknown) => {
       if (typeof arg === "function") {

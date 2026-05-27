@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Knowledge System Phase 1 - CEO Briefing</title>
+<style>
+  :root {
+    --bg:#fafaf7; --surface:#ffffff; --ink:#18181b; --ink-2:#3f3f46; --ink-3:#71717a;
+    --line:#e4e4e7; --line-2:#f4f4f5;
+    --brand:#4f46e5; --brand-2:#6366f1; --brand-soft:#eef2ff;
+    --warn:#ca8a04; --warn-soft:#fef9c3;
+    --ok:#15803d; --ok-soft:#dcfce7;
+    --crit:#b91c1c; --crit-soft:#fee2e2;
+    --shadow:0 1px 3px rgba(24,24,27,0.04),0 8px 24px rgba(24,24,27,0.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#09090b; --surface:#18181b; --ink:#fafafa; --ink-2:#d4d4d8; --ink-3:#a1a1aa;
+      --line:#27272a; --line-2:#18181b; --brand:#818cf8; --brand-2:#a5b4fc; --brand-soft:#1e1b4b;
+      --warn:#facc15; --warn-soft:#422006; --ok:#4ade80; --ok-soft:#052e16;
+      --crit:#f87171; --crit-soft:#450a0a;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior:smooth; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,Arial,sans-serif; font-size:17px; line-height:1.6; }
+  .deck { max-width:1200px; margin:0 auto; padding:24px 24px 120px; }
+  .topbar { position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px 24px; background:rgba(255,255,255,0.85); border:1px solid var(--line); border-radius:16px; margin-bottom:36px; backdrop-filter:saturate(180%) blur(12px); }
+  @media (prefers-color-scheme: dark) { .topbar { background:rgba(24,24,27,0.85); } }
+  .brand-mark { display:flex; align-items:center; gap:12px; font-weight:700; font-size:15px; }
+  .brand-dot { width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg,var(--brand),var(--brand-2)); display:inline-grid; place-items:center; color:white; font-weight:800; font-size:14px; box-shadow:0 2px 8px rgba(79,70,229,0.32); }
+  .topbar .meta { font-size:13px; color:var(--ink-3); }
+  .badge { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:999px; background:var(--ok-soft); color:var(--ok); font-size:12px; font-weight:600; border:1px solid color-mix(in srgb, var(--ok) 30%, transparent); }
+  .topbar button { background:transparent; color:var(--ink-2); border:1px solid var(--line); padding:8px 14px; border-radius:10px; font-size:13px; font-weight:500; cursor:pointer; }
+  .topbar button:hover { color:var(--ink); border-color:var(--brand); }
+  .slide { background:var(--surface); border:1px solid var(--line); border-radius:24px; padding:56px; margin-bottom:32px; box-shadow:var(--shadow); scroll-margin-top:120px; }
+  .slide-num { display:inline-block; font-size:13px; font-weight:600; color:var(--brand); letter-spacing:0.12em; text-transform:uppercase; margin-bottom:8px; }
+  .slide h2.title { font-size:36px; font-weight:700; letter-spacing:-0.02em; margin:0 0 12px; line-height:1.15; }
+  .slide .kicker { color:var(--ink-3); font-size:17px; margin:0 0 32px; max-width:760px; }
+  .hero { background:linear-gradient(135deg,#0f766e 0%,#15803d 55%,#4f46e5 100%); color:white; padding:80px 56px; border:none; }
+  .hero .eyebrow { display:inline-flex; align-items:center; gap:8px; padding:6px 14px; border-radius:999px; background:rgba(255,255,255,0.18); font-size:13px; font-weight:600; margin-bottom:24px; }
+  .hero h1 { font-size:56px; line-height:1.05; letter-spacing:-0.02em; margin:0 0 20px; max-width:900px; }
+  .hero p { font-size:20px; line-height:1.5; margin:0 0 36px; max-width:760px; opacity:0.92; }
+  .hero .hero-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin-top:12px; }
+  .hero .stat { background:rgba(255,255,255,0.12); border-radius:14px; padding:18px; border:1px solid rgba(255,255,255,0.18); }
+  .hero .stat .num { font-size:30px; font-weight:700; line-height:1.1; }
+  .hero .stat .lbl { font-size:13px; opacity:0.86; margin-top:6px; }
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+  .grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+  .grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; }
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:24px; }
+  .card.tint { background:var(--brand-soft); border-color:color-mix(in srgb, var(--brand) 20%, transparent); }
+  .card h3 { margin:0 0 10px; font-size:18px; font-weight:600; }
+  .card p { margin:4px 0; color:var(--ink-2); font-size:15px; }
+  .metric-card { padding:28px; }
+  .metric-card .num-big { font-size:48px; font-weight:700; letter-spacing:-0.02em; line-height:1; }
+  .metric-card .lbl { color:var(--ink-3); font-size:14px; margin-top:10px; font-weight:500; }
+  ul.clean, ol.clean { margin:0; padding-left:22px; }
+  ul.clean li, ol.clean li { margin:8px 0; color:var(--ink-2); }
+  ul.bare { list-style:none; margin:0; padding:0; }
+  ul.bare li { padding:12px 14px; border-radius:10px; margin-bottom:8px; background:var(--line-2); color:var(--ink-2); display:flex; align-items:start; gap:12px; }
+  ul.bare li::before { content:""; flex:0 0 6px; height:6px; border-radius:999px; background:var(--ok); margin-top:9px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; margin-bottom:12px; }
+  thead th { text-align:left; background:var(--line-2); color:var(--ink-3); padding:10px 12px; border-bottom:1px solid var(--line); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; }
+  tbody td { padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top; color:var(--ink-2); }
+  .pill { display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+  .pill.ok { background:var(--ok-soft); color:var(--ok); }
+  .pill.warn { background:var(--warn-soft); color:var(--warn); }
+  .callout { background:var(--brand-soft); color:var(--brand); border-left:4px solid var(--brand); padding:18px 22px; border-radius:12px; margin:18px 0; font-size:15px; font-weight:500; }
+  .callout.ok { background:var(--ok-soft); color:var(--ok); border-left-color:var(--ok); }
+  .callout.warn { background:var(--warn-soft); color:var(--warn); border-left-color:var(--warn); }
+  .approval-bar { background:linear-gradient(135deg,#18181b,#27272a); color:white; border-radius:18px; padding:36px; margin-top:22px; }
+  .approval-bar h3 { margin:0 0 10px; font-size:22px; }
+  .approval-bar p { margin:0 0 20px; opacity:0.86; font-size:15px; }
+  .approval-actions { display:flex; gap:12px; flex-wrap:wrap; }
+  .btn-approve, .btn-changes, .btn-hold { padding:12px 22px; border-radius:12px; font-size:14px; font-weight:600; border:1px solid transparent; cursor:default; }
+  .btn-approve { background:white; color:#18181b; }
+  .btn-changes { background:transparent; color:white; border-color:rgba(255,255,255,0.4); }
+  .btn-hold { background:transparent; color:rgba(255,255,255,0.7); border-color:rgba(255,255,255,0.2); }
+  .footer { text-align:center; color:var(--ink-3); font-size:13px; padding:24px 0 8px; }
+  code { background:var(--line-2); color:var(--ink); padding:1px 6px; border-radius:4px; font-size:13px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+  @media (max-width:980px) { .deck { padding:16px; } .slide { padding:36px 28px; border-radius:18px; } .hero { padding:56px 28px; } .hero h1 { font-size:40px; } .hero .hero-grid, .grid-2, .grid-3, .grid-4 { grid-template-columns:1fr; } .slide h2.title { font-size:28px; } }
+  @media print { .topbar { display:none; } .slide, .hero { page-break-after:always; box-shadow:none; border:1px solid #d4d4d8; } }
+</style>
+</head>
+<body>
+<div class="deck">
+
+  <header class="topbar">
+    <div class="brand-mark"><span class="brand-dot">SK</span> Knowledge System V1 - CEO Briefing</div>
+    <div class="meta">2026-05-27 - Implementation complete - <span class="badge">Ready for CEO review</span></div>
+    <div><button type="button" onclick="window.print()">Print</button></div>
+  </header>
+
+  <section class="slide hero">
+    <span class="eyebrow">Phase 1 shipped on 2026-05-27</span>
+    <h1>Company memory is live, behind a flag, awaiting your call.</h1>
+    <p>Every layer of the approved Phase 1 plan landed. Engineering, QA, security, and the product reviewers all signed off. Nothing is user-visible until you say go.</p>
+    <div class="hero-grid">
+      <div class="stat"><div class="num">748</div><div class="lbl">tests pass (+254)</div></div>
+      <div class="stat"><div class="num">5</div><div class="lbl">DB migrations</div></div>
+      <div class="stat"><div class="num">12</div><div class="lbl">new API routes</div></div>
+      <div class="stat"><div class="num">0</div><div class="lbl">new dependencies</div></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">02 - What you are seeing</span>
+    <h2 class="title">A complete loop, end to end.</h2>
+    <p class="kicker">A worker can capture a lesson from a finished job. An admin can approve it. A reader can find it. That is the V1 promise.</p>
+    <div class="grid-3">
+      <div class="card"><h3>Worker, post-task</h3><p>Button on a reviewed job: "Create knowledge article from this job." Pre-fills the form with the source context. Optional AI assist structures the writeup. The worker stays in control.</p></div>
+      <div class="card"><h3>Worker, useful link</h3><p>"+ Add external reference" full-page form. URL canonicalized so duplicates are caught. Reviewer adds verified-on stamp on approval.</p></div>
+      <div class="card"><h3>Admin reviewer</h3><p>Dedicated <code>/knowledge/review</code> inbox with Unassigned / Mine / All / Closed tabs. Approve, Request changes, Reject. Same actor cannot review own work.</p></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">03 - Implementation summary</span>
+    <h2 class="title">Four waves, four sessions, one team.</h2>
+    <div class="grid-4">
+      <div class="card metric-card"><div class="num-big">5</div><div class="lbl">migrations - Wave 1</div></div>
+      <div class="card metric-card"><div class="num-big">12</div><div class="lbl">lib modules - Wave 2A</div></div>
+      <div class="card metric-card"><div class="num-big">12</div><div class="lbl">API routes - Wave 2B</div></div>
+      <div class="card metric-card"><div class="num-big">22</div><div class="lbl">components - Wave 2C</div></div>
+    </div>
+    <h3 style="margin-top:24px; font-size:18px;">Wave 3: product review iteration</h3>
+    <ul class="bare">
+      <li>Sidebar review badge endpoint added so the count appears reliably.</li>
+      <li>List rows now render kind, reliability, freshness chips natively.</li>
+      <li>Reviewer queue "Unassigned" tab filters server-side, not in memory.</li>
+      <li>PATCH endpoint now accepts more fields with state-machine guards.</li>
+      <li>Default reliability tier per article kind resolves server-side.</li>
+      <li>AI structuring returns a clear error code for ineligible kinds.</li>
+      <li>Source-job link uses the right job route.</li>
+    </ul>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">04 - Tests, quality, security</span>
+    <h2 class="title">Everything that should run did. Twice.</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Test counts</h3>
+        <table>
+          <thead><tr><th>Bucket</th><th>Added</th></tr></thead>
+          <tbody>
+            <tr><td>Unit assertions</td><td>158</td></tr>
+            <tr><td>Integration tests</td><td>49</td></tr>
+            <tr><td>Component .tsx tests</td><td>32</td></tr>
+            <tr><td>E2E specs</td><td>1</td></tr>
+            <tr><td><strong>Total</strong></td><td><strong>+254</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card tint">
+        <h3>Security defaults (V1)</h3>
+        <ul class="clean">
+          <li>Master flag <code>knowledge_articles_enabled</code> = false</li>
+          <li>AI flag <code>knowledge_ai_structuring_enabled</code> = false</li>
+          <li>Real LLM call blocked behind 3 independent gates</li>
+          <li>Markdown sanitized server-side</li>
+          <li>Secrets scanner runs on submit (9 patterns)</li>
+          <li>Author cannot review own work (server-side guard)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">05 - Sign-offs</span>
+    <h2 class="title">Eight reviewers. Eight approvals.</h2>
+    <table>
+      <thead><tr><th>Reviewer</th><th>Verdict</th><th>See</th></tr></thead>
+      <tbody>
+        <tr><td>Production Engineering Lead</td><td><span class="pill ok">Approved</span></td><td><code>phase_1_engineering_audit.md</code></td></tr>
+        <tr><td>Senior Architect</td><td><span class="pill ok">Approved</span></td><td>same</td></tr>
+        <tr><td>QA Engineer</td><td><span class="pill ok">Approved</span></td><td><code>phase_1_qa_test_report.md</code></td></tr>
+        <tr><td>Evaluation Engineer</td><td><span class="pill ok">Approved</span></td><td>same</td></tr>
+        <tr><td>Security Engineer</td><td><span class="pill ok">Approved</span></td><td><code>phase_1_security_review.md</code></td></tr>
+        <tr><td>Product Manager</td><td><span class="pill ok">Approved</span></td><td><code>phase_1_product_review_notes.md</code></td></tr>
+        <tr><td>Product Designer</td><td><span class="pill ok">Approved</span></td><td>same</td></tr>
+        <tr><td>Knowledge Management Specialist</td><td><span class="pill ok">Approved</span></td><td>same</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">06 - Risks already in V1's mitigation</span>
+    <h2 class="title">The top three pilot risks have answers.</h2>
+    <div class="grid-3">
+      <div class="card">
+        <h3>Reviewer queue overflow</h3>
+        <p>Default SLA gentle prod at 3 days, escalation at 5 days. Pause submissions if &gt;30% stuck &gt;7 days. Dashboard exposes per-reviewer time-to-decision.</p>
+      </div>
+      <div class="card">
+        <h3>Secrets in published articles</h3>
+        <p>9-pattern scanner runs at submit time. Reviewer sees a warning with pattern type and an 8-char preview. Weekly re-scan cron warns on already-published rows.</p>
+      </div>
+      <div class="card">
+        <h3>External link rot</h3>
+        <p>Weekly link-health cron HEAD-checks every external_reference; broken links notify the reviewer. Freshness pill turns amber after the per-kind threshold (180 days for external).</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">07 - What is deferred</span>
+    <h2 class="title">V2 and V3 are framed, not started.</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h3>V2 candidates</h3>
+        <ul class="clean">
+          <li>Auto-fetch external page title (SSRF-guarded)</li>
+          <li>Senior-employee reviewer role</li>
+          <li>Real LLM call after vendor sign-off</li>
+          <li>LLM-grader warn-only against the editorial rubric</li>
+          <li>Per-author monthly cost quota</li>
+          <li>Attachments on articles (reuse S3)</li>
+          <li>Saved searches</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>V3 candidates</h3>
+        <ul class="clean">
+          <li>Multi-language bodies (he / en / ar)</li>
+          <li>Semantic search via embeddings</li>
+          <li>Article analytics (privacy-aware)</li>
+          <li>Customer-facing knowledge subset (separate compliance review)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout">Nothing in V2 or V3 is implied by V1. Each is a separate decision at the V1 + 2 weeks check-in.</div>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">08 - Final approval</span>
+    <h2 class="title">CEO sign-off checkpoint</h2>
+    <p class="kicker">Phase 1 is fully implemented, fully tested, and fully reviewed. The team waits on your one-line call before the master flag flips for a pilot ring.</p>
+    <div class="grid-2">
+      <div class="card tint">
+        <h3>What "approve" means</h3>
+        <ul class="clean">
+          <li>Master flag may flip on for 2 reviewer users (pilot ring)</li>
+          <li>The rest of the organization sees nothing until you say so</li>
+          <li>The AI structuring step stays dry-run; no real LLM call</li>
+          <li>Re-decision check at V1 + 2 weeks for V2 vendor</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>What stays the same</h3>
+        <ul class="clean">
+          <li>No new deps. No new env vars in production.</li>
+          <li>Existing data identity-mapped through the 5 migrations.</li>
+          <li>Flag-off behavior is total: surface 404s, nothing leaks.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="approval-bar">
+      <h3>Reply in chat with one of these</h3>
+      <p>Implementation is done. Phase 1 is ready for review.</p>
+      <div class="approval-actions">
+        <span class="btn-approve">approve</span>
+        <span class="btn-changes">approve with changes</span>
+        <span class="btn-hold">hold for questions</span>
+      </div>
+    </div>
+    <div class="callout ok"><strong>Phase 1 is ready for CEO review.</strong></div>
+  </section>
+
+  <div class="footer">Skyware Internal Management Portal - Knowledge System Phase 1 CEO Briefing - 2026-05-27</div>
+</div>
+</body>
+</html>

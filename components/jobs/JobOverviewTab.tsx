@@ -4,8 +4,10 @@ import { JobSlaBar } from "./JobSlaBar";
 import { JobTransitionButtons } from "./JobTransitionButtons";
 import { JobReassignControl } from "./JobReassignControl";
 import { JobActiveTimerPanel } from "./JobActiveTimerPanel";
+import { CreateKnowledgeFromJobButton } from "./CreateKnowledgeFromJobButton";
 import { formatTz, timeAgo } from "@/lib/time";
 import { getT } from "@/lib/i18n/server";
+import { getFeatureFlag } from "@/lib/feature-flags";
 import type { JobDetail } from "@/lib/jobs/queries";
 
 interface Props {
@@ -16,6 +18,11 @@ interface Props {
 
 export async function JobOverviewTab({ job, admin, currentUserId }: Props) {
   const { t } = await getT();
+  const knowledgeEnabled = await getFeatureFlag("knowledge_articles_enabled");
+  const showCreateKnowledge =
+    knowledgeEnabled &&
+    job.status === "reviewed" &&
+    (admin || job.assignedEmployeeId === currentUserId);
 
   return (
     <div className="grid gap-6 lg:grid-cols-3">
@@ -87,6 +94,7 @@ export async function JobOverviewTab({ job, admin, currentUserId }: Props) {
               currentAssigneeId={job.assignedEmployeeId}
             />
           )}
+          {showCreateKnowledge && <CreateKnowledgeFromJobButton jobId={job.id} />}
         </section>
 
         <Separator />

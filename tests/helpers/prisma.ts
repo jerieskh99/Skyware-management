@@ -62,6 +62,9 @@ export interface MockedPrisma {
   recurringJobTemplate: MockedModel;
   knowledgeArticle: MockedModel;
   knowledgeArticleTag: MockedModel;
+  knowledgeArticleRevision: MockedModel;
+  knowledgeArticleReview: MockedModel;
+  knowledgeArticleReference: MockedModel;
   clientHealthSnapshot: MockedModel;
   $transaction: Mock;
   $queryRaw: Mock;

@@ -4,6 +4,14 @@ import { GET as detailGET, PATCH as detailPATCH, DELETE as detailDELETE } from "
 import { POST as publishPOST } from "@/app/api/knowledge/[slug]/publish/route";
 import { POST as archivePOST } from "@/app/api/knowledge/[slug]/archive/route";
 import { POST as tagPOST, DELETE as tagDELETE } from "@/app/api/knowledge/[slug]/tags/route";
+import { POST as submitReviewPOST } from "@/app/api/knowledge/[slug]/submit-review/route";
+import { POST as reviewPOST } from "@/app/api/knowledge/[slug]/review/route";
+import { POST as rescindPOST } from "@/app/api/knowledge/[slug]/rescind/route";
+import { POST as reVerifyPOST } from "@/app/api/knowledge/[slug]/re-verify/route";
+import { POST as aiStructurePOST } from "@/app/api/knowledge/[slug]/ai-structure/route";
+import { POST as unArchivePOST } from "@/app/api/knowledge/[slug]/un-archive/route";
+import { POST as unApprovePOST } from "@/app/api/knowledge/[slug]/un-approve/route";
+import { POST as jobToArticlePOST } from "@/app/api/jobs/[id]/create-knowledge-article/route";
 import { prisma, resetPrisma } from "../helpers/prisma";
 import { makeAdminSession, mockAuthAs } from "../helpers/session";
 
@@ -103,6 +111,86 @@ describe("knowledge — feature flag off", () => {
         { method: "DELETE" },
       ),
       makeParams(SLUG),
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("POST /api/knowledge/[slug]/submit-review returns 404", async () => {
+    const res = await submitReviewPOST(
+      new Request(`http://localhost/api/knowledge/${SLUG}/submit-review`, { method: "POST" }),
+      makeParams(SLUG),
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("POST /api/knowledge/[slug]/review returns 404", async () => {
+    const res = await reviewPOST(
+      new Request(`http://localhost/api/knowledge/${SLUG}/review`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ decision: "approved" }),
+      }),
+      makeParams(SLUG),
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("POST /api/knowledge/[slug]/rescind returns 404", async () => {
+    const res = await rescindPOST(
+      new Request(`http://localhost/api/knowledge/${SLUG}/rescind`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+      }),
+      makeParams(SLUG),
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("POST /api/knowledge/[slug]/re-verify returns 404", async () => {
+    const res = await reVerifyPOST(
+      new Request(`http://localhost/api/knowledge/${SLUG}/re-verify`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+      }),
+      makeParams(SLUG),
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("POST /api/knowledge/[slug]/ai-structure returns 404", async () => {
+    const res = await aiStructurePOST(
+      new Request(`http://localhost/api/knowledge/${SLUG}/ai-structure`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+      }),
+      makeParams(SLUG),
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("POST /api/knowledge/[slug]/un-archive returns 404", async () => {
+    const res = await unArchivePOST(
+      new Request(`http://localhost/api/knowledge/${SLUG}/un-archive`, { method: "POST" }),
+      makeParams(SLUG),
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("POST /api/knowledge/[slug]/un-approve returns 404", async () => {
+    const res = await unApprovePOST(
+      new Request(`http://localhost/api/knowledge/${SLUG}/un-approve`, { method: "POST" }),
+      makeParams(SLUG),
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("POST /api/jobs/[id]/create-knowledge-article returns 404", async () => {
+    const res = await jobToArticlePOST(
+      new Request("http://localhost/api/jobs/some-id/create-knowledge-article", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+      }),
+      { params: Promise.resolve({ id: "some-id" }) },
     );
     expect(res.status).toBe(404);
   });

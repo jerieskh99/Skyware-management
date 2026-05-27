@@ -177,6 +177,10 @@ enum NotificationKind {
   sla_breached
   job_assigned
   mention
+  knowledge_review_requested
+  knowledge_review_decided
+  knowledge_freshness_due
+  knowledge_link_broken
 }
 
 enum SavedViewVisibility {
@@ -248,16 +252,16 @@ model User {
   department Department @relation(fields: [departmentId], references: [id])
   role       Role       @relation(fields: [roleId], references: [id])
 
-  assignedJobs               Job[]                   @relation("AssignedJobs")
-  createdJobs                Job[]                   @relation("CreatedJobs")
+  assignedJobs               Job[]                      @relation("AssignedJobs")
+  createdJobs                Job[]                      @relation("CreatedJobs")
   statusEvents               JobStatusEvent[]
-  submittedReports           WorkReport[]            @relation("SubmittedReports")
-  approvedReports            WorkReport[]            @relation("ApprovedReports")
+  submittedReports           WorkReport[]               @relation("SubmittedReports")
+  approvedReports            WorkReport[]               @relation("ApprovedReports")
   timeSessions               TimeSession[]
   posts                      CommunicationPost[]
   replies                    CommunicationReply[]
-  savedViewsOwned            SavedView[]             @relation("SavedViewOwner")
-  savedViewsCreated          SavedView[]             @relation("SavedViewCreator")
+  savedViewsOwned            SavedView[]                @relation("SavedViewOwner")
+  savedViewsCreated          SavedView[]                @relation("SavedViewCreator")
   auditLogs                  AuditLog[]
   environmentNotes           ClientEnvironmentNote[]
   createdClients             Client[]
@@ -268,12 +272,16 @@ model User {
   updatedFeatureFlags        FeatureFlag[]
   notifications              Notification[]
   slaDefaults                SlaDefaults[]
-  updatedCompanySettings     CompanySettings[]       @relation("UpdatedCompanySettings")
-  recurringTemplatesCreated  RecurringJobTemplate[]  @relation("RecurringCreatedBy")
-  recurringTemplatesUpdated  RecurringJobTemplate[]  @relation("RecurringUpdatedBy")
-  recurringTemplatesAssigned RecurringJobTemplate[]  @relation("RecurringDefaultAssignee")
-  knowledgeAuthored          KnowledgeArticle[]      @relation("KnowledgeAuthor")
-  knowledgeEdited            KnowledgeArticle[]      @relation("KnowledgeLastEditor")
+  updatedCompanySettings     CompanySettings[]          @relation("UpdatedCompanySettings")
+  recurringTemplatesCreated  RecurringJobTemplate[]     @relation("RecurringCreatedBy")
+  recurringTemplatesUpdated  RecurringJobTemplate[]     @relation("RecurringUpdatedBy")
+  recurringTemplatesAssigned RecurringJobTemplate[]     @relation("RecurringDefaultAssignee")
+  knowledgeAuthored          KnowledgeArticle[]         @relation("KnowledgeAuthor")
+  knowledgeEdited            KnowledgeArticle[]         @relation("KnowledgeLastEditor")
+  knowledgeVerified          KnowledgeArticle[]         @relation("KnowledgeArticleVerifier")
+  knowledgeReviewed          KnowledgeArticle[]         @relation("KnowledgeArticleReviewer")
+  knowledgeRevisionsAuthored KnowledgeArticleRevision[] @relation("KnowledgeArticleRevisionAuthor")
+  knowledgeReviewsConducted  KnowledgeArticleReview[]   @relation("KnowledgeArticleReviewReviewer")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -315,14 +323,15 @@ model Job {
   linkedPayment     Payment?              @relation("JobLinkedPayment", fields: [linkedPaymentId], references: [id])
   recurringTemplate RecurringJobTemplate? @relation("RecurringSourceTemplate", fields: [recurringTemplateId], references: [id])
 
-  statusEvents     JobStatusEvent[]
-  workReport       WorkReport?
-  timeSessions     TimeSession[]
-  hourlyBankUsages HourlyBankUsage[]
-  oneTimeCharge    OneTimeJobCharge?
-  tags             JobTag[]
-  attachments      JobAttachment[]
-  relatedPosts     CommunicationPost[]
+  statusEvents             JobStatusEvent[]
+  workReport               WorkReport?
+  timeSessions             TimeSession[]
+  hourlyBankUsages         HourlyBankUsage[]
+  oneTimeCharge            OneTimeJobCharge?
+  tags                     JobTag[]
+  attachments              JobAttachment[]
+  relatedPosts             CommunicationPost[]
+  relatedKnowledgeArticles KnowledgeArticle[]  @relation("KnowledgeArticleSourceJob")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -370,6 +379,8 @@ model WorkReport {
   job         Job   @relation(fields: [jobId], references: [id])
   submittedBy User  @relation("SubmittedReports", fields: [submittedById], references: [id])
   approvedBy  User? @relation("ApprovedReports", fields: [approvedById], references: [id])
+
+  relatedKnowledgeArticles KnowledgeArticle[] @relation("KnowledgeArticleSourceWorkReport")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1028,8 +1039,41 @@ model RecurringJobTemplate {
 
 enum KnowledgeArticleStatus {
   draft
+  ai_structured
+  pending_review
+  approved
   published
   archived
+}
+
+enum KnowledgeArticleType {
+  internal_task_lesson
+  external_reference
+  how_to_guide
+  troubleshooting_note
+  architecture_decision
+  process_policy_note
+}
+
+enum KnowledgeReliabilityTier {
+  verified
+  validated
+  single_source
+  anecdotal
+}
+
+enum KnowledgeArticleReviewStatus {
+  pending
+  approved
+  changes_requested
+  rejected
+}
+
+enum KnowledgeArticleReferenceKind {
+  related
+  supersedes
+  superseded_by
+  see_also
 }
 
 enum KnowledgeArticleVisibility {
@@ -1046,8 +1090,9 @@ model KnowledgeArticle {
   title              String
   /// Markdown body. Render via existing markdown helper if any; else plain text.
   body               String                     @db.Text
-  /// Optional one-line summary used in lists.
-  summary            String?
+  /// Optional one-line summary used in lists. Required by application layer for
+  /// kind = external_reference; nullable at the DB layer so legacy rows stay valid.
+  summary            String?                    @db.Text
   status             KnowledgeArticleStatus     @default(draft)
   visibility         KnowledgeArticleVisibility @default(internal)
   /// Soft-delete: archived articles drop out of search and list views.
@@ -1058,10 +1103,44 @@ model KnowledgeArticle {
   /// Optional related client; gives a "this article is about client X" hint.
   relatedClientId    String?                    @map("related_client_id") @db.Uuid
 
-  author        User                  @relation("KnowledgeAuthor", fields: [authorUserId], references: [id])
-  lastEditedBy  User?                 @relation("KnowledgeLastEditor", fields: [lastEditedByUserId], references: [id])
-  relatedClient Client?               @relation("ClientKnowledge", fields: [relatedClientId], references: [id])
-  tags          KnowledgeArticleTag[]
+  /// Knowledge V1: classification, source linkage, external metadata, AI snapshots,
+  /// version pointer, reviewer/verifier tracking, reader-facing context.
+  kind                 KnowledgeArticleType     @default(how_to_guide)
+  sourceJobId          String?                  @map("source_job_id") @db.Uuid
+  sourceWorkReportId   String?                  @map("source_work_report_id") @db.Uuid
+  externalSource       String?                  @map("external_source")
+  externalUrl          String?                  @map("external_url") @db.Text
+  externalUrlHash      String?                  @map("external_url_hash")
+  lastVerifiedAt       DateTime?                @map("last_verified_at")
+  lastVerifiedByUserId String?                  @map("last_verified_by_user_id") @db.Uuid
+  reliabilityTier      KnowledgeReliabilityTier @default(single_source) @map("reliability_tier")
+  /// 0..100 confidence score. Range guarded by CHECK constraint.
+  confidenceScore      Int?                     @map("confidence_score")
+  /// JSONB snapshot of the LLM-structured output captured at AI structuring time.
+  /// Immutable after capture; further editing goes into revisions.
+  aiStructuredSnapshot Json?                    @map("ai_structured_snapshot")
+  /// Plain-text snapshot of the original worker writeup before AI structuring.
+  rawInputSnapshot     String?                  @map("raw_input_snapshot") @db.Text
+  /// Monotonically incrementing revision counter. History lives in
+  /// KnowledgeArticleRevision; this column is the head pointer.
+  currentVersion       Int                      @default(1) @map("current_version")
+  lastReviewedAt       DateTime?                @map("last_reviewed_at")
+  reviewerUserId       String?                  @map("reviewer_user_id") @db.Uuid
+  /// 1-3 sentence "why this article matters". Optional.
+  whyItMatters         String?                  @map("why_it_matters") @db.Text
+
+  author           User                        @relation("KnowledgeAuthor", fields: [authorUserId], references: [id])
+  lastEditedBy     User?                       @relation("KnowledgeLastEditor", fields: [lastEditedByUserId], references: [id])
+  relatedClient    Client?                     @relation("ClientKnowledge", fields: [relatedClientId], references: [id])
+  sourceJob        Job?                        @relation("KnowledgeArticleSourceJob", fields: [sourceJobId], references: [id], onDelete: SetNull)
+  sourceWorkReport WorkReport?                 @relation("KnowledgeArticleSourceWorkReport", fields: [sourceWorkReportId], references: [id], onDelete: SetNull)
+  lastVerifiedBy   User?                       @relation("KnowledgeArticleVerifier", fields: [lastVerifiedByUserId], references: [id], onDelete: SetNull)
+  reviewer         User?                       @relation("KnowledgeArticleReviewer", fields: [reviewerUserId], references: [id], onDelete: SetNull)
+  tags             KnowledgeArticleTag[]
+  revisions        KnowledgeArticleRevision[]  @relation("KnowledgeArticleRevisions")
+  reviews          KnowledgeArticleReview[]    @relation("KnowledgeArticleReviews")
+  references       KnowledgeArticleReference[] @relation("KnowledgeArticleRefs")
+  referencedBy     KnowledgeArticleReference[] @relation("KnowledgeArticleReferencedBy")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1069,6 +1148,58 @@ model KnowledgeArticle {
   @@index([status, updatedAt(sort: Desc)])
   @@index([relatedClientId])
   @@map("knowledge_articles")
+}
+
+model KnowledgeArticleRevision {
+  id           String   @id @default(uuid()) @db.Uuid
+  articleId    String   @map("article_id") @db.Uuid
+  version      Int
+  title        String
+  body         String   @db.Text
+  summary      String?  @db.Text
+  whyItMatters String?  @map("why_it_matters") @db.Text
+  authorUserId String   @map("author_user_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  article KnowledgeArticle @relation("KnowledgeArticleRevisions", fields: [articleId], references: [id], onDelete: Cascade)
+  author  User             @relation("KnowledgeArticleRevisionAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
+
+  @@unique([articleId, version])
+  @@index([articleId, createdAt(sort: Desc)])
+  @@map("knowledge_article_revisions")
+}
+
+model KnowledgeArticleReview {
+  id             String                       @id @default(uuid()) @db.Uuid
+  articleId      String                       @map("article_id") @db.Uuid
+  reviewerUserId String                       @map("reviewer_user_id") @db.Uuid
+  status         KnowledgeArticleReviewStatus @default(pending)
+  comment        String?                      @db.Text
+  decidedAt      DateTime?                    @map("decided_at")
+  cycleNumber    Int                          @default(1) @map("cycle_number")
+  createdAt      DateTime                     @default(now()) @map("created_at")
+
+  article  KnowledgeArticle @relation("KnowledgeArticleReviews", fields: [articleId], references: [id], onDelete: Cascade)
+  reviewer User             @relation("KnowledgeArticleReviewReviewer", fields: [reviewerUserId], references: [id], onDelete: Restrict)
+
+  @@index([articleId, createdAt(sort: Desc)])
+  @@index([reviewerUserId, status])
+  @@map("knowledge_article_reviews")
+}
+
+model KnowledgeArticleReference {
+  id                  String                        @id @default(uuid()) @db.Uuid
+  articleId           String                        @map("article_id") @db.Uuid
+  referencedArticleId String                        @map("referenced_article_id") @db.Uuid
+  kind                KnowledgeArticleReferenceKind @default(related)
+  createdAt           DateTime                      @default(now()) @map("created_at")
+
+  article           KnowledgeArticle @relation("KnowledgeArticleRefs", fields: [articleId], references: [id], onDelete: Cascade)
+  referencedArticle KnowledgeArticle @relation("KnowledgeArticleReferencedBy", fields: [referencedArticleId], references: [id], onDelete: Cascade)
+
+  @@unique([articleId, referencedArticleId, kind])
+  @@index([referencedArticleId])
+  @@map("knowledge_article_references")
 }
 
 /// Reuses the existing Tag table. A tag with scope `communication`, `job`,

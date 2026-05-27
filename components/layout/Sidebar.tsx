@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/lib/permissions";
 import { UserMenu } from "./UserMenu";
@@ -22,6 +23,7 @@ import {
   FileText,
   Shield,
   Layers,
+  ClipboardList,
 } from "lucide-react";
 
 interface NavItem {
@@ -29,6 +31,8 @@ interface NavItem {
   labelKey: string;
   icon: React.ElementType;
   adminOnly?: boolean;
+  /** Optional reactive badge label. */
+  badge?: () => number;
 }
 
 interface NavGroup {
@@ -56,6 +60,12 @@ const GROUPS: NavGroup[] = [
     items: [
       { href: "/communication", labelKey: "nav.channels", icon: MessageSquare },
       { href: "/knowledge", labelKey: "nav.knowledge", icon: BookOpen },
+      {
+        href: "/knowledge/review",
+        labelKey: "nav.knowledgeReview",
+        icon: ClipboardList,
+        adminOnly: true,
+      },
     ],
   },
   {
@@ -85,6 +95,31 @@ interface Props {
   knowledgeEnabled?: boolean;
 }
 
+/**
+ * Pending review count for the "Knowledge review" sidebar entry. Refetched
+ * every 60s. Returns 0 for non-admins and when the feature flag is off so
+ * the badge silently disappears.
+ *
+ * Backed by `GET /api/knowledge/pending-review-count`. The endpoint returns
+ * `{ count: 0 }` for non-admins and 404 when the `knowledge_articles_enabled`
+ * flag is off. Either way the badge fades out gracefully.
+ */
+function usePendingReviewCount(enabled: boolean): number {
+  const { data } = useQuery({
+    queryKey: ["knowledge-pending-review"],
+    queryFn: async () => {
+      const res = await fetch("/api/knowledge/pending-review-count", {
+        credentials: "include",
+      });
+      if (!res.ok) return { count: 0 };
+      return (await res.json()) as { count: number };
+    },
+    refetchInterval: 60_000,
+    enabled,
+  });
+  return data?.count ?? 0;
+}
+
 export function Sidebar({
   user,
   statisticsMeEnabled = false,
@@ -92,6 +127,9 @@ export function Sidebar({
 }: Props) {
   const pathname = usePathname();
   const { t } = useT();
+  const pendingReviewCount = usePendingReviewCount(
+    knowledgeEnabled && user.isAdmin,
+  );
 
   function isActive(href: string) {
     return pathname === href || pathname.startsWith(href + "/");
@@ -113,7 +151,9 @@ export function Sidebar({
     if (g.labelKey === "nav.groupCommunication" && !knowledgeEnabled) {
       return {
         ...g,
-        items: g.items.filter((it) => it.href !== "/knowledge"),
+        items: g.items.filter(
+          (it) => it.href !== "/knowledge" && it.href !== "/knowledge/review",
+        ),
       };
     }
     return g;
@@ -150,7 +190,15 @@ export function Sidebar({
                 .filter((it) => !it.adminOnly || user.isAdmin)
                 .map((item) => (
                   <li key={item.href}>
-                    <NavLink item={item} active={isActive(item.href)} />
+                    <NavLink
+                      item={item}
+                      active={isActive(item.href)}
+                      badge={
+                        item.href === "/knowledge/review" && pendingReviewCount > 0
+                          ? pendingReviewCount
+                          : undefined
+                      }
+                    />
                   </li>
                 ))}
             </ul>
@@ -180,7 +228,15 @@ export function Sidebar({
   );
 }
 
-function NavLink({ item, active }: { item: NavItem; active: boolean }) {
+function NavLink({
+  item,
+  active,
+  badge,
+}: {
+  item: NavItem;
+  active: boolean;
+  badge?: number;
+}) {
   const Icon = item.icon;
   const { t } = useT();
   return (
@@ -201,6 +257,14 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       )}
       <Icon className={cn("h-4 w-4 shrink-0", active ? "text-brand" : "")} />
       <span className="truncate">{t(item.labelKey)}</span>
+      {badge !== undefined && badge > 0 && (
+        <span
+          aria-label={String(badge)}
+          className="ms-auto inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-semibold text-white"
+        >
+          {badge > 99 ? "99+" : badge}
+        </span>
+      )}
     </Link>
   );
 }

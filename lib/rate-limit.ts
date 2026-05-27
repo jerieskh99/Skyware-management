@@ -71,4 +71,11 @@ export const LIMITS = {
    * a normal user who fat-fingers a few passwords during a single session.
    */
   authLogin: { windowMs: 15 * 60 * 1000, max: 10 },
+  /**
+   * Knowledge AI structuring: 5 dry-run invocations per hour per IP.
+   * Even though V1 is a deterministic dry-run, we cap the route so an
+   * accidental UI loop or hostile script cannot redact thousands of secret
+   * patterns per minute.
+   */
+  knowledgeAi: { windowMs: 60 * 60 * 1000, max: 5 },
 } as const;

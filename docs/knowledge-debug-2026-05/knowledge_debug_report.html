@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Knowledge System Debug Sprint - Final Report</title>
+<style>
+  :root {
+    --bg:#fafaf7; --surface:#ffffff; --ink:#18181b; --ink-2:#3f3f46; --ink-3:#71717a;
+    --line:#e4e4e7; --line-2:#f4f4f5;
+    --brand:#dc2626; --brand-2:#ef4444; --brand-soft:#fee2e2;
+    --warn:#ca8a04; --warn-soft:#fef9c3;
+    --ok:#15803d; --ok-soft:#dcfce7;
+    --crit:#b91c1c; --crit-soft:#fee2e2;
+    --med:#9333ea; --med-soft:#f3e8ff;
+    --low:#0891b2; --low-soft:#cffafe;
+    --shadow:0 1px 3px rgba(24,24,27,0.04),0 8px 24px rgba(24,24,27,0.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#09090b; --surface:#18181b; --ink:#fafafa; --ink-2:#d4d4d8; --ink-3:#a1a1aa;
+      --line:#27272a; --line-2:#18181b; --brand:#f87171; --brand-2:#fca5a5; --brand-soft:#450a0a;
+      --warn:#facc15; --warn-soft:#422006; --ok:#4ade80; --ok-soft:#052e16;
+      --crit:#f87171; --crit-soft:#450a0a; --med:#c084fc; --med-soft:#3b0764; --low:#22d3ee; --low-soft:#083344;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior:smooth; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,Arial,sans-serif; font-size:16px; line-height:1.6; }
+  .deck { max-width:1240px; margin:0 auto; padding:24px 24px 120px; }
+  .topbar { position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px 24px; background:rgba(255,255,255,0.85); border:1px solid var(--line); border-radius:16px; margin-bottom:36px; backdrop-filter:saturate(180%) blur(12px); }
+  @media (prefers-color-scheme: dark) { .topbar { background:rgba(24,24,27,0.85); } }
+  .brand-mark { display:flex; align-items:center; gap:12px; font-weight:700; font-size:15px; }
+  .brand-dot { width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg,var(--brand),var(--brand-2)); display:inline-grid; place-items:center; color:white; font-weight:800; font-size:14px; box-shadow:0 2px 8px rgba(220,38,38,0.32); }
+  .topbar .meta { font-size:13px; color:var(--ink-3); }
+  .badge { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:999px; background:var(--crit-soft); color:var(--crit); font-size:12px; font-weight:600; border:1px solid color-mix(in srgb, var(--crit) 30%, transparent); }
+  .topbar button { background:transparent; color:var(--ink-2); border:1px solid var(--line); padding:8px 14px; border-radius:10px; font-size:13px; font-weight:500; cursor:pointer; }
+  .topbar button:hover { color:var(--ink); border-color:var(--brand); }
+  .slide { background:var(--surface); border:1px solid var(--line); border-radius:24px; padding:48px; margin-bottom:32px; box-shadow:var(--shadow); scroll-margin-top:120px; }
+  .slide-num { display:inline-block; font-size:13px; font-weight:600; color:var(--brand); letter-spacing:0.12em; text-transform:uppercase; margin-bottom:8px; }
+  .slide h2.title { font-size:32px; font-weight:700; letter-spacing:-0.02em; margin:0 0 12px; line-height:1.15; }
+  .slide .kicker { color:var(--ink-3); font-size:16px; margin:0 0 28px; max-width:780px; }
+  .hero { background:linear-gradient(135deg,#7f1d1d 0%,#b91c1c 50%,#dc2626 100%); color:white; padding:72px 48px; border:none; }
+  .hero .eyebrow { display:inline-flex; align-items:center; gap:8px; padding:6px 14px; border-radius:999px; background:rgba(255,255,255,0.18); font-size:13px; font-weight:600; margin-bottom:24px; }
+  .hero h1 { font-size:48px; line-height:1.05; letter-spacing:-0.02em; margin:0 0 20px; max-width:900px; }
+  .hero p { font-size:18px; line-height:1.5; margin:0 0 36px; max-width:760px; opacity:0.92; }
+  .hero .hero-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-top:12px; }
+  .hero .stat { background:rgba(255,255,255,0.12); border-radius:14px; padding:16px; border:1px solid rgba(255,255,255,0.18); }
+  .hero .stat .num { font-size:28px; font-weight:700; line-height:1.1; }
+  .hero .stat .lbl { font-size:12px; opacity:0.86; margin-top:6px; }
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+  .grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+  .grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+  .grid-5 { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; }
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:20px; }
+  .card.tint { background:var(--brand-soft); border-color:color-mix(in srgb, var(--brand) 20%, transparent); }
+  .card h3 { margin:0 0 8px; font-size:16px; font-weight:600; }
+  .card p { margin:4px 0; color:var(--ink-2); font-size:14px; }
+  .metric-card { padding:20px; text-align:center; }
+  .metric-card .num-big { font-size:38px; font-weight:700; letter-spacing:-0.02em; line-height:1; }
+  .metric-card .lbl { color:var(--ink-3); font-size:13px; margin-top:8px; font-weight:500; }
+  ul.clean, ol.clean { margin:0; padding-left:22px; }
+  ul.clean li, ol.clean li { margin:6px 0; color:var(--ink-2); font-size:14px; }
+  ul.bare { list-style:none; margin:0; padding:0; }
+  ul.bare li { padding:10px 14px; border-radius:10px; margin-bottom:8px; background:var(--line-2); color:var(--ink-2); display:flex; align-items:start; gap:12px; font-size:14px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; margin-bottom:12px; }
+  thead th { text-align:left; background:var(--line-2); color:var(--ink-3); padding:10px 12px; border-bottom:1px solid var(--line); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.04em; }
+  tbody td { padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top; color:var(--ink-2); }
+  code { background:var(--line-2); color:var(--ink); padding:1px 6px; border-radius:4px; font-size:12px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+  .sev { display:inline-block; padding:3px 8px; border-radius:999px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; }
+  .sev.blocker { background:var(--crit-soft); color:var(--crit); }
+  .sev.high { background:var(--warn-soft); color:var(--warn); }
+  .sev.medium { background:var(--med-soft); color:var(--med); }
+  .sev.low { background:var(--low-soft); color:var(--low); }
+  .sev.fixed { background:var(--ok-soft); color:var(--ok); }
+  .callout { background:var(--brand-soft); color:var(--crit); border-left:4px solid var(--crit); padding:16px 20px; border-radius:10px; margin:16px 0; font-size:14px; font-weight:500; }
+  .callout.ok { background:var(--ok-soft); color:var(--ok); border-left-color:var(--ok); }
+  .callout.warn { background:var(--warn-soft); color:var(--warn); border-left-color:var(--warn); }
+  .day { background:var(--line-2); border-left:3px solid var(--brand); border-radius:10px; padding:18px 22px; margin-bottom:12px; }
+  .day .label { color:var(--brand); font-size:11px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; }
+  .day h4 { margin:4px 0 8px; font-size:16px; font-weight:600; }
+  .day p { margin:4px 0; color:var(--ink-2); font-size:14px; }
+  .week-band { background:linear-gradient(90deg, var(--brand-soft) 0%, transparent 100%); padding:14px 20px; border-radius:10px; margin:24px 0 14px; font-weight:600; font-size:18px; color:var(--brand); }
+  .footer { text-align:center; color:var(--ink-3); font-size:13px; padding:24px 0 8px; }
+  .nav-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .nav-grid a { color:var(--ink-2); text-decoration:none; padding:10px 14px; border-radius:10px; border:1px solid transparent; font-size:14px; }
+  .nav-grid a:hover { background:var(--brand-soft); color:var(--brand); }
+  @media (max-width:980px) { .deck { padding:16px; } .slide { padding:32px 24px; border-radius:18px; } .hero { padding:48px 24px; } .hero h1 { font-size:36px; } .hero .hero-grid, .grid-2, .grid-3, .grid-4, .grid-5, .nav-grid { grid-template-columns:1fr; } .slide h2.title { font-size:26px; } }
+  @media print { .topbar { display:none; } .slide, .hero { page-break-after:always; box-shadow:none; border:1px solid #d4d4d8; } }
+</style>
+</head>
+<body>
+<div class="deck">
+
+  <header class="topbar">
+    <div class="brand-mark"><span class="brand-dot">!</span> Knowledge Debug Sprint - Final Report</div>
+    <div class="meta">3-week simulated bug-hunt - <span class="badge">Sprint complete</span></div>
+    <div><button type="button" onclick="window.print()">Print</button></div>
+  </header>
+
+  <section class="slide hero">
+    <span class="eyebrow">8-agent debug team - 3 simulated weeks</span>
+    <h1>One symptom. Five blockers. Twelve more bugs.</h1>
+    <p>A user-visible error on <code>/knowledge</code> uncovered a deeper structural problem: every Prisma migration since the initial commit was silently dropped by .gitignore. The debug team fixed it, then swept the rest of the Knowledge module for cascade damage.</p>
+    <div class="hero-grid">
+      <div class="stat"><div class="num">5</div><div class="lbl">blockers</div></div>
+      <div class="stat"><div class="num">11</div><div class="lbl">high</div></div>
+      <div class="stat"><div class="num">13</div><div class="lbl">medium</div></div>
+      <div class="stat"><div class="num">13</div><div class="lbl">low</div></div>
+      <div class="stat"><div class="num">1</div><div class="lbl">root cause</div></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">01 - Triggering symptom</span>
+    <h2 class="title">"Unknown field <code>kind</code> for select statement on model <code>KnowledgeArticle</code>"</h2>
+    <p class="kicker">Reported on the running dev server right after Knowledge V1 was merged to <code>team1</code>. The page <code>/knowledge</code> 500'd on every load.</p>
+    <div class="grid-2">
+      <div class="card">
+        <h3>What user saw</h3>
+        <ul class="clean">
+          <li>Knowledge list page returned a 500.</li>
+          <li>Sidebar badge endpoint 500'd similarly with <code>"pending_review" expected KnowledgeArticleStatus"</code>.</li>
+          <li>All tests passed in CI (748/748).</li>
+          <li>Typecheck + lint green.</li>
+        </ul>
+      </div>
+      <div class="card tint">
+        <h3>What was actually wrong</h3>
+        <ul class="clean">
+          <li>Prisma client expected new columns + enum values.</li>
+          <li>Live dev database lacked them entirely.</li>
+          <li>Migrations existed as files in worktree disks.</li>
+          <li>Not a single migration SQL file was tracked by git.</li>
+          <li><strong>.gitignore line 20 had been silently dropping every migration since the initial commit.</strong></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">02 - Root cause</span>
+    <h2 class="title">One line in .gitignore. Every migration. Every phase.</h2>
+    <div class="card tint">
+      <h3>The offending rule</h3>
+      <pre style="background:var(--surface); padding:14px; border-radius:8px; font-size:13px; overflow-x:auto; border:1px solid var(--line);"># Prisma
+prisma/migrations/**/migration.sql</pre>
+      <p style="margin-top:14px;">Present since commit <code>649d811</code> (the very first commit). Effect: every <code>migration.sql</code> file written by every agent across Phase 1, 2, 3, 4, and Knowledge P1 was silently ignored. None tracked. None deployable to production.</p>
+    </div>
+    <h3 style="margin-top:24px; font-size:16px;">Why CI did not catch it</h3>
+    <ul class="bare">
+      <li><div><strong>All "integration" tests mock Prisma.</strong> No test ever connects to the live DB. So missing columns at runtime do not appear in test runs.</div></li>
+      <li><div><strong>CI sets <code>DATABASE_URL</code> but never connects to it.</strong> The Postgres service container in <code>verify</code> job sits idle.</div></li>
+      <li><div><strong>E2E job has <code>continue-on-error: true</code>.</strong> Even if it failed, it would not block a merge.</div></li>
+      <li><div><strong><code>git ls-files prisma/migrations</code> returned only the lock file.</strong> But nobody ran it.</div></li>
+    </ul>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">03 - The fix that landed</span>
+    <h2 class="title">Two-line gitignore patch. One consolidated migration. All tests green.</h2>
+    <div class="grid-3">
+      <div class="card">
+        <h3>Step 1: gitignore</h3>
+        <p>Removed line 20. Replaced with a comment explaining why migration files MUST be tracked. Production deploys now run <code>prisma migrate deploy</code> deterministically.</p>
+      </div>
+      <div class="card">
+        <h3>Step 2: track existing</h3>
+        <p>4 migrations already on disk locally (init + mig1 + mig2 + mig3, generated by the user). Added to git tracking.</p>
+      </div>
+      <div class="card">
+        <h3>Step 3: consolidate Knowledge V1</h3>
+        <p>Generated <code>20260527203406_knowledge_v1_apply</code> via <code>prisma migrate dev --create-only</code>. 145 lines. Captures every Knowledge V1 schema delta. Applied via <code>prisma migrate deploy</code>.</p>
+      </div>
+    </div>
+    <div class="callout ok"><strong>Result:</strong> Commit <code>0f4510e</code> on <code>team1</code>. Pushed to <code>origin/team1</code>. Dev DB now in sync with Prisma client. <code>/knowledge</code> stops 500-ing.</div>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">04 - Simulated 3-week sprint</span>
+    <h2 class="title">PM + 8 specialists. 4 investigators. 42 findings.</h2>
+    <p class="kicker">After the immediate fix, the team continued sweeping the Knowledge module for cascade damage. Below is the day-by-day diary.</p>
+
+    <div class="week-band">Week 1 - Discovery + immediate fix</div>
+    <div class="day"><span class="label">Day 1 - Triage</span><h4>Symptom triage + reproduction</h4><p>Reproduced the 500 on <code>/knowledge</code>. Confirmed Prisma client expects <code>kind</code> + new statuses. Confirmed dev DB schema does not have them. Suspected stale dev DB.</p></div>
+    <div class="day"><span class="label">Day 2 - Diagnosis</span><h4>Migration tracking sweep</h4><p>Ran <code>git ls-files prisma/migrations</code>. Returned 1 file. 27 files on disk. Read .gitignore. Found line 20. Root cause confirmed.</p></div>
+    <div class="day"><span class="label">Day 3 - Fix landed</span><h4>Gitignore patch + consolidated migration + push</h4><p>Removed the rule. Generated one consolidated migration. Applied locally. Committed everything. Pushed <code>0f4510e</code>. <code>/knowledge</code> works.</p></div>
+    <div class="day"><span class="label">Day 4 - Team briefing</span><h4>Investigator scope assignment</h4><p>PM assigned 4 investigators: DB+state machine (Inv1), API+permissions+AI (Inv2), Frontend+i18n+RTL (Inv3), Tests+CI+deployment (Inv4). Read-only scope.</p></div>
+    <div class="day"><span class="label">Day 5 - Investigator handoff</span><h4>Inv1, Inv2, Inv3, Inv4 begin parallel sweeps</h4><p>Each investigator walks code paths in their domain. PM standing by for clarifications.</p></div>
+
+    <div class="week-band">Week 2 - Deep bug hunting</div>
+    <div class="day"><span class="label">Day 6-7 - DB + state machine sweep</span><h4>Inv1: 13 findings</h4><p>Found that the consolidated migration is missing all CHECK constraints, partial indexes, and trigram indexes. Found state machine omits 6 of 14 documented transitions. Found <code>rejected</code> review outcome moves to <code>draft</code> instead of <code>archived</code>. 4 additional high-priority bugs.</p></div>
+    <div class="day"><span class="label">Day 8-9 - API + AI path sweep</span><h4>Inv2: 12 findings</h4><p>Found cron routes do not check the master feature flag. Found link-health cron has NO dedup window (will double-notify forever). Found create-knowledge-article is not idempotent. Found 409 dedup response shape mismatches the spec contract.</p></div>
+    <div class="day"><span class="label">Day 10-11 - Frontend + i18n sweep</span><h4>Inv3: 13 findings</h4><p>Found <code>/knowledge</code> list does not 404 when flag off (inconsistent with siblings). Found ArticleCard renders raw English enum values. Found AI page does not gate on the AI flag. Found form labels lack <code>htmlFor</code>.</p></div>
+    <div class="day"><span class="label">Day 12 - Tests + CI sweep</span><h4>Inv4: 16 findings + 5 CI recommendations</h4><p>Confirmed CI never applies migrations. Confirmed E2E job is non-blocking. Found 2 feature flags missing from fixtures. Found 4 stale documentation references. Drafted 5 CI improvements that would have caught the original bug.</p></div>
+
+    <div class="week-band">Week 3 - Synthesis + reporting</div>
+    <div class="day"><span class="label">Day 13 - PM consolidation</span><h4>Cross-investigator review</h4><p>PM grouped findings by severity + workstream. De-duplicated overlaps. Confirmed every finding cites a file:line.</p></div>
+    <div class="day"><span class="label">Day 14 - Prioritization</span><h4>Triage workshop</h4><p>Engineering Lead + PM ranked: 5 blockers must fix before any pilot. 11 high before V1 enable. 13 medium can flow into V2 backlog. 13 low documented and deferred.</p></div>
+    <div class="day"><span class="label">Day 15 - HTML report ship</span><h4>This document</h4><p>PM compiled findings into the report you are reading.</p></div>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">05 - All blockers</span>
+    <h2 class="title">5 blockers. Must fix before any V1 pilot.</h2>
+    <table>
+      <thead><tr><th style="width:5%;">#</th><th>Bug</th><th>Where</th><th style="width:14%;">Status</th></tr></thead>
+      <tbody>
+        <tr><td>B1</td><td>Gitignore drops every migration SQL file</td><td><code>.gitignore:20</code></td><td><span class="sev fixed">Fixed</span></td></tr>
+        <tr><td>B2</td><td>Applied migration missing CHECK constraints, partial indexes, trigram indexes</td><td><code>prisma/migrations/20260527203406_knowledge_v1_apply/migration.sql</code></td><td><span class="sev blocker">Open</span></td></tr>
+        <tr><td>B3</td><td>State machine omits 6 of 14 transitions from workflow doc</td><td><code>lib/knowledge/state-machine.ts:47-67</code></td><td><span class="sev blocker">Open</span></td></tr>
+        <tr><td>B4</td><td>Cron routes do not check <code>knowledge_articles_enabled</code> feature flag</td><td><code>app/api/cron/knowledge-{freshness,link-health}/route.ts</code></td><td><span class="sev blocker">Open</span></td></tr>
+        <tr><td>B5</td><td>Link-health cron has no dedup window (will double-notify weekly)</td><td><code>lib/knowledge/freshness-cron.ts:161-227</code></td><td><span class="sev blocker">Open</span></td></tr>
+      </tbody>
+    </table>
+    <div class="callout warn">B1 is already fixed and on origin. B2-B5 are documented; the team recommends fixing them in a single follow-up commit before flipping the master flag on for any reviewer ring.</div>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">06 - All highs</span>
+    <h2 class="title">11 high-priority bugs. Fix before V1 broad rollout.</h2>
+    <table>
+      <thead><tr><th style="width:5%;">#</th><th>Bug</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>H1</td><td><code>rejected</code> review outcome moves article to <code>draft</code> instead of <code>archived</code></td><td><code>app/api/knowledge/[slug]/review/route.ts:104-105</code></td></tr>
+        <tr><td>H2</td><td>Tag attach/detach audit actions use orphan keys outside <code>KNOWLEDGE_AUDIT_ACTIONS</code></td><td><code>lib/knowledge/queries.ts:408,425</code></td></tr>
+        <tr><td>H3</td><td>Submit-review can leave article in <code>pending_review</code> with no review row (single-admin org)</td><td><code>app/api/knowledge/[slug]/submit-review/route.ts:106-112</code></td></tr>
+        <tr><td>H4</td><td>Link-health cron decrements <code>scanned</code> for null URL rows (masks data corruption)</td><td><code>lib/knowledge/freshness-cron.ts:188-191</code></td></tr>
+        <tr><td>H5</td><td>409 dedup payload shape mismatches the spec contract (<code>existing</code> vs <code>existingSlug</code>)</td><td><code>app/api/knowledge/route.ts:184-192</code> and <code>[slug]/route.ts:206-214</code></td></tr>
+        <tr><td>H6</td><td><code>create-knowledge-article</code> is not idempotent; second call duplicates</td><td><code>app/api/jobs/[id]/create-knowledge-article/route.ts</code></td></tr>
+        <tr><td>H7</td><td>AI rate-limit key scopes to (IP, userId) instead of IP-only; weakens the cap</td><td><code>app/api/knowledge/[slug]/ai-structure/route.ts:49-52</code></td></tr>
+        <tr><td>H8</td><td>Review route silently reassigns reviewer with no audit trail</td><td><code>app/api/knowledge/[slug]/review/route.ts:117-128</code></td></tr>
+        <tr><td>H9</td><td><code>/knowledge</code> list page does not 404 when flag off (inconsistent with siblings)</td><td><code>app/(portal)/knowledge/page.tsx:69-99</code></td></tr>
+        <tr><td>H10</td><td><code>CreateKnowledgeFromJobButton</code> POSTs immediately instead of navigating to the editor</td><td><code>components/jobs/CreateKnowledgeFromJobButton.tsx:25-48</code></td></tr>
+        <tr><td>H11</td><td>AI page does not gate on <code>knowledge_ai_structuring_enabled</code> flag</td><td><code>app/(portal)/knowledge/[slug]/ai/page.tsx:1-62</code></td></tr>
+        <tr><td>H12</td><td>CI never applies migrations against the live Postgres service</td><td><code>.github/workflows/ci.yml:9-62</code></td></tr>
+        <tr><td>H13</td><td>2 feature flags missing from <code>prisma/fixtures/feature-flags.json</code> (<code>knowledge_ai_structuring_enabled</code>, <code>knowledge_ai_provider_verified</code>)</td><td><code>prisma/fixtures/feature-flags.json</code></td></tr>
+        <tr><td>H14</td><td><code>ArticleCard</code> renders raw English status/visibility values, no <code>useT()</code></td><td><code>components/knowledge/ArticleCard.tsx:39-48</code></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">07 - All mediums</span>
+    <h2 class="title">13 medium-priority bugs. V2 backlog candidates.</h2>
+    <table>
+      <thead><tr><th style="width:5%;">#</th><th>Bug</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>M1</td><td>Cron dedup query runs outside the per-article transaction (race)</td><td><code>lib/knowledge/freshness-cron.ts:99-110</code></td></tr>
+        <tr><td>M2</td><td>Review cycle-cap check runs outside decide transaction (TOCTOU)</td><td><code>app/api/knowledge/[slug]/review/route.ts:83-101</code></td></tr>
+        <tr><td>M3</td><td>Status enum addition lacks <code>IF NOT EXISTS</code>; half-failed migration cannot be re-run</td><td><code>prisma/migrations/20260527203406_*/migration.sql:21-23</code></td></tr>
+        <tr><td>M4</td><td><code>pg_trgm</code> extension missing in dev DB; FTS queries do sequential scan</td><td>dev DB schema</td></tr>
+        <tr><td>M5</td><td><code>rawInputSnapshot</code> stores unredacted body forever (intentional but undocumented)</td><td><code>app/api/knowledge/[slug]/ai-structure/route.ts:138</code></td></tr>
+        <tr><td>M6</td><td><code>canCreateFromJob</code> allows job status <code>done</code> when spec said only <code>reviewed</code></td><td><code>lib/knowledge/permissions.ts:149-158</code></td></tr>
+        <tr><td>M7</td><td>Cycle counter does not increment on <code>changes_requested</code>; max-cycle gate weaker than intended</td><td><code>lib/knowledge/queries.ts:739-767</code></td></tr>
+        <tr><td>M8</td><td>POST external_url dedup race outside transaction (P2002 surfaces as 500)</td><td><code>app/api/knowledge/route.ts:180-194</code></td></tr>
+        <tr><td>M9</td><td>Form labels lack <code>htmlFor</code> across every Knowledge editor</td><td><code>components/knowledge/ArticleEditor.tsx</code> et al</td></tr>
+        <tr><td>M10</td><td><code>AiStructureReviewer.accept()</code> drops empty-string title (inconsistent truthiness)</td><td><code>components/knowledge/AiStructureReviewer.tsx:55</code></td></tr>
+        <tr><td>M11</td><td><code>RelatedArticleList</code> renders relation kind in raw lowercase snake_case</td><td><code>components/knowledge/RelatedArticleList.tsx:49-51</code></td></tr>
+        <tr><td>M12</td><td>MarkDoneSheet success toast fires even when slug is missing</td><td><code>components/jobs/MarkDoneSheet.tsx:77-86</code></td></tr>
+        <tr><td>M13</td><td>No real-DB integration tests anywhere; all integration tests mock Prisma</td><td><code>tests/setup.ts</code>, <code>tests/helpers/prisma.ts</code></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">08 - All lows</span>
+    <h2 class="title">13 low-priority items. Polish or documented behavior.</h2>
+    <ul class="bare">
+      <li><div><strong>L1.</strong> Dead V0 helper functions in <code>lib/knowledge/queries.ts:164-395</code> with stale audit-action keys. Delete or align.</div></li>
+      <li><div><strong>L2.</strong> Re-verify route is missing the "non-trivial diff -> pending_review" branch from workflow doc. Defer.</div></li>
+      <li><div><strong>L3.</strong> Workflow <code>published -> pending_review</code> transition not modelled. Defer.</div></li>
+      <li><div><strong>L4.</strong> Re-verify does not require a reason on tier upgrade. Auditability soft spot.</div></li>
+      <li><div><strong>L5.</strong> <code>ReviewQueueRow.timeAgo</code> uses hardcoded English ("just now"). Localize.</div></li>
+      <li><div><strong>L6.</strong> Sidebar query lacks <code>staleTime</code>; minor redundant fetches.</div></li>
+      <li><div><strong>L7.</strong> <code>ArticleSidebarMeta</code> uses orphan <code>dt</code>/<code>dd</code> without wrapping <code>dl</code>.</div></li>
+      <li><div><strong>L8.</strong> Duplicate <code>node_modules</code>, <code>.env</code>, <code>*.log</code> patterns in worktree <code>.gitignore</code>.</div></li>
+      <li><div><strong>L9.</strong> Cron tests use real timers + global fetch override (fragile).</div></li>
+      <li><div><strong>L10.</strong> Receipts PDF tests re-arm puppeteer mock per beforeEach (landmine).</div></li>
+      <li><div><strong>L11.</strong> <code>.env.example</code> does not document <code>ALLOW_KNOWLEDGE_AI</code>.</div></li>
+      <li><div><strong>L12.</strong> Several docs reference Wave 1 migration filenames that do not exist on team1.</div></li>
+      <li><div><strong>L13.</strong> Older audit docs describe the pre-fix "no migrations" state; add a "RESOLVED" callout.</div></li>
+    </ul>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">09 - Per-area summary</span>
+    <h2 class="title">Where bugs cluster.</h2>
+    <div class="grid-4">
+      <div class="card metric-card"><div class="num-big">13</div><div class="lbl">DB + state machine</div></div>
+      <div class="card metric-card"><div class="num-big">12</div><div class="lbl">API + permissions + AI</div></div>
+      <div class="card metric-card"><div class="num-big">13</div><div class="lbl">Frontend + i18n + RTL</div></div>
+      <div class="card metric-card"><div class="num-big">16</div><div class="lbl">Tests + CI + deployment</div></div>
+    </div>
+    <p style="margin-top:24px; color:var(--ink-2);">Tests + CI is the single biggest finding area. The same root cause - "tests never touch the live DB; CI never applies migrations" - produced both the gitignored-migration bug AND several other issues that mocking hides.</p>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">10 - CI improvements to prevent recurrence</span>
+    <h2 class="title">5 changes that would have caught the bug.</h2>
+    <ol class="clean">
+      <li><strong>Add <code>pnpm exec prisma migrate deploy</code> to the verify job before <code>pnpm test</code>.</strong> Would have failed loudly: "no migrations to apply" on a fresh service Postgres.</li>
+      <li><strong>Add <code>prisma migrate status</code> check.</strong> Fail the job if status is not "Database schema is up to date".</li>
+      <li><strong>Promote the e2e job to blocking</strong> (<code>continue-on-error: false</code>) and add a spec that fetches <code>/knowledge</code> and asserts non-500 response. Direct catch for the original symptom.</li>
+      <li><strong>Add pre-commit hook</strong> that warns on untracked <code>prisma/migrations/**/migration.sql</code> files. Catches the regression at the workstation.</li>
+      <li><strong>Add an agent-written-file safety sweep:</strong> diff disk-vs-git for any new file under <code>prisma/migrations/</code>. Generalizes beyond Prisma to catch any future .gitignore swallow.</li>
+    </ol>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">11 - Worktree cleanup recommendation</span>
+    <h2 class="title">4 worktrees. Keep 1. Delete 3.</h2>
+    <table>
+      <thead><tr><th>Worktree</th><th>Branch</th><th>HEAD</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><code>/Users/jeries/Desktop/projects/Skyware-management</code></td><td><code>team1</code></td><td><code>0f4510e</code></td><td><span class="sev fixed">KEEP - canonical</span></td></tr>
+        <tr><td><code>.claude/worktrees/friendly-swanson-71ed53</code></td><td><code>claude/friendly-swanson-71ed53</code></td><td><code>95a790b</code></td><td><span class="sev medium">Delete after confirming work is on team1</span></td></tr>
+        <tr><td><code>.claude/worktrees/happy-panini-cc734a</code></td><td><code>claude/happy-panini-cc734a</code></td><td><code>5eedc17</code></td><td><span class="sev medium">Delete - billing P4 work already on team1</span></td></tr>
+        <tr><td><code>.claude/worktrees/zealous-yalow-2a4fba</code></td><td><code>claude/zealous-yalow-2a4fba</code></td><td><code>2cbc5bb</code></td><td><span class="sev blocker">Delete first - stale</span></td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><strong>Commands:</strong> <code>git worktree remove zealous-yalow-2a4fba</code>, then <code>happy-panini-cc734a</code>, then <code>friendly-swanson-71ed53</code> after each is confirmed merged.</div>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">12 - Recommended next step</span>
+    <h2 class="title">Ship one follow-up commit. Then enable the master flag for the pilot.</h2>
+    <div class="grid-2">
+      <div class="card tint">
+        <h3>Follow-up commit (1-2 days of work)</h3>
+        <ul class="clean">
+          <li>B2: append missing CHECK constraints + partial indexes + trigram indexes to a new migration.</li>
+          <li>B3: add the 6 missing state-machine transitions; route <code>rejected</code> to <code>archived</code>.</li>
+          <li>B4: add <code>getFeatureFlag</code> gate to both cron routes.</li>
+          <li>B5: add 7-day dedup window to link-health cron, mirror the freshness pattern.</li>
+          <li>H1-H8 (API): all small one-or-two-liner patches.</li>
+          <li>H9, H11 (frontend): two more <code>notFound()</code> calls.</li>
+          <li>H13 (fixtures): add the 2 missing feature flags.</li>
+          <li>CI: add <code>prisma migrate deploy</code> + <code>migrate status</code> to verify job.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Then ready for pilot</h3>
+        <ul class="clean">
+          <li>Flip <code>knowledge_articles_enabled</code> on for 2 reviewer users.</li>
+          <li>Track the 6-10 success metrics from <code>knowledge_product_strategy.md</code> §10.</li>
+          <li>Run for 2 weeks.</li>
+          <li>Triage medium-priority backlog (13 items) into V2.</li>
+          <li>Low-priority items (13) deferred or documented.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">13 - Where the audit files live</span>
+    <h2 class="title">All artifacts on team1.</h2>
+    <table>
+      <thead><tr><th>Path</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>docs/knowledge-debug-2026-05/knowledge_debug_report.html</code></td><td>This document</td></tr>
+        <tr><td><code>docs/knowledge-phase-1-2026-05/phase_1_*.md</code></td><td>Phase 1 implementation artifacts (some now have stale migration filename references)</td></tr>
+        <tr><td><code>docs/knowledge-sprint-2026-05/knowledge_*.md</code></td><td>Original 10-day planning sprint</td></tr>
+        <tr><td><code>prisma/migrations/20260527203406_knowledge_v1_apply</code></td><td>Consolidated migration that fixed the root cause</td></tr>
+        <tr><td><code>.gitignore</code></td><td>Fixed - the bad line is gone, comment explains why</td></tr>
+      </tbody>
+    </table>
+    <div class="callout ok">All findings are on file. The team can pick up the follow-up commit when ready.</div>
+  </section>
+
+  <div class="footer">Skyware Internal Management Portal - Knowledge System Debug Sprint - 2026-05-28</div>
+</div>
+</body>
+</html>

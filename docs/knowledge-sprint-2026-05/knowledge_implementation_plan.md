@@ -256,12 +256,60 @@ Estimated effort: 6-8 engineering days.
 
 ---
 
-## 9. Approval
+## 9. Project manager approval note
 
-Approver: Jeries Khoury
+The 10-day sprint converged. Every cross-team decision is documented in
+the per-discipline audits and reflected in this plan. The PM is satisfied
+that:
+
+- Scope is realistic for a small team (15-20 eng days V1; mid-sprint
+  cuts have already been applied to keep scope honest).
+- The dependency order is clean: schema first, then API + state
+  machine, then UI, then cron + freshness.
+- Compliance gates mirror an existing proven pattern (the receipts
+  module three-gate lock).
+- Open questions are catalogued; none block V1.
+- The team can ship V1 and learn before promising V2.
+
+Recommendation: **approve V1** as written. Defer V2 until V1 is in the
+hands of two reviewer users for two weeks.
+
+Signed: Project Manager, sprint 2026-05-26.
+
+## 10. Product manager approval note
+
+The product vision (`knowledge_product_strategy.md`) survived the sprint
+intact. The two creation funnels (task-to-knowledge + external
+reference) are concrete, distinct, and ship together in V1 so the
+system has real authoring volume from day one. Anti-personas hold the
+line against scope drift.
+
+The PM-PdM convergence calls on the final day:
+- Reliability tier applies to all 6 article types with type-specific
+  defaults. Not deferred.
+- AI structuring is OPTIONAL and DRY-RUN by default in V1. The vendor
+  decision is deliberately a V2 decision.
+- Same-actor reviewer guard is server-side, not just UI.
+- Approve and Publish are distinct actions.
+- Freshness sweep notifies; never auto-acts.
+
+Recommendation: **approve V1** as scoped. The PdM commits to:
+- Onboarding 2 reviewer users in the first week of V1 rollout.
+- Tracking the 6-10 success metrics in
+  `knowledge_product_strategy.md` §10.
+- Re-decision check at V1 + 2 weeks to choose V2 vendor for the LLM
+  step.
+
+Signed: Product Manager, sprint 2026-05-26.
+
+## 11. Final approval
+
+Approver: Jeries Khoury (CEO)
 Approval options:
-- **approve** -> start Phase 1.
+- **approve** -> start V1.
 - **approve with changes** -> name items to add, cut, or re-phase.
 - **hold** -> ask questions in chat first.
+
+The PM and PdM have both signed off. Execution waits on the CEO call.
 
 **Implementation has not started. Awaiting approval.**

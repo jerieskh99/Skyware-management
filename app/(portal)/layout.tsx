@@ -21,10 +21,15 @@ export default async function PortalLayout({
   const user = session.user as SessionUser;
   const [{ locale, dict }, flags] = await Promise.all([
     getT(),
-    getFeatureFlags(["statistics_me_enabled", "knowledge_articles_enabled"]),
+    getFeatureFlags([
+      "statistics_me_enabled",
+      "knowledge_articles_enabled",
+      "billing_reminders_enabled",
+    ]),
   ]);
   const statisticsMeEnabled = flags["statistics_me_enabled"] ?? false;
   const knowledgeEnabled = flags["knowledge_articles_enabled"] ?? false;
+  const billingRemindersEnabled = flags["billing_reminders_enabled"] ?? false;
 
   return (
     <LocaleProvider locale={locale} dict={dict}>
@@ -35,6 +40,7 @@ export default async function PortalLayout({
               user={user}
               statisticsMeEnabled={statisticsMeEnabled}
               knowledgeEnabled={knowledgeEnabled}
+              billingRemindersEnabled={billingRemindersEnabled}
             />
             <div className="flex flex-1 flex-col overflow-hidden">
               <Header user={user} />

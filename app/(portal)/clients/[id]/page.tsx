@@ -70,12 +70,20 @@ export default async function ClientDetailPage({ params, searchParams }: Props) 
 
   let burnByBank: Record<string, BankBurn> | null = null;
   let burnEnabled = false;
-  if (activeTab === "billing" && billingData?.billingAccount?.hourlyBanks?.length) {
-    burnEnabled = await getFeatureFlag("hourly_burn_enabled");
-    if (burnEnabled) {
-      const ids = billingData.billingAccount.hourlyBanks.map((b) => b.id);
-      const burnMap = await getBankBurn(ids);
-      burnByBank = Object.fromEntries(burnMap);
+  let remindersEnabled = false;
+  let manualContactEnabled = false;
+  if (activeTab === "billing") {
+    [remindersEnabled, manualContactEnabled] = await Promise.all([
+      getFeatureFlag("billing_reminders_enabled"),
+      getFeatureFlag("manual_contact_enabled"),
+    ]);
+    if (billingData?.billingAccount?.hourlyBanks?.length) {
+      burnEnabled = await getFeatureFlag("hourly_burn_enabled");
+      if (burnEnabled) {
+        const ids = billingData.billingAccount.hourlyBanks.map((b) => b.id);
+        const burnMap = await getBankBurn(ids);
+        burnByBank = Object.fromEntries(burnMap);
+      }
     }
   }
 
@@ -124,10 +132,13 @@ export default async function ClientDetailPage({ params, searchParams }: Props) 
         <ClientBillingTab
           clientId={id}
           clientName={client.companyName}
+          clientEmail={client.email}
           billingAccount={billingData?.billingAccount ?? null}
           payments={billingData?.payments ?? []}
           burnByBank={burnByBank}
           burnEnabled={burnEnabled}
+          remindersEnabled={remindersEnabled}
+          manualContactEnabled={manualContactEnabled}
         />
       )}
       {activeTab === "receipts" && <ReceiptsPlaceholder />}

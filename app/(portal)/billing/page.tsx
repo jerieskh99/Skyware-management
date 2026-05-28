@@ -64,10 +64,12 @@ export default async function BillingPage({ searchParams }: Props) {
     "saved_views_enabled",
     "saved_views_team_shared_enabled",
     "aging_buckets_enabled",
+    "manual_contact_enabled",
   ]);
   const savedViewsEnabled = flags["saved_views_enabled"] ?? false;
   const teamSharedEnabled = flags["saved_views_team_shared_enabled"] ?? false;
   const agingEnabled = flags["aging_buckets_enabled"] ?? false;
+  const manualContactEnabled = flags["manual_contact_enabled"] ?? false;
 
   const [kpis, payments, aging, agingBuckets] = await Promise.all([
     getBillingKpis(),
@@ -181,7 +183,7 @@ export default async function BillingPage({ searchParams }: Props) {
                 </div>
                 <div className="flex items-center gap-2">
                   <PaymentStatusChip status={p.status} />
-                  <BillingPageActions payment={p} />
+                  <BillingPageActions payment={p} manualContactEnabled={manualContactEnabled} />
                 </div>
               </div>
             ))}
@@ -241,7 +243,7 @@ export default async function BillingPage({ searchParams }: Props) {
                         <PaymentStatusChip status={p.status} />
                       </td>
                       <td className="px-4 py-3">
-                        <BillingPageActions payment={p} />
+                        <BillingPageActions payment={p} manualContactEnabled={manualContactEnabled} />
                       </td>
                     </tr>
                   ))}

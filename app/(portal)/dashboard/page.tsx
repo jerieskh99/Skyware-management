@@ -11,7 +11,8 @@ import {
   getHourlyBanksLow,
   type HourlyBankLowRow,
 } from "@/lib/dashboard/queries";
-import { getAgingBuckets, type AgingBuckets } from "@/lib/billing/queries";
+import { getAgingBuckets, computeBurnFor, type AgingBuckets } from "@/lib/billing/queries";
+import { prisma } from "@/lib/prisma";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { JobStatusChip } from "@/components/jobs/JobStatusChip";
 import { JobPriorityChip } from "@/components/jobs/JobPriorityChip";
@@ -32,7 +33,58 @@ import {
   CalendarClock,
   Hourglass,
   Clock,
+  BellRing,
 } from "lucide-react";
+
+/** Hourly banks whose consumption has reached the alert threshold (90%+). */
+interface BankAt90Row {
+  bankId: string;
+  clientId: string;
+  clientName: string;
+  consumedPercent: number;
+}
+
+/**
+ * Active hourly banks at or above 90% consumption, for the dashboard alert
+ * strip. Computed inline (two queries + the shared burn helper) since the
+ * existing `getHourlyBanksLow` is projection-based, not percent-based.
+ */
+async function getBanksAt90(): Promise<BankAt90Row[]> {
+  const banks = await prisma.hourlyBank.findMany({
+    where: { status: "active" },
+    select: {
+      id: true,
+      totalHoursPurchasedMinutes: true,
+      billingAccount: { select: { client: { select: { id: true, companyName: true } } } },
+    },
+  });
+  if (banks.length === 0) return [];
+
+  const usages = await prisma.hourlyBankUsage.findMany({
+    where: { hourlyBankId: { in: banks.map((b) => b.id) } },
+    select: { hourlyBankId: true, minutesUsed: true, usedAt: true },
+  });
+
+  const rows: BankAt90Row[] = [];
+  for (const bank of banks) {
+    const total = bank.totalHoursPurchasedMinutes;
+    if (!total || total <= 0) continue;
+    const burn = computeBurnFor(
+      { totalHoursPurchasedMinutes: total },
+      usages.filter((u) => u.hourlyBankId === bank.id),
+    );
+    const consumedPercent = Math.round((burn.minutesUsedTotal / total) * 100);
+    if (consumedPercent < 90) continue;
+    rows.push({
+      bankId: bank.id,
+      clientId: bank.billingAccount.client.id,
+      clientName: bank.billingAccount.client.companyName,
+      consumedPercent,
+    });
+  }
+  rows.sort((a, b) => b.consumedPercent - a.consumedPercent);
+  return rows.slice(0, 8);
+}
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -41,15 +93,26 @@ export default async function DashboardPage() {
   const { t } = await getT();
 
   if (isAdmin(user)) {
-    const flags = await getFeatureFlags(["aging_buckets_enabled", "hourly_burn_enabled"]);
+    const flags = await getFeatureFlags([
+      "aging_buckets_enabled",
+      "hourly_burn_enabled",
+      "billing_reminders_enabled",
+      "hourly_bank_alerts_enabled",
+    ]);
     const agingEnabled = flags["aging_buckets_enabled"] ?? false;
     const burnEnabled = flags["hourly_burn_enabled"] ?? false;
+    const remindersEnabled = flags["billing_reminders_enabled"] ?? false;
+    const bankAlertsEnabled = flags["hourly_bank_alerts_enabled"] ?? false;
 
-    const [kpis, lists, agingBuckets, banksLow] = await Promise.all([
+    const [kpis, lists, agingBuckets, banksLow, remindersPending, banksAt90] = await Promise.all([
       getAdminKpis(),
       getAdminDashboardLists(),
       agingEnabled ? getAgingBuckets() : Promise.resolve(null),
       burnEnabled ? getHourlyBanksLow() : Promise.resolve([] as HourlyBankLowRow[]),
+      remindersEnabled
+        ? prisma.paymentReminder.count({ where: { status: "admin_notified" } })
+        : Promise.resolve(0),
+      bankAlertsEnabled ? getBanksAt90() : Promise.resolve([] as BankAt90Row[]),
     ]);
     return (
       <AdminDashboard
@@ -59,6 +122,10 @@ export default async function DashboardPage() {
         agingBuckets={agingBuckets}
         banksLow={banksLow}
         burnEnabled={burnEnabled}
+        remindersEnabled={remindersEnabled}
+        remindersPending={remindersPending}
+        bankAlertsEnabled={bankAlertsEnabled}
+        banksAt90={banksAt90}
         t={t}
       />
     );
@@ -115,6 +182,10 @@ function AdminDashboard({
   agingBuckets,
   banksLow,
   burnEnabled,
+  remindersEnabled,
+  remindersPending,
+  bankAlertsEnabled,
+  banksAt90,
   t,
 }: {
   user: SessionUser;
@@ -123,6 +194,10 @@ function AdminDashboard({
   agingBuckets: AgingBuckets | null;
   banksLow: HourlyBankLowRow[];
   burnEnabled: boolean;
+  remindersEnabled: boolean;
+  remindersPending: number;
+  bankAlertsEnabled: boolean;
+  banksAt90: BankAt90Row[];
   t: T;
 }) {
   const greet = greeting(t);
@@ -188,9 +263,28 @@ function AdminDashboard({
         </section>
       )}
 
+      {/* Reminders pending review (feature-flagged) */}
+      {remindersEnabled && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <KpiCard
+            icon={BellRing}
+            tone={remindersPending > 0 ? "warn" : "default"}
+            label={t("dashboard.remindersPendingTitle")}
+            value={remindersPending}
+            note={remindersPending > 0 ? t("dashboard.remindersPendingCount") : t("dashboard.remindersPendingEmpty")}
+            href="/billing/reminders"
+          />
+        </div>
+      )}
+
       {/* Hourly banks low strip (feature-flagged) */}
       {burnEnabled && (
         <BanksLowSection rows={banksLow} t={t} />
+      )}
+
+      {/* Hourly banks at 90%+ strip (feature-flagged) */}
+      {bankAlertsEnabled && (
+        <BanksAt90Section rows={banksAt90} t={t} />
       )}
 
       {/* Quick actions */}
@@ -467,6 +561,38 @@ function BanksLowSection({ rows, t }: { rows: HourlyBankLowRow[]; t: T }) {
                   {t("billing.burn.monthsRemaining")}
                 </p>
               </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </SectionCard>
+  );
+}
+
+function BanksAt90Section({ rows, t }: { rows: BankAt90Row[]; t: T }) {
+  return (
+    <SectionCard
+      title={t("dashboard.banksAt90Title")}
+      icon={Clock}
+      count={rows.length}
+      seeAllHref="/billing"
+      seeAllLabel={t("common.viewAll")}
+      className={rows.length > 0 ? "border-warn/30 bg-warn-soft/30" : undefined}
+    >
+      {rows.length === 0 ? (
+        <EmptySectionInline>{t("dashboard.banksAt90Empty")}</EmptySectionInline>
+      ) : (
+        <div className="divide-y">
+          {rows.map((r) => (
+            <Link
+              key={r.bankId}
+              href={`/clients/${r.clientId}?tab=billing`}
+              className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm transition-colors hover:bg-accent/40"
+            >
+              <p className="min-w-0 truncate font-medium">{r.clientName}</p>
+              <span className="shrink-0 text-sm font-semibold text-warn">
+                {r.consumedPercent}% {t("dashboard.banksAt90Consumed")}
+              </span>
             </Link>
           ))}
         </div>

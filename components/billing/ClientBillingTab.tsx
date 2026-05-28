@@ -18,12 +18,15 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { BurnRateBar } from "./BurnRateBar";
 import { PaymentStatusChip } from "./PaymentStatusChip";
 import { MarkPaidSheet } from "./MarkPaidSheet";
+import { ManualContactDialog } from "./ManualContactDialog";
+import { PaymentReminderRuleDialog } from "./PaymentReminderRuleDialog";
+import { EmailHistory } from "./EmailHistory";
 import type { BankBurn } from "@/lib/billing/queries";
 import { useT } from "@/lib/i18n/client";
 import type { Locale } from "@/lib/i18n";
 import { formatCurrency, formatCurrencyILS, formatDateIL } from "@/lib/format";
-import type { MonthlyBillingStatus, HourlyBankStatus, PaymentStatus, Currency } from "@prisma/client";
-import { Plus, Pencil, Trash2, CreditCard, Clock, Zap } from "lucide-react";
+import type { MonthlyBillingStatus, HourlyBankStatus, PaymentStatus, Currency, LatenessUnit } from "@prisma/client";
+import { Plus, Pencil, Trash2, CreditCard, Clock, Zap, Mail, BellRing, Mails } from "lucide-react";
 
 interface MonthlyItem {
   id: string;
@@ -79,6 +82,10 @@ interface PaymentRow {
   method: string | null;
   reference: string | null;
   notes: string | null;
+  latenessAmount: number | null;
+  latenessUnit: LatenessUnit | null;
+  latenessNotifyAdminFirst: boolean;
+  autoSendAfterMinutes: number | null;
   sourceMonthly: { id: string; serviceName: string } | null;
   createdBy: { displayName: string };
 }
@@ -94,12 +101,18 @@ interface BillingAccount {
 interface Props {
   clientId: string;
   clientName: string;
+  /** Client email; manual-contact is disabled when absent. */
+  clientEmail?: string | null;
   billingAccount: BillingAccount | null;
   payments: PaymentRow[];
   /** Per-bank burn projection. Keyed by bank id. `null` means the strip is off. */
   burnByBank?: Record<string, BankBurn> | null;
   /** When false, burn projection lines are hidden. */
   burnEnabled?: boolean;
+  /** Gates the per-payment reminder-rule editor. */
+  remindersEnabled?: boolean;
+  /** Gates the "Contact client" buttons. */
+  manualContactEnabled?: boolean;
 }
 
 function fmtDate(d: string | Date | null, locale: Locale) {
@@ -118,6 +131,16 @@ function sourceTypeLabel(t: (key: string) => string, sourceType: string): string
     return t(`payment.sourceType.${sourceType}`);
   }
   return sourceType;
+}
+
+function latenessSummary(
+  amount: number | null,
+  unit: LatenessUnit | null,
+  t: (key: string) => string,
+): string {
+  if (amount === null || unit === null) return t("billing.lateness.summaryNone");
+  const key = unit === "weeks" ? "billing.lateness.summaryWeeks" : "billing.lateness.summaryDays";
+  return t(key).replace("{{amount}}", String(amount));
 }
 
 const selectClass =
@@ -288,20 +311,29 @@ function MonthlySection({ clientId, items, currency }: { clientId: string; items
 
 function HourlyBanksSection({
   clientId,
+  clientName,
+  clientEmail,
   banks,
   currency,
   burnByBank,
   burnEnabled,
+  manualContactEnabled,
+  onContactSent,
 }: {
   clientId: string;
+  clientName: string;
+  clientEmail: string | null;
   banks: HourlyBank[];
   currency: string;
   burnByBank: Record<string, BankBurn> | null;
   burnEnabled: boolean;
+  manualContactEnabled: boolean;
+  onContactSent: () => void;
 }) {
   const router = useRouter();
   const { t, locale } = useT();
   const [open, setOpen] = useState(false);
+  const [contactBankId, setContactBankId] = useState<string | null>(null);
   const [logUsageBankId, setLogUsageBankId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -425,6 +457,17 @@ function HourlyBanksSection({
                     >
                       <Plus className="me-1 h-3 w-3" /> Log usage
                     </Button>
+                    {manualContactEnabled && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() => setContactBankId(bank.id)}
+                        disabled={isPending}
+                      >
+                        <Mail className="me-1 h-3 w-3" /> {t("billing.contactClient")}
+                      </Button>
+                    )}
                     <button
                       onClick={() => { setDeleteError(null); setDeleteTarget(bank); }}
                       disabled={isPending}
@@ -560,6 +603,19 @@ function HourlyBanksSection({
         errorMessage={deleteError}
         onConfirm={confirmDeleteBank}
       />
+
+      {manualContactEnabled && contactBankId && (
+        <ManualContactDialog
+          open={contactBankId !== null}
+          onClose={() => setContactBankId(null)}
+          onSent={onContactSent}
+          clientId={clientId}
+          clientName={clientName}
+          hasEmail={Boolean(clientEmail)}
+          hourlyBankId={contactBankId}
+          defaultTemplateKind="hourly_bank_low_client"
+        />
+      )}
     </section>
   );
 }
@@ -704,19 +760,29 @@ function OneTimeSection({ clientId, charges }: { clientId: string; charges: OneT
 function PaymentsSection({
   clientId,
   clientName,
+  clientEmail,
   payments,
   monthlyItems,
   hourlyBanks,
+  remindersEnabled,
+  manualContactEnabled,
+  onContactSent,
 }: {
   clientId: string;
   clientName: string;
+  clientEmail: string | null;
   payments: PaymentRow[];
   monthlyItems: MonthlyItem[];
   hourlyBanks: HourlyBank[];
+  remindersEnabled: boolean;
+  manualContactEnabled: boolean;
+  onContactSent: () => void;
 }) {
   const router = useRouter();
   const { t, locale } = useT();
   const [activePayment, setActivePayment] = useState<PaymentRow | null>(null);
+  const [ruleTarget, setRuleTarget] = useState<PaymentRow | null>(null);
+  const [contactPayment, setContactPayment] = useState<PaymentRow | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -793,9 +859,25 @@ function PaymentsSection({
                   {fmtAmount(p.amountPlaceholder, p.currency, locale)} · Issued {fmtDate(p.issuedDate, locale)}
                   {p.dueDate && ` · Due ${fmtDate(p.dueDate, locale)}`}
                 </p>
+                {remindersEnabled && (
+                  <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <BellRing className="h-3 w-3" />
+                    {latenessSummary(p.latenessAmount, p.latenessUnit, t)}
+                  </p>
+                )}
               </div>
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
                 <PaymentStatusChip status={p.status} />
+                {remindersEnabled && (
+                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setRuleTarget(p)} disabled={isPending}>
+                    <BellRing className="me-1 h-3 w-3" /> {t("billing.lateness.button")}
+                  </Button>
+                )}
+                {manualContactEnabled && (
+                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setContactPayment(p)} disabled={isPending}>
+                    <Mail className="me-1 h-3 w-3" /> {t("billing.contactClient")}
+                  </Button>
+                )}
                 {p.status !== "paid" && p.status !== "cancelled" && (
                   <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setActivePayment(p)}>
                     <Pencil className="me-1 h-3 w-3" /> Update
@@ -899,18 +981,76 @@ function PaymentsSection({
           onClose={() => setActivePayment(null)}
         />
       )}
+
+      {remindersEnabled && ruleTarget && (
+        <PaymentReminderRuleDialog
+          paymentId={ruleTarget.id}
+          open={ruleTarget !== null}
+          onClose={() => setRuleTarget(null)}
+          initial={{
+            latenessAmount: ruleTarget.latenessAmount,
+            latenessUnit: ruleTarget.latenessUnit,
+            latenessNotifyAdminFirst: ruleTarget.latenessNotifyAdminFirst,
+            autoSendAfterMinutes: ruleTarget.autoSendAfterMinutes,
+          }}
+        />
+      )}
+
+      {manualContactEnabled && contactPayment && (
+        <ManualContactDialog
+          open={contactPayment !== null}
+          onClose={() => setContactPayment(null)}
+          onSent={onContactSent}
+          clientId={clientId}
+          clientName={clientName}
+          hasEmail={Boolean(clientEmail)}
+          paymentId={contactPayment.id}
+          defaultTemplateKind="payment_reminder_client"
+          vars={buildPaymentVars(contactPayment, locale)}
+        />
+      )}
     </section>
   );
+}
+
+/**
+ * Render-vars for a payment-scoped manual contact. `client_name`,
+ * `company_name`, and `contact_url` are filled server-side; here we provide
+ * the payment-specific placeholders the templates reference.
+ */
+function buildPaymentVars(p: PaymentRow, locale: Locale): Record<string, string> {
+  const handle = p.reference || `PMT-${p.id.slice(0, 8)}`;
+  const vars: Record<string, string> = {
+    payment_public_number: handle,
+    currency: p.currency,
+  };
+  if (p.amountPlaceholder != null) {
+    vars.amount = (p.amountPlaceholder / 100).toFixed(2);
+  }
+  if (p.dueDate) {
+    vars.due_date = formatDateIL(new Date(p.dueDate), locale);
+    const due = new Date(p.dueDate).getTime();
+    const days = Math.floor((Date.now() - due) / (1000 * 60 * 60 * 24));
+    vars.days_overdue = String(Math.max(0, days));
+  }
+  return vars;
 }
 
 export function ClientBillingTab({
   clientId,
   clientName,
+  clientEmail = null,
   billingAccount,
   payments,
   burnByBank = null,
   burnEnabled = false,
+  remindersEnabled = false,
+  manualContactEnabled = false,
 }: Props) {
+  // Bumped after any successful manual send so the email-history table refetches.
+  const [emailRefreshKey, setEmailRefreshKey] = useState(0);
+  const onContactSent = () => setEmailRefreshKey((k) => k + 1);
+
   if (!billingAccount) {
     return (
       <div className="rounded-lg border border-dashed p-10 text-center">
@@ -930,10 +1070,14 @@ export function ClientBillingTab({
       <Separator />
       <HourlyBanksSection
         clientId={clientId}
+        clientName={clientName}
+        clientEmail={clientEmail}
         banks={billingAccount.hourlyBanks}
         currency={billingAccount.defaultCurrency}
         burnByBank={burnByBank}
         burnEnabled={burnEnabled}
+        manualContactEnabled={manualContactEnabled}
+        onContactSent={onContactSent}
       />
       <Separator />
       <OneTimeSection clientId={clientId} charges={billingAccount.oneTimeCharges} />
@@ -941,10 +1085,29 @@ export function ClientBillingTab({
       <PaymentsSection
         clientId={clientId}
         clientName={clientName}
+        clientEmail={clientEmail}
         payments={payments}
         monthlyItems={billingAccount.monthlyBillingItems}
         hourlyBanks={billingAccount.hourlyBanks}
+        remindersEnabled={remindersEnabled}
+        manualContactEnabled={manualContactEnabled}
+        onContactSent={onContactSent}
       />
+
+      <Separator />
+      <EmailHistorySection clientId={clientId} refreshKey={emailRefreshKey} />
     </div>
+  );
+}
+
+function EmailHistorySection({ clientId, refreshKey }: { clientId: string; refreshKey: number }) {
+  const { t } = useT();
+  return (
+    <section className="space-y-3">
+      <h3 className="flex items-center gap-1.5 text-sm font-semibold">
+        <Mails className="h-4 w-4 text-muted-foreground" /> {t("emailHistory.title")}
+      </h3>
+      <EmailHistory clientId={clientId} refreshKey={refreshKey} />
+    </section>
   );
 }

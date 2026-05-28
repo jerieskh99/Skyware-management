@@ -24,6 +24,7 @@ import {
   Shield,
   Layers,
   ClipboardList,
+  BellRing,
 } from "lucide-react";
 
 interface NavItem {
@@ -74,6 +75,7 @@ const GROUPS: NavGroup[] = [
     items: [
       { href: "/clients", labelKey: "nav.clients", icon: Building2, adminOnly: true },
       { href: "/billing", labelKey: "nav.billing", icon: CreditCard, adminOnly: true },
+      { href: "/billing/reminders", labelKey: "nav.billingReminders", icon: BellRing, adminOnly: true },
       { href: "/receipts", labelKey: "nav.receipts", icon: Receipt, adminOnly: true },
       { href: "/financial-documents", labelKey: "nav.financialDocumentsShort", icon: FileText, adminOnly: true },
     ],
@@ -93,6 +95,7 @@ interface Props {
   user: SessionUser;
   statisticsMeEnabled?: boolean;
   knowledgeEnabled?: boolean;
+  billingRemindersEnabled?: boolean;
 }
 
 /**
@@ -120,18 +123,47 @@ function usePendingReviewCount(enabled: boolean): number {
   return data?.count ?? 0;
 }
 
+/**
+ * Count of reminders awaiting an admin decision (`admin_notified`). Drives the
+ * "Billing reminders" badge. Reuses `GET /api/billing/reminders` with
+ * `limit=1`, reading the `total`. Returns 0 for non-admins, when the flag is
+ * off (the endpoint 404s), or on any error so the badge fades out gracefully.
+ */
+function useRemindersPendingCount(enabled: boolean): number {
+  const { data } = useQuery({
+    queryKey: ["billing-reminders-pending"],
+    queryFn: async () => {
+      const res = await fetch("/api/billing/reminders?status=admin_notified&limit=1", {
+        credentials: "include",
+      });
+      if (!res.ok) return { total: 0 };
+      return (await res.json()) as { total: number };
+    },
+    refetchInterval: 60_000,
+    enabled,
+  });
+  return data?.total ?? 0;
+}
+
 export function Sidebar({
   user,
   statisticsMeEnabled = false,
   knowledgeEnabled = false,
+  billingRemindersEnabled = false,
 }: Props) {
   const pathname = usePathname();
   const { t } = useT();
   const pendingReviewCount = usePendingReviewCount(
     knowledgeEnabled && user.isAdmin,
   );
+  const remindersPendingCount = useRemindersPendingCount(
+    billingRemindersEnabled && user.isAdmin,
+  );
 
   function isActive(href: string) {
+    // `/billing` is a prefix of `/billing/reminders`; keep the parent from
+    // staying highlighted when a child route owns the path.
+    if (href === "/billing") return pathname === "/billing";
     return pathname === href || pathname.startsWith(href + "/");
   }
 
@@ -154,6 +186,12 @@ export function Sidebar({
         items: g.items.filter(
           (it) => it.href !== "/knowledge" && it.href !== "/knowledge/review",
         ),
+      };
+    }
+    if (g.labelKey === "nav.groupClientsBilling" && !billingRemindersEnabled) {
+      return {
+        ...g,
+        items: g.items.filter((it) => it.href !== "/billing/reminders"),
       };
     }
     return g;
@@ -196,7 +234,9 @@ export function Sidebar({
                       badge={
                         item.href === "/knowledge/review" && pendingReviewCount > 0
                           ? pendingReviewCount
-                          : undefined
+                          : item.href === "/billing/reminders" && remindersPendingCount > 0
+                            ? remindersPendingCount
+                            : undefined
                       }
                     />
                   </li>

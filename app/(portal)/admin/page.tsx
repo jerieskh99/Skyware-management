@@ -11,7 +11,8 @@ import { SlaDefaultsSection } from "@/components/admin/SlaDefaultsSection";
 import { CronTriggerSection } from "@/components/admin/CronTriggerSection";
 import { RecurringTemplatesSection } from "@/components/admin/RecurringTemplatesSection";
 import { CompanySettingsForm } from "@/components/admin/CompanySettingsForm";
-import { Shield, Users, Tag, Flag, BookOpen, SlidersHorizontal, Building2, Network, Clock, Repeat } from "lucide-react";
+import { EmailTemplatesSection, type EmailTemplateRow } from "@/components/admin/EmailTemplatesSection";
+import { Shield, Users, Tag, Flag, BookOpen, SlidersHorizontal, Building2, Network, Clock, Repeat, Mail } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { getT } from "@/lib/i18n/server";
 import { FALLBACK_PRIORITY_SLA_MINUTES } from "@/lib/sla";
@@ -32,6 +33,7 @@ const BASE_TAB_KEYS = [
 ] as const;
 
 const RECURRING_TAB = { key: "recurring", icon: Repeat } as const;
+const EMAIL_TEMPLATES_TAB = { key: "email-templates", icon: Mail } as const;
 
 const PAGE_SIZE = 25;
 
@@ -46,8 +48,15 @@ export default async function AdminPage({ searchParams }: Props) {
   if (!isAdmin(user)) redirect("/dashboard");
 
   const sp = await searchParams;
-  const recurringFlag = await getFeatureFlag("recurring_jobs_enabled");
-  const TAB_KEYS = recurringFlag ? [...BASE_TAB_KEYS, RECURRING_TAB] : BASE_TAB_KEYS;
+  const [recurringFlag, emailTemplatesFlag] = await Promise.all([
+    getFeatureFlag("recurring_jobs_enabled"),
+    getFeatureFlag("email_templates_admin_ui"),
+  ]);
+  const TAB_KEYS = [
+    ...BASE_TAB_KEYS,
+    ...(recurringFlag ? [RECURRING_TAB] : []),
+    ...(emailTemplatesFlag ? [EMAIL_TEMPLATES_TAB] : []),
+  ];
   const tab = TAB_KEYS.some((t) => t.key === sp["tab"]) ? sp["tab"] : "users";
   const { t } = await getT();
   const page = Math.max(1, parseInt(sp["page"] ?? "1", 10));
@@ -71,6 +80,7 @@ export default async function AdminPage({ searchParams }: Props) {
   let recurringClients: Awaited<ReturnType<typeof getRecurringClients>> = [];
   let recurringUsers: Awaited<ReturnType<typeof getRecurringUsers>> = [];
   let companySettings: CompanySettings | null = null;
+  let emailTemplates: EmailTemplateRow[] = [];
 
   if (tab === "users") {
     [users, roleOptions, deptOptions] = await Promise.all([
@@ -100,6 +110,8 @@ export default async function AdminPage({ searchParams }: Props) {
     ]);
   } else if (tab === "company") {
     companySettings = await getCompanySettings();
+  } else if (tab === "email-templates") {
+    emailTemplates = await getEmailTemplates();
   }
 
   return (
@@ -163,6 +175,10 @@ export default async function AdminPage({ searchParams }: Props) {
 
       {tab === "company" && (
         <CompanySettingsForm initial={toCompanySettingsDTO(companySettings)} />
+      )}
+
+      {tab === "email-templates" && (
+        <EmailTemplatesSection templates={emailTemplates} />
       )}
 
       {tab === "recurring" && (
@@ -262,6 +278,24 @@ async function getSlaRows(): Promise<
       updatedAt: row?.updatedAt ?? null,
     };
   });
+}
+
+async function getEmailTemplates(): Promise<EmailTemplateRow[]> {
+  const rows = await prisma.emailTemplate.findMany({
+    select: {
+      id: true,
+      kind: true,
+      name: true,
+      subjectEn: true,
+      bodyEn: true,
+      subjectHe: true,
+      bodyHe: true,
+      variableNotes: true,
+      updatedAt: true,
+    },
+    orderBy: { kind: "asc" },
+  });
+  return rows.map((r) => ({ ...r, updatedAt: r.updatedAt.toISOString() }));
 }
 
 async function getRecurringDepts() {

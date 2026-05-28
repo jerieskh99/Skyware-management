@@ -66,6 +66,10 @@ export interface MockedPrisma {
   knowledgeArticleReview: MockedModel;
   knowledgeArticleReference: MockedModel;
   clientHealthSnapshot: MockedModel;
+  paymentReminder: MockedModel;
+  emailTemplate: MockedModel;
+  emailLog: MockedModel;
+  hourlyBankAlertLog: MockedModel;
   $transaction: Mock;
   $queryRaw: Mock;
   $executeRaw: Mock;

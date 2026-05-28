@@ -98,6 +98,149 @@ async function main() {
   }
   console.log("  Feature flags OK");
 
+  // ---- Email templates (Phase 4 Wave 2) ----
+  // One row per EmailTemplateKind. Bilingual default subject + body with
+  // mustache-like {{variable}} placeholders. The Wave-2 render layer
+  // interpolates these. We upsert on `kind` (UNIQUE); `update: {}` so an
+  // admin's later edits are NEVER overwritten by a re-seed - the seed only
+  // provides the first-run defaults.
+  //
+  // Supported variables: {{client_name}}, {{payment_public_number}},
+  // {{amount}}, {{currency}}, {{due_date}}, {{days_overdue}},
+  // {{company_name}}, {{contact_url}}.
+  const emailTemplates: Array<{
+    kind:
+      | "payment_reminder_admin"
+      | "payment_reminder_client"
+      | "hourly_bank_low_admin"
+      | "hourly_bank_low_client"
+      | "manual_contact";
+    name: string;
+    subjectEn: string;
+    bodyEn: string;
+    subjectHe: string;
+    bodyHe: string;
+    variableNotes: string;
+  }> = [
+    {
+      kind: "payment_reminder_admin",
+      name: "Payment reminder - admin notice",
+      subjectEn: "Review needed: payment reminder for {{client_name}} ({{payment_public_number}})",
+      bodyEn:
+        "A payment reminder is ready to send.\n\n" +
+        "Client: {{client_name}}\n" +
+        "Payment: {{payment_public_number}}\n" +
+        "Amount: {{amount}} {{currency}}\n" +
+        "Due date: {{due_date}}\n" +
+        "Days overdue: {{days_overdue}}\n\n" +
+        "Approve, delay, or cancel from the billing reminders queue before it is sent to the client.",
+      subjectHe: "נדרש אישור: תזכורת תשלום עבור {{client_name}} ({{payment_public_number}})",
+      bodyHe:
+        "תזכורת תשלום מוכנה לשליחה.\n\n" +
+        "לקוח: {{client_name}}\n" +
+        "תשלום: {{payment_public_number}}\n" +
+        "סכום: {{amount}} {{currency}}\n" +
+        "תאריך לתשלום: {{due_date}}\n" +
+        "ימי איחור: {{days_overdue}}\n\n" +
+        "יש לאשר, לדחות או לבטל מתוך תור תזכורות התשלום לפני שהתזכורת נשלחת ללקוח.",
+      variableNotes:
+        "Sent to admins for review. {{days_overdue}} is the count of days past {{due_date}}.",
+    },
+    {
+      kind: "payment_reminder_client",
+      name: "Payment reminder - client email",
+      subjectEn: "Payment reminder from {{company_name}} - {{payment_public_number}}",
+      bodyEn:
+        "Dear {{client_name}},\n\n" +
+        "This is a friendly reminder that payment {{payment_public_number}} for {{amount}} {{currency}} " +
+        "was due on {{due_date}} and is now {{days_overdue}} day(s) overdue.\n\n" +
+        "If you have already arranged payment, please disregard this message. " +
+        "Otherwise, you can reach us here: {{contact_url}}\n\n" +
+        "Thank you,\n{{company_name}}",
+      subjectHe: "תזכורת תשלום מאת {{company_name}} - {{payment_public_number}}",
+      bodyHe:
+        "{{client_name}} שלום,\n\n" +
+        "זוהי תזכורת ידידותית כי התשלום {{payment_public_number}} על סך {{amount}} {{currency}} " +
+        "היה לתשלום בתאריך {{due_date}} וכעת הוא באיחור של {{days_overdue}} ימים.\n\n" +
+        "אם כבר הסדרתם את התשלום, ניתן להתעלם מהודעה זו. " +
+        "אחרת, ניתן ליצור עמנו קשר כאן: {{contact_url}}\n\n" +
+        "בתודה,\n{{company_name}}",
+      variableNotes:
+        "Sent to the client. Keep the tone polite; this is a first reminder.",
+    },
+    {
+      kind: "hourly_bank_low_admin",
+      name: "Hourly bank low - admin notice",
+      subjectEn: "Hourly bank low for {{client_name}} - {{days_overdue}}% reserved",
+      bodyEn:
+        "An hourly bank has reached its alert threshold.\n\n" +
+        "Client: {{client_name}}\n\n" +
+        "The bank is nearly consumed. Consider contacting the client to renew or top up the hours.\n\n" +
+        "Open the client billing tab to review usage and projected months remaining.",
+      subjectHe: "מאגר שעות נמוך עבור {{client_name}}",
+      bodyHe:
+        "מאגר שעות הגיע לסף ההתראה.\n\n" +
+        "לקוח: {{client_name}}\n\n" +
+        "המאגר כמעט נוצל במלואו. כדאי ליצור קשר עם הלקוח לחידוש או הוספת שעות.\n\n" +
+        "יש לפתוח את לשונית החיובים של הלקוח כדי לבחון את הצריכה ואת מספר החודשים הצפוי שנותר.",
+      variableNotes:
+        "Sent to admins when a bank crosses the 90% consumption threshold.",
+    },
+    {
+      kind: "hourly_bank_low_client",
+      name: "Hourly bank low - client email",
+      subjectEn: "Your hours package is running low - {{company_name}}",
+      bodyEn:
+        "Dear {{client_name}},\n\n" +
+        "Your prepaid hours package with {{company_name}} is running low. " +
+        "To avoid any interruption to ongoing work, we recommend renewing or topping up your hours.\n\n" +
+        "To arrange this or ask any questions, please reach us here: {{contact_url}}\n\n" +
+        "Thank you,\n{{company_name}}",
+      subjectHe: "חבילת השעות שלכם מתקרבת לסיום - {{company_name}}",
+      bodyHe:
+        "{{client_name}} שלום,\n\n" +
+        "חבילת השעות מראש שלכם מול {{company_name}} מתקרבת לסיום. " +
+        "כדי להימנע מהפרעה בעבודה השוטפת, אנו ממליצים לחדש או להוסיף שעות.\n\n" +
+        "לתיאום או לכל שאלה, ניתן ליצור עמנו קשר כאן: {{contact_url}}\n\n" +
+        "בתודה,\n{{company_name}}",
+      variableNotes:
+        "Sent to the client when their hourly bank is low. Encourage renewal.",
+    },
+    {
+      kind: "manual_contact",
+      name: "Manual contact - blank shell",
+      subjectEn: "A message from {{company_name}}",
+      bodyEn:
+        "Dear {{client_name}},\n\n" +
+        "[Write your message here.]\n\n" +
+        "Thank you,\n{{company_name}}",
+      subjectHe: "הודעה מאת {{company_name}}",
+      bodyHe:
+        "{{client_name}} שלום,\n\n" +
+        "[יש לכתוב כאן את ההודעה.]\n\n" +
+        "בתודה,\n{{company_name}}",
+      variableNotes:
+        "Starting point for an ad-hoc message. The sender edits the body before sending.",
+    },
+  ];
+  for (const t of emailTemplates) {
+    await prisma.emailTemplate.upsert({
+      where: { kind: t.kind },
+      // Never overwrite admin edits on re-seed; only fill first-run defaults.
+      update: {},
+      create: {
+        kind: t.kind,
+        name: t.name,
+        subjectEn: t.subjectEn,
+        bodyEn: t.bodyEn,
+        subjectHe: t.subjectHe,
+        bodyHe: t.bodyHe,
+        variableNotes: t.variableNotes,
+      },
+    });
+  }
+  console.log(`  Email templates OK (${emailTemplates.length} rows)`);
+
   // ---- SLA defaults (per priority) ----
   // Initial values match the previous hardcoded defaults in lib/sla.ts.
   // Admin can edit these from /admin?tab=sla; we only insert on first run.

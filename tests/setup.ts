@@ -75,6 +75,10 @@ function buildPrismaMock() {
     knowledgeArticleReview: modelStub(),
     knowledgeArticleReference: modelStub(),
     clientHealthSnapshot: modelStub(),
+    paymentReminder: modelStub(),
+    emailTemplate: modelStub(),
+    emailLog: modelStub(),
+    hourlyBankAlertLog: modelStub(),
     $transaction: vi.fn(async (arg: unknown) => {
       if (typeof arg === "function") {
         return (arg as AnyFn)(client);

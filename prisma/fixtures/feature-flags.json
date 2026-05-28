@@ -93,5 +93,30 @@
     "key": "knowledge_ai_provider_verified",
     "enabled": false,
     "description": "Set true ONLY after a vendor + redaction review. Required (along with knowledge_ai_structuring_enabled and ALLOW_KNOWLEDGE_AI env) for the real LLM call path to engage."
+  },
+  {
+    "key": "billing_reminders_enabled",
+    "enabled": false,
+    "description": "Master switch for the late-payment reminder cron + admin review UI. When off, the reminder writer no-ops and the UI surfaces are hidden. Phase 4 Wave 2."
+  },
+  {
+    "key": "hourly_bank_alerts_enabled",
+    "enabled": false,
+    "description": "Master switch for the hourly-bank low-balance (90%) alert cron + UI. When off, the alert writer no-ops and the UI surfaces are hidden. Phase 4 Wave 2."
+  },
+  {
+    "key": "manual_contact_enabled",
+    "enabled": false,
+    "description": "Show the manual client-contact dialog (compose + send/queue an email to a client). When off, the dialog is hidden. Phase 4 Wave 2."
+  },
+  {
+    "key": "billing_email_real_send",
+    "enabled": false,
+    "description": "Production-only gate that lets the email transport actually deliver (mirrors the receipts 3-gate pattern). When false, every email is captured as a test-mode queued EmailLog row and never sent. Default false."
+  },
+  {
+    "key": "email_templates_admin_ui",
+    "enabled": false,
+    "description": "Expose the email template editor at /admin?tab=email-templates. When off, the tab is hidden and the template-edit API rejects writes. Default false. Phase 4 Wave 2."
   }
 ]

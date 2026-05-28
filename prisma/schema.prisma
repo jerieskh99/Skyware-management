@@ -173,6 +173,63 @@ enum Currency {
   EUR
 }
 
+/// Time unit for Payment.latenessUnit. Drives the reminder cron's
+/// "trigger date" calculation: `dueDate + latenessAmount * (1 day | 1 week)`.
+/// Added in migration 20260528010000_billing_reminders_v2.
+enum LatenessUnit {
+  days
+  weeks
+}
+
+/// Lifecycle of a single PaymentReminder row. Created by the reminder cron
+/// at status `scheduled`, transitions through admin review, then to either
+/// `sent` (client email transport accepted) or `send_failed` (transport
+/// rejected). `bounced` is reserved for V3+ delivery-webhook integration.
+/// Added in migration 20260528010000_billing_reminders_v2.
+enum PaymentReminderStatus {
+  scheduled
+  admin_notified
+  approved
+  delayed
+  cancelled
+  sent
+  send_failed
+  bounced
+}
+
+/// Discriminator for EmailTemplate rows. One row per kind (UNIQUE).
+/// Added in migration 20260528010000_billing_reminders_v2.
+enum EmailTemplateKind {
+  payment_reminder_admin
+  payment_reminder_client
+  hourly_bank_low_admin
+  hourly_bank_low_client
+  manual_contact
+}
+
+/// Discriminator for EmailLog rows. `test` is reserved for ad-hoc
+/// transport diagnostics that do not map to a template. Added in
+/// migration 20260528010000_billing_reminders_v2.
+enum EmailKind {
+  payment_reminder_admin
+  payment_reminder_client
+  hourly_bank_low_admin
+  hourly_bank_low_client
+  manual_contact
+  test
+}
+
+/// Delivery outcome for an EmailLog row. Test-mode runs ship as `queued`
+/// and never call the transport. `bounced` is reserved for V3+ delivery-
+/// webhook integration. Added in migration
+/// 20260528010000_billing_reminders_v2.
+enum EmailDeliveryStatus {
+  queued
+  sent
+  failed
+  bounced
+}
+
 enum NotificationKind {
   sla_breached
   job_assigned
@@ -181,6 +238,9 @@ enum NotificationKind {
   knowledge_review_decided
   knowledge_freshness_due
   knowledge_link_broken
+  payment_reminder_pending_review
+  hourly_bank_low
+  manual_contact_sent
 }
 
 enum SavedViewVisibility {
@@ -282,6 +342,10 @@ model User {
   knowledgeReviewed          KnowledgeArticle[]         @relation("KnowledgeArticleReviewer")
   knowledgeRevisionsAuthored KnowledgeArticleRevision[] @relation("KnowledgeArticleRevisionAuthor")
   knowledgeReviewsConducted  KnowledgeArticleReview[]   @relation("KnowledgeArticleReviewReviewer")
+  /// Wave-2 billing reminders + email infrastructure back-relations.
+  paymentReminderDecisions   PaymentReminder[]          @relation("PaymentReminderDecidedBy")
+  emailTemplatesEdited       EmailTemplate[]            @relation("EmailTemplateEditor")
+  triggeredEmails            EmailLog[]                 @relation("EmailTriggeredBy")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -473,6 +537,9 @@ model Client {
   recurringTemplates RecurringJobTemplate[]
   knowledgeArticles  KnowledgeArticle[]      @relation("ClientKnowledge")
   healthSnapshots    ClientHealthSnapshot[]
+  /// Wave-2 back-relation: every email logged for this client (reminders,
+  /// hourly-bank alerts, manual contact).
+  emailLogs          EmailLog[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -553,9 +620,13 @@ model HourlyBank {
   status                     HourlyBankStatus @default(active)
   alertThresholdPercent      Int              @default(25) @map("alert_threshold_percent")
 
-  billingAccount BillingAccount    @relation(fields: [billingAccountId], references: [id])
+  billingAccount BillingAccount       @relation(fields: [billingAccountId], references: [id])
   usages         HourlyBankUsage[]
   payments       Payment[]
+  /// Wave-2 back-relations: dedup log for the low-balance alert + every
+  /// email logged for this bank.
+  alertLogs      HourlyBankAlertLog[]
+  emailLogs      EmailLog[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -607,35 +678,50 @@ model OneTimeJobCharge {
 }
 
 model Payment {
-  id                   String            @id @default(uuid()) @db.Uuid
-  clientId             String            @map("client_id") @db.Uuid
-  sourceType           PaymentSourceType @map("source_type")
-  sourceMonthlyId      String?           @map("source_monthly_id") @db.Uuid
-  sourceHourlyId       String?           @map("source_hourly_id") @db.Uuid
-  amountPlaceholder    Int?              @map("amount_placeholder")
+  id                       String            @id @default(uuid()) @db.Uuid
+  clientId                 String            @map("client_id") @db.Uuid
+  sourceType               PaymentSourceType @map("source_type")
+  sourceMonthlyId          String?           @map("source_monthly_id") @db.Uuid
+  sourceHourlyId           String?           @map("source_hourly_id") @db.Uuid
+  amountPlaceholder        Int?              @map("amount_placeholder")
   /// VAT split fields, added in migration 20260525000200. All nullable; the
   /// legacy `amountPlaceholder` (now treated as the gross total when the
   /// split is absent) stays for existing rows. New writes should populate
   /// `amountBeforeVat` + `vatAmount` + `totalAmount` + `vatRateBasisPoints`.
-  amountBeforeVat      Int?              @map("amount_before_vat")
-  vatAmount            Int?              @map("vat_amount")
-  totalAmount          Int?              @map("total_amount")
+  amountBeforeVat          Int?              @map("amount_before_vat")
+  vatAmount                Int?              @map("vat_amount")
+  totalAmount              Int?              @map("total_amount")
   /// VAT rate stored as basis points (e.g. 1800 = 18.00%). Snapshot at
   /// payment-issue time so historical rates survive a profile change.
-  vatRateBasisPoints   Int?              @map("vat_rate_basis_points")
+  vatRateBasisPoints       Int?              @map("vat_rate_basis_points")
   /// Rate from `currency` to ILS at issue moment. Symmetry with
   /// ReceiptDocument.exchangeRate. Nullable for ILS rows.
-  currencyExchangeRate Decimal?          @map("currency_exchange_rate") @db.Decimal(18, 6)
-  currency             Currency          @default(ILS)
-  issuedDate           DateTime          @map("issued_date") @db.Date
-  dueDate              DateTime?         @map("due_date") @db.Date
-  paidDate             DateTime?         @map("paid_date") @db.Date
-  status               PaymentStatus     @default(draft)
-  method               PaymentMethod?
-  reference            String?
-  linkedReceiptId      String?           @map("linked_receipt_id") @db.Uuid
-  notes                String?           @db.Text
-  createdByUserId      String            @map("created_by_user_id") @db.Uuid
+  currencyExchangeRate     Decimal?          @map("currency_exchange_rate") @db.Decimal(18, 6)
+  currency                 Currency          @default(ILS)
+  issuedDate               DateTime          @map("issued_date") @db.Date
+  dueDate                  DateTime?         @map("due_date") @db.Date
+  paidDate                 DateTime?         @map("paid_date") @db.Date
+  status                   PaymentStatus     @default(draft)
+  method                   PaymentMethod?
+  reference                String?
+  linkedReceiptId          String?           @map("linked_receipt_id") @db.Uuid
+  notes                    String?           @db.Text
+  createdByUserId          String            @map("created_by_user_id") @db.Uuid
+  /// Wave-2 reminder rule. Together with `latenessUnit` defines how many
+  /// `days`/`weeks` after `dueDate` the reminder cron should fire. Both
+  /// columns must be set together, or both must be null (enforced by
+  /// CHECK constraint `payments_lateness_consistency_chk` in migration
+  /// 20260528010000_billing_reminders_v2).
+  latenessAmount           Int?              @map("lateness_amount")
+  latenessUnit             LatenessUnit?     @map("lateness_unit")
+  /// Wave-2 safety toggle. When true (default), the reminder cron emails
+  /// admins BEFORE touching the client. When false, the worker proceeds
+  /// straight to client send subject to other safety gates.
+  latenessNotifyAdminFirst Boolean           @default(true) @map("lateness_notify_admin_first")
+  /// Wave-2 auto-send gate. When non-null, the worker may auto-send the
+  /// client email N minutes after admin notification without an explicit
+  /// approval click. Null means explicit approval is required.
+  autoSendAfterMinutes     Int?              @map("auto_send_after_minutes")
 
   client        Client              @relation(fields: [clientId], references: [id])
   sourceMonthly MonthlyBillingItem? @relation(fields: [sourceMonthlyId], references: [id])
@@ -649,6 +735,9 @@ model Payment {
   /// added in migration 20260525000300). One payment can have multiple receipts
   /// (e.g. invoice plus separate receipt plus credit note).
   receipts       ReceiptDocument[]  @relation("ReceiptPayment")
+  /// Wave-2 back-relations.
+  reminders      PaymentReminder[]
+  emailLogs      EmailLog[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1239,4 +1328,137 @@ model ClientHealthSnapshot {
   @@unique([clientId, periodStart], name: "client_period_unique")
   @@index([clientId, periodStart(sort: Desc)])
   @@map("client_health_snapshots")
+}
+
+/// Wave-2 reminder rows. One row per scheduled reminder per payment.
+/// Created by the reminder cron when a Payment's lateness rule fires;
+/// transitions via admin decisions then to a `sent` / `send_failed`
+/// terminal state. Added in migration 20260528010000_billing_reminders_v2.
+model PaymentReminder {
+  id                String                @id @default(uuid()) @db.Uuid
+  paymentId         String                @map("payment_id") @db.Uuid
+  status            PaymentReminderStatus @default(scheduled)
+  /// Resolved date when the client email should fire (initially `dueDate +
+  /// latenessAmount/unit`). Admin "delay" decisions push this forward.
+  scheduledFor      DateTime              @map("scheduled_for")
+  /// When admins were emailed about the upcoming reminder.
+  adminNotifiedAt   DateTime?             @map("admin_notified_at")
+  /// When an admin decided (approve / delay / cancel / send-now).
+  decidedAt         DateTime?             @map("decided_at")
+  decidedByUserId   String?               @map("decided_by_user_id") @db.Uuid
+  /// Free-text reason on delay / cancel.
+  decisionComment   String?               @map("decision_comment") @db.Text
+  /// When the client email was actually attempted.
+  sentAt            DateTime?             @map("sent_at")
+  /// Provider message id (Resend, SendGrid, SES, etc). Null if test mode.
+  providerMessageId String?               @map("provider_message_id")
+  /// Provider error code / message on failure.
+  failureReason     String?               @map("failure_reason") @db.Text
+  /// Snapshot of template + rendered subject + body at send time
+  /// (audit immutability).
+  sentSnapshot      Json?                 @map("sent_snapshot")
+  createdAt         DateTime              @default(now()) @map("created_at")
+  updatedAt         DateTime              @updatedAt @map("updated_at")
+
+  payment   Payment    @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  decidedBy User?      @relation("PaymentReminderDecidedBy", fields: [decidedByUserId], references: [id], onDelete: SetNull)
+  emailLogs EmailLog[]
+
+  @@index([paymentId, createdAt(sort: Desc)])
+  @@index([status, scheduledFor])
+  @@map("payment_reminders")
+}
+
+/// Wave-2 admin-editable email templates. Exactly one row per
+/// EmailTemplateKind (UNIQUE). Seed inserts all five rows on first run with
+/// bilingual default subject + body. Added in migration
+/// 20260528010000_billing_reminders_v2.
+model EmailTemplate {
+  id              String            @id @default(uuid()) @db.Uuid
+  kind            EmailTemplateKind @unique
+  /// Display name shown in admin UI.
+  name            String
+  /// English subject + body, mustache-like `{{variable}}` interpolation.
+  subjectEn       String            @map("subject_en")
+  bodyEn          String            @map("body_en") @db.Text
+  /// Hebrew variants.
+  subjectHe       String            @map("subject_he")
+  bodyHe          String            @map("body_he") @db.Text
+  /// Last admin edit.
+  updatedByUserId String?           @map("updated_by_user_id") @db.Uuid
+  /// Optional explanation of variables; rendered as helper text in admin
+  /// UI.
+  variableNotes   String?           @map("variable_notes") @db.Text
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  updatedBy User? @relation("EmailTemplateEditor", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  @@map("email_templates")
+}
+
+/// Wave-2 audit trail for every email the system attempts. Test-mode rows
+/// stay at `queued` and are NEVER handed to the transport. We do NOT store
+/// transport credentials. Added in migration
+/// 20260528010000_billing_reminders_v2.
+model EmailLog {
+  id                String              @id @default(uuid()) @db.Uuid
+  kind              EmailKind
+  /// True when transport was skipped (test mode). Production sends write
+  /// `false`.
+  testMode          Boolean             @default(true) @map("test_mode")
+  /// Recipient address.
+  toEmail           String              @map("to_email")
+  /// Optional CC / BCC stored as JSON array of strings.
+  cc                Json?
+  bcc               Json?
+  fromEmail         String              @map("from_email")
+  subject           String              @db.Text
+  bodyHtml          String              @map("body_html") @db.Text
+  bodyText          String?             @map("body_text") @db.Text
+  language          String              @default("en")
+  /// Linked entities. Nullable because manual contact may not link to a
+  /// payment, and hourly-bank alerts do not link to a payment.
+  paymentId         String?             @map("payment_id") @db.Uuid
+  paymentReminderId String?             @map("payment_reminder_id") @db.Uuid
+  hourlyBankId      String?             @map("hourly_bank_id") @db.Uuid
+  clientId          String?             @map("client_id") @db.Uuid
+  triggeredByUserId String?             @map("triggered_by_user_id") @db.Uuid
+  /// Provider message id (when sent for real).
+  providerMessageId String?             @map("provider_message_id")
+  status            EmailDeliveryStatus @default(queued)
+  failureReason     String?             @map("failure_reason") @db.Text
+  createdAt         DateTime            @default(now()) @map("created_at")
+
+  payment         Payment?         @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  paymentReminder PaymentReminder? @relation(fields: [paymentReminderId], references: [id], onDelete: SetNull)
+  hourlyBank      HourlyBank?      @relation(fields: [hourlyBankId], references: [id], onDelete: SetNull)
+  client          Client?          @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  triggeredBy     User?            @relation("EmailTriggeredBy", fields: [triggeredByUserId], references: [id], onDelete: SetNull)
+
+  @@index([clientId, createdAt(sort: Desc)])
+  @@index([paymentId, createdAt(sort: Desc)])
+  @@index([kind, status])
+  @@map("email_logs")
+}
+
+/// Wave-2 dedup table so the 90% hourly-bank low-balance alert does not
+/// fire repeatedly for the same bank. One row per fired alert tier.
+/// `thresholdPercent` defaults to 90 today; reserved for future tiers
+/// (75, 100). Added in migration 20260528010000_billing_reminders_v2.
+model HourlyBankAlertLog {
+  id               String   @id @default(uuid()) @db.Uuid
+  hourlyBankId     String   @map("hourly_bank_id") @db.Uuid
+  /// Snapshot of consumed minutes at alert time.
+  consumedMinutes  Int      @map("consumed_minutes")
+  /// Snapshot of total minutes at alert time.
+  totalMinutes     Int      @map("total_minutes")
+  /// 90 for the V2 alert. Reserved for future tiers (75, 100).
+  thresholdPercent Int      @default(90) @map("threshold_percent")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  hourlyBank HourlyBank @relation(fields: [hourlyBankId], references: [id], onDelete: Cascade)
+
+  @@index([hourlyBankId, createdAt(sort: Desc)])
+  @@map("hourly_bank_alert_logs")
 }

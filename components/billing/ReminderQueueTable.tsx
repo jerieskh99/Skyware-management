@@ -9,7 +9,10 @@ import { useT } from "@/lib/i18n/client";
 import { formatCurrency, formatCurrencyILS, formatDateIL, formatDateTimeIL } from "@/lib/format";
 import type { Locale } from "@/lib/i18n";
 import type { LatenessUnit } from "@prisma/client";
-import { Gavel } from "lucide-react";
+// lucide-react@0.469.0 ships a corrupt build missing dist/esm/icons/gavel.js
+// (the .js.map is present but the .js is not), which breaks the webpack
+// build. Scale is a present, semantically-equivalent "review/decide" icon.
+import { Scale } from "lucide-react";
 
 function paymentHandle(reference: string | null, id: string): string {
   return reference || `PMT-${id.slice(0, 8)}`;
@@ -84,7 +87,7 @@ export function ReminderQueueTable({ reminders }: Props) {
                   </td>
                   <td className="px-4 py-3">
                     <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setActive(r)}>
-                      <Gavel className="me-1 h-3 w-3" /> {t("billingReminders.review")}
+                      <Scale className="me-1 h-3 w-3" /> {t("billingReminders.review")}
                     </Button>
                   </td>
                 </tr>

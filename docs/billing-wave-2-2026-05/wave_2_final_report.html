@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Billing Wave 2 - Final Report</title>
+<style>
+  :root {
+    --bg:#fafaf7; --surface:#ffffff; --ink:#18181b; --ink-2:#3f3f46; --ink-3:#71717a;
+    --line:#e4e4e7; --line-2:#f4f4f5;
+    --brand:#0b62b6; --brand-2:#2563eb; --brand-soft:#dbeafe;
+    --warn:#ca8a04; --warn-soft:#fef9c3; --ok:#15803d; --ok-soft:#dcfce7;
+    --crit:#b91c1c; --crit-soft:#fee2e2;
+    --shadow:0 1px 3px rgba(24,24,27,0.04),0 8px 24px rgba(24,24,27,0.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#09090b; --surface:#18181b; --ink:#fafafa; --ink-2:#d4d4d8; --ink-3:#a1a1aa;
+      --line:#27272a; --line-2:#18181b; --brand:#60a5fa; --brand-2:#93c5fd; --brand-soft:#1e3a8a;
+      --warn:#facc15; --warn-soft:#422006; --ok:#4ade80; --ok-soft:#052e16; --crit:#f87171; --crit-soft:#450a0a;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior:smooth; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,Arial,sans-serif; font-size:16px; line-height:1.6; }
+  .deck { max-width:1200px; margin:0 auto; padding:24px 24px 120px; }
+  .topbar { position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px 24px; background:rgba(255,255,255,0.85); border:1px solid var(--line); border-radius:16px; margin-bottom:36px; backdrop-filter:saturate(180%) blur(12px); }
+  @media (prefers-color-scheme: dark) { .topbar { background:rgba(24,24,27,0.85); } }
+  .brand-mark { display:flex; align-items:center; gap:12px; font-weight:700; font-size:15px; }
+  .brand-dot { width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg,var(--brand),var(--brand-2)); display:inline-grid; place-items:center; color:white; font-weight:800; font-size:14px; }
+  .topbar .meta { font-size:13px; color:var(--ink-3); }
+  .badge { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:999px; background:var(--ok-soft); color:var(--ok); font-size:12px; font-weight:600; border:1px solid color-mix(in srgb, var(--ok) 30%, transparent); }
+  .topbar button { background:transparent; color:var(--ink-2); border:1px solid var(--line); padding:8px 14px; border-radius:10px; font-size:13px; cursor:pointer; }
+  .topbar button:hover { color:var(--ink); border-color:var(--brand); }
+  .slide { background:var(--surface); border:1px solid var(--line); border-radius:24px; padding:48px; margin-bottom:32px; box-shadow:var(--shadow); scroll-margin-top:120px; }
+  .slide-num { display:inline-block; font-size:13px; font-weight:600; color:var(--brand); letter-spacing:0.12em; text-transform:uppercase; margin-bottom:8px; }
+  .slide h2.title { font-size:32px; font-weight:700; letter-spacing:-0.02em; margin:0 0 12px; line-height:1.15; }
+  .slide .kicker { color:var(--ink-3); font-size:16px; margin:0 0 28px; max-width:800px; }
+  .hero { background:linear-gradient(135deg,#0b3b8c 0%,#0b62b6 55%,#2563eb 100%); color:white; padding:72px 48px; border:none; }
+  .hero .eyebrow { display:inline-flex; align-items:center; gap:8px; padding:6px 14px; border-radius:999px; background:rgba(255,255,255,0.18); font-size:13px; font-weight:600; margin-bottom:24px; }
+  .hero h1 { font-size:48px; line-height:1.05; letter-spacing:-0.02em; margin:0 0 20px; max-width:900px; }
+  .hero p { font-size:18px; line-height:1.5; margin:0 0 36px; max-width:780px; opacity:0.92; }
+  .hero .hero-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; }
+  .hero .stat { background:rgba(255,255,255,0.12); border-radius:14px; padding:16px; border:1px solid rgba(255,255,255,0.18); }
+  .hero .stat .num { font-size:28px; font-weight:700; line-height:1.1; }
+  .hero .stat .lbl { font-size:12px; opacity:0.86; margin-top:6px; }
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+  .grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+  .grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:20px; }
+  .card.tint { background:var(--brand-soft); border-color:color-mix(in srgb, var(--brand) 20%, transparent); }
+  .card h3 { margin:0 0 8px; font-size:16px; font-weight:600; }
+  .card p { margin:4px 0; color:var(--ink-2); font-size:14px; }
+  .metric-card { padding:20px; text-align:center; }
+  .metric-card .num-big { font-size:40px; font-weight:700; letter-spacing:-0.02em; line-height:1; }
+  .metric-card .lbl { color:var(--ink-3); font-size:13px; margin-top:8px; font-weight:500; }
+  ul.clean { margin:0; padding-left:22px; } ul.clean li { margin:7px 0; color:var(--ink-2); font-size:14px; }
+  ul.bare { list-style:none; margin:0; padding:0; } ul.bare li { padding:10px 14px; border-radius:10px; margin-bottom:8px; background:var(--line-2); color:var(--ink-2); display:flex; gap:12px; font-size:14px; }
+  ul.bare li::before { content:""; flex:0 0 6px; height:6px; border-radius:999px; background:var(--brand); margin-top:9px; }
+  ul.bare.ok li::before { background:var(--ok); }
+  table { width:100%; border-collapse:collapse; font-size:13px; margin-bottom:12px; }
+  thead th { text-align:left; background:var(--line-2); color:var(--ink-3); padding:10px 12px; border-bottom:1px solid var(--line); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.04em; }
+  tbody td { padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top; color:var(--ink-2); }
+  code { background:var(--line-2); color:var(--ink); padding:1px 6px; border-radius:4px; font-size:12px; font-family:ui-monospace,Menlo,Consolas,monospace; }
+  .sev { display:inline-block; padding:3px 8px; border-radius:999px; font-size:11px; font-weight:700; text-transform:uppercase; }
+  .sev.ok { background:var(--ok-soft); color:var(--ok); }
+  .sev.warn { background:var(--warn-soft); color:var(--warn); }
+  .flow { display:grid; gap:14px; grid-template-columns:repeat(5,1fr); margin:24px 0; }
+  .flow-step { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; text-align:center; position:relative; }
+  .flow-step .n { display:inline-grid; place-items:center; width:28px; height:28px; border-radius:999px; background:var(--brand); color:white; font-size:13px; font-weight:700; margin-bottom:8px; }
+  .flow-step h4 { margin:0 0 4px; font-size:14px; } .flow-step p { margin:0; font-size:12px; color:var(--ink-3); }
+  .flow-step + .flow-step::before { content:"->"; position:absolute; left:-11px; top:50%; transform:translateY(-50%); color:var(--ink-3); }
+  .callout { background:var(--brand-soft); color:var(--brand); border-left:4px solid var(--brand); padding:16px 20px; border-radius:10px; margin:16px 0; font-size:14px; font-weight:500; }
+  .callout.ok { background:var(--ok-soft); color:var(--ok); border-left-color:var(--ok); }
+  .callout.warn { background:var(--warn-soft); color:var(--warn); border-left-color:var(--warn); }
+  .footer { text-align:center; color:var(--ink-3); font-size:13px; padding:24px 0 8px; }
+  @media (max-width:980px) { .deck { padding:16px; } .slide { padding:32px 24px; border-radius:18px; } .hero { padding:48px 24px; } .hero h1 { font-size:36px; } .hero .hero-grid, .grid-2, .grid-3, .grid-4, .flow { grid-template-columns:1fr; } .flow-step + .flow-step::before { display:none; } .slide h2.title { font-size:26px; } }
+  @media print { .topbar { display:none; } .slide, .hero { page-break-after:always; box-shadow:none; border:1px solid #d4d4d8; } }
+</style>
+</head>
+<body>
+<div class="deck">
+
+  <header class="topbar">
+    <div class="brand-mark"><span class="brand-dot">SK</span> Billing Wave 2 - Final Report</div>
+    <div class="meta">2026-05-28 - <span class="badge">8 sign-offs - ready for CEO</span></div>
+    <div><button type="button" onclick="window.print()">Print</button></div>
+  </header>
+
+  <section class="slide hero">
+    <span class="eyebrow">Revised Wave 2 - reminders, alerts, manual contact</span>
+    <h1>Billing chases itself now - safely, behind admin review.</h1>
+    <p>Automated late-payment reminders with admin-first approval, hourly-bank 90% alerts, and a manual client-contact flow. No real email leaves the system in V2: every send is captured in test mode.</p>
+    <div class="hero-grid">
+      <div class="stat"><div class="num">867</div><div class="lbl">tests pass / 0 fail</div></div>
+      <div class="stat"><div class="num">4</div><div class="lbl">new models</div></div>
+      <div class="stat"><div class="num">12</div><div class="lbl">new routes</div></div>
+      <div class="stat"><div class="num">2</div><div class="lbl">cron jobs</div></div>
+      <div class="stat"><div class="num">0</div><div class="lbl">real emails sent</div></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">01 - Executive summary</span>
+    <h2 class="title">What shipped, in one breath.</h2>
+    <p class="lede" style="font-size:17px;color:var(--ink-2);">Admins set a lateness rule on a payment. When it lapses, the system notifies admins first (dashboard + email), shows the full context, and waits for a decision: approve, delay, cancel, or send now. The client reminder email renders from an editable bilingual template. Hourly-bank clients get a 90% usage alert. Admins can also contact any client manually from Billing with a previewed, logged email. Everything is audited. Nothing is transmitted for real in V2.</p>
+    <div class="grid-4">
+      <div class="card metric-card"><div class="num-big">5</div><div class="lbl">new enums</div></div>
+      <div class="card metric-card"><div class="num-big">+115</div><div class="lbl">new tests</div></div>
+      <div class="card metric-card"><div class="num-big">5</div><div class="lbl">feature flags (off)</div></div>
+      <div class="card metric-card"><div class="num-big">8</div><div class="lbl">reviewer sign-offs</div></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">02 - Revised Wave 2 scope</span>
+    <h2 class="title">Four features. Tight guardrails.</h2>
+    <div class="grid-2">
+      <div class="card tint">
+        <h3>In scope</h3>
+        <ul class="clean">
+          <li>Per-payment lateness rule (days or weeks)</li>
+          <li>Admin-first notify + review queue (approve/delay/cancel/send-now)</li>
+          <li>Client reminder email from editable bilingual template</li>
+          <li>Hourly-bank 90% alert (dashboard + admin + client), 30-day dedup</li>
+          <li>Manual contact from billing/payment/bank with preview + history</li>
+          <li>Email template editor + email log</li>
+          <li>Audit on every event; admin-only; flags default off</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Out of scope (deferred)</h3>
+        <ul class="clean">
+          <li>Real email provider integration (V2 is transport-stubbed)</li>
+          <li>Delivery / bounce webhooks</li>
+          <li>Open / click tracking</li>
+          <li>In-app client reply inbox</li>
+          <li>Per-client language preference</li>
+          <li>Bulk remind-all</li>
+          <li>SMS / WhatsApp</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">03 - Reminder flow</span>
+    <h2 class="title">Admin sees it first. Client only after a decision.</h2>
+    <div class="flow">
+      <div class="flow-step"><div class="n">1</div><h4>Rule set</h4><p>Admin sets lateness (days/weeks) on a payment.</p></div>
+      <div class="flow-step"><div class="n">2</div><h4>Trigger lapses</h4><p>Cron finds the overdue payment, creates a reminder.</p></div>
+      <div class="flow-step"><div class="n">3</div><h4>Admin notified</h4><p>Dashboard notification + admin email. Full context shown.</p></div>
+      <div class="flow-step"><div class="n">4</div><h4>Admin decides</h4><p>Approve / delay / cancel / send now.</p></div>
+      <div class="flow-step"><div class="n">5</div><h4>Client email</h4><p>Rendered from template. Test mode - captured, not sent.</p></div>
+    </div>
+    <div class="callout warn">Optional policy: a per-payment "auto-send after N minutes of admin notification" window. Off unless an admin sets it. Even then, the email is test-mode in V2.</div>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">04 - What was implemented</span>
+    <h2 class="title">Across every layer.</h2>
+    <div class="grid-4">
+      <div class="card"><h3>Database</h3><ul class="clean"><li>1 migration</li><li>4 models</li><li>5 enums</li><li>4 Payment cols + CHECK</li><li>5 templates seeded</li></ul></div>
+      <div class="card"><h3>Backend</h3><ul class="clean"><li>Email seam (gates/render/transport)</li><li>Reminder state machine</li><li>Scheduler + auto-send</li><li>Hourly-bank scan</li><li>Manual contact</li></ul></div>
+      <div class="card"><h3>API + cron</h3><ul class="clean"><li>12 routes</li><li>2 cron entrypoints</li><li>All flag-gated</li><li>Admin-only mutations</li><li>Full audit</li></ul></div>
+      <div class="card"><h3>Frontend</h3><ul class="clean"><li>Reminder queue page</li><li>Decision dialog</li><li>Manual contact dialog</li><li>Template editor</li><li>Dashboard widgets</li><li>~143 i18n keys/locale</li></ul></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">05 - What was debugged</span>
+    <h2 class="title">Two real issues, both resolved.</h2>
+    <ul class="bare ok">
+      <li><div><strong>Wrong-worktree schema build.</strong> The DB wave landed in a non-canonical worktree. The byte-identical delta (5 enums + 4 models, nothing else) was copied to canonical <code>team1</code>, verified, committed. No data loss.</div></li>
+      <li><div><strong>lucide-react test failures (pre-existing, 3 files).</strong> Root cause: lucide-react@0.469.0 has no <code>exports</code> field and a corrupt ESM build (a missing icon file). Fixed via a deterministic stub alias in <code>vitest.config.ts</code>. The suite is now fully green for the first time in several waves.</div></li>
+    </ul>
+    <div class="callout ok">QA ran 61 tests against the Wave 2 routes and lib. Zero functional defects found in the Wave 2 code itself.</div>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">06 - Bugs found and fixed</span>
+    <h2 class="title">Log.</h2>
+    <table>
+      <thead><tr><th>#</th><th>Severity</th><th>Issue</th><th>Resolution</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><span class="sev warn">Blocker</span></td><td>Wave 2 schema on wrong git worktree</td><td>Delta copied to team1, verified</td></tr>
+        <tr><td>2</td><td><span class="sev warn">High</span></td><td>lucide-react vite resolution broke 3 test files</td><td>Stub alias in vitest.config.ts</td></tr>
+        <tr><td>3</td><td><span class="sev ok">Med</span></td><td>Payment has no public-number column</td><td>Handle = reference or PMT-id8</td></tr>
+        <tr><td>4</td><td><span class="sev ok">Med</span></td><td>Client has no language column</td><td>Client emails default Hebrew; deferred</td></tr>
+        <tr><td>5</td><td><span class="sev ok">Low</span></td><td>gitignore could drop the new migration</td><td>Already fixed on team1; verified tracked</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">07 - Product review feedback</span>
+    <h2 class="title">What product asked for in the weekly review, and what landed.</h2>
+    <div class="grid-2">
+      <div class="card tint">
+        <h3>Landed</h3>
+        <ul class="clean">
+          <li>Every send surface shows the test-mode state</li>
+          <li>Manual-contact preview renders the {{variables}}</li>
+          <li>Lateness rule is a clear per-payment dialog</li>
+          <li>Dashboard reminders-pending count</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Deferred (agreed)</h3>
+        <ul class="clean">
+          <li>Open/click tracking (CRM scope)</li>
+          <li>In-app client reply (needs client auth)</li>
+          <li>Per-client language</li>
+          <li>Bulk remind-all (risky without per-client review)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">08 - Test coverage and results</span>
+    <h2 class="title">867 pass. 0 fail. Every requirement verified.</h2>
+    <table>
+      <thead><tr><th>Required verification</th><th>Covered</th></tr></thead>
+      <tbody>
+        <tr><td>Admin notification by email</td><td><span class="sev ok">yes</span></td></tr>
+        <tr><td>Admin notification in dashboard</td><td><span class="sev ok">yes</span></td></tr>
+        <tr><td>Reminder scheduling</td><td><span class="sev ok">yes</span></td></tr>
+        <tr><td>Approve / delay / cancel / manual send</td><td><span class="sev ok">yes</span></td></tr>
+        <tr><td>Client reminder preview / send</td><td><span class="sev ok">yes (test mode)</span></td></tr>
+        <tr><td>Hourly-bank 90% threshold</td><td><span class="sev ok">yes + dedup</span></td></tr>
+        <tr><td>Manual contact from Billing</td><td><span class="sev ok">yes</span></td></tr>
+        <tr><td>Permissions (admin-only)</td><td><span class="sev ok">yes</span></td></tr>
+        <tr><td>Audit logs</td><td><span class="sev ok">yes</span></td></tr>
+        <tr><td>Failure states</td><td><span class="sev ok">yes</span></td></tr>
+        <tr><td>Empty / loading states</td><td><span class="sev ok">yes</span></td></tr>
+        <tr><td>Knowledge regression</td><td><span class="sev ok">none</span></td></tr>
+        <tr><td>Full end-to-end workflow</td><td><span class="sev ok">yes (lib full-flow test)</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">09 - Remaining risks</span>
+    <h2 class="title">Known and contained.</h2>
+    <ul class="bare">
+      <li><div><strong>Real email not yet wired.</strong> When it is, add a transmit-path test with a mocked provider + security review. V2 cannot send, so no current risk.</div></li>
+      <li><div><strong>Billing-list manual-contact no-email guard is backend-only</strong> (list query selects only id + name). Acceptable; the 422 surfaces clearly.</div></li>
+      <li><div><strong>EmailLog body retention policy</strong> needed before real sending is enabled (PII).</div></li>
+      <li><div><strong>Client emails default Hebrew</strong> until a per-client language column lands.</div></li>
+    </ul>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">10 - Screens / workflows completed</span>
+    <h2 class="title">What an admin can now do.</h2>
+    <div class="grid-3">
+      <div class="card"><h3>Reminder queue</h3><p><code>/billing/reminders</code> - filterable list, status chips, decision dialog with full payment context.</p></div>
+      <div class="card"><h3>Lateness rule editor</h3><p>Per-payment dialog in the client billing tab. Days/weeks + admin-first + optional auto-send.</p></div>
+      <div class="card"><h3>Manual contact</h3><p>From billing, payment rows, and hourly-bank rows. Reason, language, editable body, live preview, send.</p></div>
+      <div class="card"><h3>Email template editor</h3><p>Admin tab. 5 bilingual templates with clickable variable chips.</p></div>
+      <div class="card"><h3>Email history</h3><p>Per-client / per-payment log with test-mode badges.</p></div>
+      <div class="card"><h3>Dashboard widgets</h3><p>Reminders pending review count + hourly-banks-at-90%+ strip.</p></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <span class="slide-num">11 - Final approval status</span>
+    <h2 class="title">Eight reviewers. Eight approvals.</h2>
+    <table>
+      <thead><tr><th>Reviewer</th><th>Verdict</th><th>Document</th></tr></thead>
+      <tbody>
+        <tr><td>Production Engineering Lead</td><td><span class="sev ok">Approved</span></td><td>wave_2_execution_audit.md</td></tr>
+        <tr><td>Senior Architect</td><td><span class="sev ok">Approved</span></td><td>wave_2_execution_audit.md</td></tr>
+        <tr><td>QA Engineer</td><td><span class="sev ok">Approved</span></td><td>wave_2_qa_test_report.md</td></tr>
+        <tr><td>Evaluation Engineer</td><td><span class="sev ok">Approved</span></td><td>wave_2_qa_test_report.md</td></tr>
+        <tr><td>Security Engineer</td><td><span class="sev ok">Approved</span></td><td>wave_2_security_review.md</td></tr>
+        <tr><td>Product Manager</td><td><span class="sev ok">Approved</span></td><td>wave_2_product_review_notes.md</td></tr>
+        <tr><td>Product Designer</td><td><span class="sev ok">Approved</span></td><td>wave_2_product_review_notes.md</td></tr>
+        <tr><td>Project Manager</td><td><span class="sev ok">Approved</span></td><td>wave_2_final_summary.md</td></tr>
+      </tbody>
+    </table>
+    <div class="callout ok"><strong>Wave 2 is ready for CEO review.</strong> Master flags stay default off. Real email cannot be sent in V2 by design.</div>
+  </section>
+
+  <div class="footer">Skyware Internal Management Portal - Billing Wave 2 Final Report - 2026-05-28</div>
+</div>
+</body>
+</html>

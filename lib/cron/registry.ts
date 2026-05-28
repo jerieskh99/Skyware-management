@@ -38,6 +38,18 @@ export const CRON_JOBS: CronJobMeta[] = [
     label: "Knowledge - external link health",
     description: "HEAD-checks external_reference URLs and notifies on broken links.",
   },
+  {
+    key: "billing-reminders",
+    label: "Billing - late-payment reminders",
+    description:
+      "Schedule reminders for unpaid payments whose lateness rule has fired (notify admins for review), then auto-send client reminders for any whose autoSendAfterMinutes policy has elapsed. Emails are test-mode unless the 3-gate real-send is configured. No-op when billing_reminders_enabled is off.",
+  },
+  {
+    key: "hourly-bank-alerts",
+    label: "Billing - hourly bank low alerts",
+    description:
+      "Scan active hourly banks; when consumption reaches 90% (deduped per bank for 30 days) notify admins and email the client. Emails are test-mode unless the 3-gate real-send is configured. No-op when hourly_bank_alerts_enabled is off.",
+  },
 ];
 
 export function findCronJob(key: string): CronJobMeta | undefined {

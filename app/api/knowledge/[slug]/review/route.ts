@@ -41,7 +41,10 @@ const MAX_REVIEW_CYCLES = 2;
  *   - `changes_requested`: article moves back to `draft`, cycle counter bumps.
  *     If the article has already cycled `MAX_REVIEW_CYCLES` times and the
  *     caller is not an admin, return 422 asking for admin arbitration.
- *   - `rejected`: article moves back to `draft` and we record the rejection.
+ *   - `rejected`: article moves to `archived` (the rejection is recorded on
+ *     the review row's `status`). Authors can clone the archived article
+ *     into a new draft if they want to try again; see the workflow doc
+ *     §1 "pending_review -> archived (reject)".
  *
  * Same-actor guard: the caller MUST NOT be the article's author.
  */
@@ -100,9 +103,16 @@ export async function POST(req: Request, { params }: Params) {
     }
   }
 
-  // Target status by decision.
+  // Target status by decision. Three decisions, three sinks:
+  //   approved          -> approved
+  //   changes_requested -> draft
+  //   rejected          -> archived (per workflow doc §1)
   const nextStatus =
-    decision === "approved" ? "approved" : "draft";
+    decision === "approved"
+      ? "approved"
+      : decision === "rejected"
+        ? "archived"
+        : "draft";
   if (!isAllowedTransition(existing.status, nextStatus)) {
     return unprocessable(
       `Cannot transition article from '${existing.status}' to '${nextStatus}'`,
@@ -115,15 +125,30 @@ export async function POST(req: Request, { params }: Params) {
       // reassign the open row to the caller before deciding so the helper's
       // same-actor invariant holds. This lets any admin pull from the queue
       // even if a different admin was the initial assignee at submit time.
+      // We write an audit row whenever this reassignment happens so a takeover
+      // is not silent.
       const open = await tx.knowledgeArticleReview.findFirst({
         where: { articleId: existing.id, status: "pending" },
         orderBy: { createdAt: "desc" },
         select: { id: true, reviewerUserId: true },
       });
       if (open && open.reviewerUserId !== auth.user.id) {
+        const previousReviewerId = open.reviewerUserId;
         await tx.knowledgeArticleReview.update({
           where: { id: open.id },
           data: { reviewerUserId: auth.user.id },
+        });
+        await writeAudit(tx, {
+          actorUserId: auth.user.id,
+          action: KNOWLEDGE_AUDIT_ACTIONS.ARTICLE_REVIEW_ASSIGNED,
+          entityType: "KnowledgeArticle",
+          entityId: existing.id,
+          diff: {
+            reviewerUserId: {
+              old: previousReviewerId,
+              new: auth.user.id,
+            },
+          },
         });
       }
 

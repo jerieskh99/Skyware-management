@@ -52,6 +52,12 @@ jobs:
       - name: Generate Prisma client
         run: pnpm db:generate
 
+      - name: Apply migrations
+        run: pnpm exec prisma migrate deploy
+
+      - name: Verify schema in sync
+        run: pnpm exec prisma migrate status
+
       - name: Lint
         run: pnpm lint
 

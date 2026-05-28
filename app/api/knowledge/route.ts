@@ -182,11 +182,14 @@ export async function POST(req: Request) {
       select: { slug: true, id: true, title: true },
     });
     if (dup) {
+      // Canonical 409 shape: `{ error, existing: { id, slug } }`. The
+      // frontend reads `data.existing.slug` to surface a deep link to the
+      // already-saved article. See `components/knowledge/ArticleEditor.tsx`.
       return NextResponse.json(
         {
-          error: "external_url_duplicate",
+          error: "duplicate_external_url",
           message: "An article already references this URL.",
-          existing: dup,
+          existing: { id: dup.id, slug: dup.slug },
         },
         { status: 409 },
       );

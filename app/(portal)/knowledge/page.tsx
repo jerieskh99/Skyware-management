@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { BookOpen, Plus, AlertTriangle } from "lucide-react";
+import { notFound, redirect } from "next/navigation";
+import { BookOpen, Plus } from "lucide-react";
 import type {
   KnowledgeArticleStatus,
   KnowledgeArticleType,
@@ -72,7 +72,12 @@ export default async function KnowledgePage({ searchParams }: Props) {
   const user = session.user as SessionUser;
   const { t, locale } = await getT();
 
+  // 404 when the master flag is off so the route is indistinguishable from
+  // a missing page, matching the behavior of `/knowledge/new`, `/knowledge/
+  // review`, and the API endpoints. This avoids leaking module existence
+  // to non-pilot tenants.
   const enabled = await getFeatureFlag("knowledge_articles_enabled");
+  if (!enabled) notFound();
 
   const params = await searchParams;
   const kind = readKind(params["kind"]);
@@ -94,9 +99,7 @@ export default async function KnowledgePage({ searchParams }: Props) {
 
   const viewerIsAdmin = isAdmin(user);
 
-  const { items } = enabled
-    ? await listArticlesFiltered(user, filters, { limit: 50 })
-    : { items: [] };
+  const { items } = await listArticlesFiltered(user, filters, { limit: 50 });
 
   // ─── Filter chip helpers ────────────────────────────────────────────────
   const baseParams = new URLSearchParams();
@@ -143,50 +146,37 @@ export default async function KnowledgePage({ searchParams }: Props) {
         title={t("knowledge.list.title")}
         description={t("knowledge.list.subtitle")}
         actions={
-          enabled ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <Link
-                href="/knowledge/new"
-                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-              >
-                <Plus className="h-4 w-4" />
-                {t("knowledge.list.addInternal")}
-              </Link>
-              <Link
-                href="/knowledge/new/external"
-                className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium hover:bg-accent"
-              >
-                <Plus className="h-4 w-4" />
-                {t("knowledge.list.addExternal")}
-              </Link>
-            </div>
-          ) : undefined
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/knowledge/new"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4" />
+              {t("knowledge.list.addInternal")}
+            </Link>
+            <Link
+              href="/knowledge/new/external"
+              className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium hover:bg-accent"
+            >
+              <Plus className="h-4 w-4" />
+              {t("knowledge.list.addExternal")}
+            </Link>
+          </div>
         }
       />
 
-      {!enabled && (
-        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50/60 p-4 text-sm">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
-          <p className="text-amber-800">{t("knowledge.list.complianceBanner")}</p>
-        </div>
-      )}
+      <FilterStrip
+        q={q}
+        activeKind={kind}
+        activeStatus={status}
+        myContributions={myContributions}
+        needsReview={needsReview}
+        kindChips={kindChips}
+        statusChips={statusChips}
+        hrefWith={hrefWith}
+      />
 
-      {enabled && (
-        <FilterStrip
-          q={q}
-          activeKind={kind}
-          activeStatus={status}
-          myContributions={myContributions}
-          needsReview={needsReview}
-          kindChips={kindChips}
-          statusChips={statusChips}
-          hrefWith={hrefWith}
-        />
-      )}
-
-      {!enabled ? (
-        <EmptyState icon={BookOpen} title={t("knowledge.list.empty")} />
-      ) : items.length === 0 ? (
+      {items.length === 0 ? (
         <EmptyState
           icon={BookOpen}
           title={q ? t("knowledge.list.noMatch") : t("knowledge.list.empty")}

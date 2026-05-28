@@ -230,7 +230,7 @@ describe("PATCH /api/knowledge/[slug] — widened fields", () => {
     );
     expect(res.status).toBe(409);
     const body = (await res.json()) as { error: string };
-    expect(body.error).toBe("external_url_duplicate");
+    expect(body.error).toBe("duplicate_external_url");
     expect(prisma.knowledgeArticle.update).not.toHaveBeenCalled();
   });
 

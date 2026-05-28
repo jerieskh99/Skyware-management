@@ -405,7 +405,7 @@ export async function attachTag(
   });
   await writeAudit(tx, {
     actorUserId: args.actorUserId,
-    action: "knowledge.tag_attached",
+    action: KNOWLEDGE_AUDIT_ACTIONS.ARTICLE_TAG_ATTACHED,
     entityType: "KnowledgeArticle",
     entityId: args.articleId,
     diff: { tagId: { old: null, new: args.tagId } },
@@ -422,7 +422,7 @@ export async function detachTag(
   if (result.count === 0) return;
   await writeAudit(tx, {
     actorUserId: args.actorUserId,
-    action: "knowledge.tag_detached",
+    action: KNOWLEDGE_AUDIT_ACTIONS.ARTICLE_TAG_DETACHED,
     entityType: "KnowledgeArticle",
     entityId: args.articleId,
     diff: { tagId: { old: args.tagId, new: null } },

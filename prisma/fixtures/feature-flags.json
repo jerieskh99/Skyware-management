@@ -83,5 +83,15 @@
     "key": "pdf_watermark_disabled",
     "enabled": false,
     "description": "When true AND receipt_finalize_enabled=true AND env ALLOW_PRODUCTION_ISSUANCE=true, the PDF renderer omits the DRAFT watermark. Default false."
+  },
+  {
+    "key": "knowledge_ai_structuring_enabled",
+    "enabled": false,
+    "description": "Enable the AI structuring step on knowledge articles. Default off. Even when true, the real LLM call only fires if ALLOW_KNOWLEDGE_AI env is set AND knowledge_ai_provider_verified flag is true; otherwise the step runs deterministic dry-run."
+  },
+  {
+    "key": "knowledge_ai_provider_verified",
+    "enabled": false,
+    "description": "Set true ONLY after a vendor + redaction review. Required (along with knowledge_ai_structuring_enabled and ALLOW_KNOWLEDGE_AI env) for the real LLM call path to engage."
   }
 ]

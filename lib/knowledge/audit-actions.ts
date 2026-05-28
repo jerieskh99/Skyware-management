@@ -18,6 +18,7 @@ export const KNOWLEDGE_AUDIT_ACTIONS = {
   ARTICLE_AI_STRUCTURED: "knowledge.article.ai_structured",
   ARTICLE_SUBMITTED_FOR_REVIEW: "knowledge.article.submitted_for_review",
   ARTICLE_REVIEW_DECIDED: "knowledge.article.review_decided",
+  ARTICLE_REVIEW_ASSIGNED: "knowledge.article.review_assigned",
   ARTICLE_PUBLISHED: "knowledge.article.published",
   ARTICLE_UN_APPROVED: "knowledge.article.un_approved",
   ARTICLE_ARCHIVED: "knowledge.article.archived",
@@ -27,6 +28,8 @@ export const KNOWLEDGE_AUDIT_ACTIONS = {
   ARTICLE_REVISION_CREATED: "knowledge.article.revision_created",
   ARTICLE_LINK_HEALTH_CHECKED: "knowledge.article.link_health_checked",
   ARTICLE_FRESHNESS_FLAGGED: "knowledge.article.freshness_flagged",
+  ARTICLE_TAG_ATTACHED: "knowledge.article.tag_attached",
+  ARTICLE_TAG_DETACHED: "knowledge.article.tag_detached",
 } as const;
 
 export type KnowledgeAuditAction =

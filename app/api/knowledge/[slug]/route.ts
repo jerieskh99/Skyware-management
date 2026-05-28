@@ -204,11 +204,13 @@ export async function PATCH(req: Request, { params }: Params) {
           select: { slug: true, id: true, title: true },
         });
         if (dup) {
+          // Canonical 409 shape: `{ error, existing: { id, slug } }`. Matches
+          // the POST handler so the frontend can use one parser for both.
           return NextResponse.json(
             {
-              error: "external_url_duplicate",
+              error: "duplicate_external_url",
               message: "An article already references this URL.",
-              existing: dup,
+              existing: { id: dup.id, slug: dup.slug },
             },
             { status: 409 },
           );

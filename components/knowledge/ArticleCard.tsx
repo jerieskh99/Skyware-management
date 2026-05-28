@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { getT } from "@/lib/i18n/server";
 
 interface TagRow {
   tag: { id: string; key: string; labelEn: string; labelHe: string; colorHex: string | null };
@@ -20,7 +21,8 @@ interface Props {
   locale?: "en" | "he";
 }
 
-export function ArticleCard({ article, locale = "en" }: Props) {
+export async function ArticleCard({ article, locale = "en" }: Props) {
+  const { t } = await getT();
   const updated =
     typeof article.updatedAt === "string"
       ? new Date(article.updatedAt)
@@ -38,12 +40,12 @@ export function ArticleCard({ article, locale = "en" }: Props) {
           <p className="truncate text-sm font-semibold">{article.title}</p>
           {article.status !== "published" && (
             <Badge variant="outline" className="text-[10px] uppercase">
-              {article.status}
+              {t(`knowledge.statuses.${article.status}`)}
             </Badge>
           )}
           {article.visibility === "admin_only" && (
             <Badge variant="outline" className="text-[10px] uppercase">
-              admin
+              {t(`knowledge.visibility.${article.visibility}`)}
             </Badge>
           )}
         </div>

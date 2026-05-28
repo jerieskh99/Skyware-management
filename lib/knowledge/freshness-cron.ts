@@ -147,20 +147,39 @@ export async function runKnowledgeFreshnessCron(): Promise<FreshnessCronSummary>
 interface LinkHealthCronSummary extends Record<string, unknown> {
   scanned: number;
   broken: number;
+  deduped: number;
 }
 
+/** Window before we re-fire a link_broken notification for the same article. */
+const LINK_BROKEN_DEDUP_WINDOW_DAYS = 7;
+
 /**
- * Scan all `published` + `external_reference` articles, HEAD-fetch each
- * `externalUrl`, and emit a `knowledge_link_broken` notification when the
- * response is non-2xx or the fetch failed entirely.
+ * Scan all `published` + `external_reference` articles that carry a non-null
+ * `externalUrl` AND `externalUrlHash`, HEAD-fetch each URL, and emit a
+ * `knowledge_link_broken` notification when the response is non-2xx or the
+ * fetch failed entirely.
  *
  * The function records ONE audit row per article (regardless of outcome)
  * so the admin can see "we did look at this on date X" without grepping
- * notification rows.
+ * notification rows. Notifications are deduped against the past
+ * `LINK_BROKEN_DEDUP_WINDOW_DAYS` so a permanently broken URL does not
+ * spam the queue every weekly run. Articles skipped via dedup increment
+ * `summary.deduped` so the operator can see how many would-be notifications
+ * were suppressed.
+ *
+ * Rows whose `externalUrl` is NULL are filtered at the SQL level so they
+ * never enter the scan loop — the dataset invariant says external_reference
+ * articles MUST have a URL once published, and a NULL there is a data bug
+ * worth surfacing (rather than silently masking by decrementing `scanned`).
  */
 export async function runKnowledgeLinkHealthCron(): Promise<LinkHealthCronSummary> {
   const rows = await prisma.knowledgeArticle.findMany({
-    where: { status: "published", kind: "external_reference" },
+    where: {
+      status: "published",
+      kind: "external_reference",
+      externalUrl: { not: null },
+      externalUrlHash: { not: null },
+    },
     select: {
       id: true,
       slug: true,
@@ -170,7 +189,11 @@ export async function runKnowledgeLinkHealthCron(): Promise<LinkHealthCronSummar
     },
   });
 
-  const summary: LinkHealthCronSummary = { scanned: rows.length, broken: 0 };
+  const summary: LinkHealthCronSummary = {
+    scanned: rows.length,
+    broken: 0,
+    deduped: 0,
+  };
   if (rows.length === 0) return summary;
 
   let adminIds: string[] | null = null;
@@ -184,12 +207,31 @@ export async function runKnowledgeLinkHealthCron(): Promise<LinkHealthCronSummar
     return adminIds;
   }
 
+  const dedupCutoff = new Date(
+    Date.now() - LINK_BROKEN_DEDUP_WINDOW_DAYS * MS_PER_DAY,
+  );
+
   for (const article of rows) {
-    if (!article.externalUrl) {
-      summary.scanned -= 1;
-      continue;
+    const result = await checkUrlHealth(article.externalUrl ?? "");
+
+    // Dedup BEFORE the per-article transaction so we do not pay for a
+    // pointless tx when a recent broken-link notification already exists.
+    // Mirrors the dedup pattern in `runKnowledgeFreshnessCron`.
+    let skipNotify = false;
+    if (!result.ok) {
+      const recent = await prisma.notification.findFirst({
+        where: {
+          kind: "knowledge_link_broken",
+          createdAt: { gte: dedupCutoff },
+          payload: { path: ["articleId"], equals: article.id },
+        } as Prisma.NotificationWhereInput,
+        select: { id: true },
+      });
+      if (recent) {
+        skipNotify = true;
+        summary.deduped += 1;
+      }
     }
-    const result = await checkUrlHealth(article.externalUrl);
 
     await prisma.$transaction(async (tx) => {
       await writeAudit(tx, {
@@ -203,7 +245,7 @@ export async function runKnowledgeLinkHealthCron(): Promise<LinkHealthCronSummar
           durationMs: { old: null, new: result.durationMs },
         },
       });
-      if (!result.ok) {
+      if (!result.ok && !skipNotify) {
         const recipients = article.reviewerUserId
           ? [article.reviewerUserId]
           : await loadAdminIds();

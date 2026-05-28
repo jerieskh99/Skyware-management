@@ -13,8 +13,11 @@ interface Props {
 
 /**
  * Server-rendered jobs detail page mounts this for reviewed jobs.
- * POSTs `/api/jobs/[id]/create-knowledge-article` and on 201 navigates
- * to the new article. Visibility is gated server-side.
+ * POSTs `/api/jobs/[id]/create-knowledge-article` and on success navigates
+ * the user directly into the editor for the new draft so they can fill in
+ * the body while the lesson is fresh. The legacy behavior (push to the
+ * view page after creation) left the user staring at the auto-generated
+ * skeleton with no obvious next step.
  */
 export function CreateKnowledgeFromJobButton({ jobId }: Props) {
   const router = useRouter();
@@ -40,7 +43,7 @@ export function CreateKnowledgeFromJobButton({ jobId }: Props) {
         title: t("markDone.createKnowledgeArticleSuccess"),
       });
       if (data.slug) {
-        router.push(`/knowledge/${data.slug}`);
+        router.push(`/knowledge/${data.slug}/edit`);
       } else {
         router.refresh();
       }

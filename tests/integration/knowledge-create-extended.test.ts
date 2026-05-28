@@ -90,7 +90,7 @@ describe("POST /api/knowledge — extended create", () => {
       error: string;
       existing: { slug: string };
     };
-    expect(body.error).toBe("external_url_duplicate");
+    expect(body.error).toBe("duplicate_external_url");
     expect(body.existing.slug).toBe("existing-slug");
     expect(prisma.knowledgeArticle.create).not.toHaveBeenCalled();
   });

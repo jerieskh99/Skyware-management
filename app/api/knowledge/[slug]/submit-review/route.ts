@@ -58,6 +58,16 @@ export async function POST(_req: Request, { params }: Params) {
   if (!existing) return notFound("Article");
 
   if (!canSubmitForReview(auth.user, existing)) return forbidden();
+  // submit-review specifically encodes the `submit_for_review` action,
+  // which only originates in `draft` or `ai_structured`. The
+  // `published -> pending_review` edge exists in the state machine but
+  // belongs to the `re_verify_diff` action (a different route surface),
+  // so guard explicitly rather than rely on a generic transition check.
+  if (existing.status !== "draft" && existing.status !== "ai_structured") {
+    return unprocessable(
+      `Article cannot be submitted for review from status '${existing.status}'`,
+    );
+  }
   if (!isAllowedTransition(existing.status, "pending_review")) {
     return unprocessable(
       `Article cannot be submitted for review from status '${existing.status}'`,
@@ -91,6 +101,21 @@ export async function POST(_req: Request, { params }: Params) {
     .map((u: { id: string }) => u.id)
     .filter((id: string) => id !== existing.authorUserId);
 
+  // Single-admin guard: if the resolved reviewer set is empty (the only
+  // admin is the article's author), we cannot move the article forward.
+  // Returning 422 leaves the article in `draft` rather than stranding it
+  // in `pending_review` with no review row. The author must invite a
+  // second admin before resubmitting.
+  if (adminIds.length === 0) {
+    return NextResponse.json(
+      {
+        error: "no_reviewer_available",
+        message: "Add another admin reviewer before submitting",
+      },
+      { status: 422 },
+    );
+  }
+
   await prisma.$transaction(async (tx) => {
     await tx.knowledgeArticle.update({
       where: { id: existing.id },
@@ -103,13 +128,11 @@ export async function POST(_req: Request, { params }: Params) {
     // Open the review row. Reviewer is "anyone in admin pool" so we pick
     // the first admin for the assignee column. The notification fans out
     // to all admins so multiple can pull from the queue.
-    const primaryReviewer = adminIds[0] ?? null;
-    if (primaryReviewer) {
-      await openReview(tx, {
-        articleId: existing.id,
-        reviewerUserId: primaryReviewer,
-      });
-    }
+    const primaryReviewer = adminIds[0]!;
+    await openReview(tx, {
+      articleId: existing.id,
+      reviewerUserId: primaryReviewer,
+    });
 
     await notifyReviewRequested(tx, {
       articleId: existing.id,

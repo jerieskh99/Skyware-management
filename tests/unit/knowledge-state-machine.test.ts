@@ -18,8 +18,15 @@ const ALL_STATUSES: KnowledgeArticleStatus[] = [
 ];
 
 describe("ALLOWED_TRANSITIONS", () => {
-  it("encodes the 9 transitions from review_workflow §1", () => {
-    expect(ALLOWED_TRANSITIONS.length).toBe(9);
+  it("encodes the 12 transitions from review_workflow §1", () => {
+    // 9 original edges (draft↔ai_structured forward, draft→pending,
+    // ai_structured→pending, pending→approved, pending→draft,
+    // approved→published, approved→pending, published→archived,
+    // archived→draft) plus 3 added per workflow doc:
+    //   - ai_structured -> draft (reject_ai)
+    //   - pending_review -> archived (reject)
+    //   - published -> pending_review (re_verify_diff)
+    expect(ALLOWED_TRANSITIONS.length).toBe(12);
   });
 
   it("every rule has a known from, to, action, and who", () => {
@@ -60,6 +67,15 @@ describe("isAllowedTransition - happy paths", () => {
   it("archived -> draft (admin resurrects)", () => {
     expect(isAllowedTransition("archived", "draft")).toBe(true);
   });
+  it("ai_structured -> draft (author rejects AI version)", () => {
+    expect(isAllowedTransition("ai_structured", "draft")).toBe(true);
+  });
+  it("pending_review -> archived (reviewer rejects)", () => {
+    expect(isAllowedTransition("pending_review", "archived")).toBe(true);
+  });
+  it("published -> pending_review (re-verify with non-trivial diff)", () => {
+    expect(isAllowedTransition("published", "pending_review")).toBe(true);
+  });
 });
 
 describe("isAllowedTransition - disallowed transitions", () => {
@@ -99,23 +115,30 @@ describe("nextStates", () => {
     expect(states.length).toBe(2);
   });
 
-  it("pending_review has two edges (approved, draft)", () => {
+  it("pending_review has three edges (approved, draft, archived)", () => {
     const states = nextStates("pending_review");
     expect(states).toContain("approved");
     expect(states).toContain("draft");
-    expect(states.length).toBe(2);
+    expect(states).toContain("archived");
+    expect(states.length).toBe(3);
   });
 
-  it("published has one edge (archived)", () => {
-    expect(nextStates("published")).toEqual(["archived"]);
+  it("published has two edges (archived, pending_review)", () => {
+    const states = nextStates("published");
+    expect(states).toContain("archived");
+    expect(states).toContain("pending_review");
+    expect(states.length).toBe(2);
   });
 
   it("archived has one edge (draft, admin only)", () => {
     expect(nextStates("archived")).toEqual(["draft"]);
   });
 
-  it("ai_structured has one edge (pending_review)", () => {
-    expect(nextStates("ai_structured")).toEqual(["pending_review"]);
+  it("ai_structured has two edges (pending_review, draft)", () => {
+    const states = nextStates("ai_structured");
+    expect(states).toContain("pending_review");
+    expect(states).toContain("draft");
+    expect(states.length).toBe(2);
   });
 });
 
@@ -124,11 +147,14 @@ describe("actionFor", () => {
     expect(actionFor("draft", "pending_review")).toBe("submit_for_review");
     expect(actionFor("pending_review", "approved")).toBe("approve");
     expect(actionFor("pending_review", "draft")).toBe("request_changes");
+    expect(actionFor("pending_review", "archived")).toBe("reject");
     expect(actionFor("approved", "published")).toBe("publish");
     expect(actionFor("approved", "pending_review")).toBe("un_approve");
     expect(actionFor("published", "archived")).toBe("archive");
+    expect(actionFor("published", "pending_review")).toBe("re_verify_diff");
     expect(actionFor("archived", "draft")).toBe("un_archive");
     expect(actionFor("draft", "ai_structured")).toBe("ai_structure");
+    expect(actionFor("ai_structured", "draft")).toBe("reject_ai");
   });
 
   it("returns null for disallowed edges", () => {

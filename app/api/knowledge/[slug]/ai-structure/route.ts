@@ -46,8 +46,11 @@ export async function POST(req: Request, { params }: Params) {
   const enabled = await getFeatureFlag("knowledge_articles_enabled");
   if (!enabled) return notFound("Knowledge articles");
 
+  // Rate limit per IP only (not per IP+user). A coordinated abuse attempt
+  // can already cycle through user IDs cheaply; pinning the cap to the IP
+  // tightens the budget against runaway scripts.
   const ip = getClientIp(req);
-  if (checkRateLimit(`knowledge-ai:${ip}:${auth.user.id}`, LIMITS.knowledgeAi)) {
+  if (checkRateLimit(`knowledge-ai:${ip}`, LIMITS.knowledgeAi)) {
     return tooManyRequests();
   }
 

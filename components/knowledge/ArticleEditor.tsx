@@ -152,14 +152,14 @@ export function ArticleEditor({
       });
 
       if (res.status === 409) {
-        // Duplicate URL: surface dedup toast with link to the existing slug.
-        // The POST route returns `{ error: "external_url_duplicate", existing: { slug, ... } }`.
+        // Duplicate URL: surface dedup toast with link to the existing
+        // article. Canonical 409 shape is
+        // `{ error: "duplicate_external_url", existing: { id, slug } }`.
         const body409 = (await res.json().catch(() => ({}))) as {
-          slug?: string;
-          existing?: { slug?: string };
+          existing?: { id?: string; slug?: string };
           error?: string;
         };
-        const existingSlug = body409.existing?.slug ?? body409.slug;
+        const existingSlug = body409.existing?.slug;
         toast.push({
           tone: "error",
           title: t("knowledge.newExternal.dedupToast"),

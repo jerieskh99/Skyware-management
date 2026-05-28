@@ -82,6 +82,23 @@ export async function POST(req: Request, { params }: Params) {
 
   if (!canCreateKindAs(auth.user, kind)) return forbidden();
 
+  // Idempotency: if a knowledge article already exists for this job AND
+  // kind, surface the existing row instead of creating a duplicate. The
+  // UI's "Create knowledge article" button is a one-click action and
+  // double-submissions (impatient click, network retry) used to mint two
+  // sibling drafts. Same kind matters because authors may legitimately
+  // spawn both a `troubleshooting_note` and a `how_to_guide` from one job.
+  const existingForJob = await prisma.knowledgeArticle.findFirst({
+    where: { sourceJobId: job.id, kind },
+    select: { id: true, slug: true },
+  });
+  if (existingForJob) {
+    return NextResponse.json(
+      { existing: true, id: existingForJob.id, slug: existingForJob.slug },
+      { status: 200 },
+    );
+  }
+
   const title =
     `Lesson from job ${job.publicNumber}: ` +
     job.title.slice(0, 80);

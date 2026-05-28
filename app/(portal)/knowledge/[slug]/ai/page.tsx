@@ -28,6 +28,13 @@ export default async function AiStructurePage({ params }: Params) {
   const enabled = await getFeatureFlag("knowledge_articles_enabled");
   if (!enabled) notFound();
 
+  // The AI structuring step is gated by a separate flag so an admin can
+  // enable the module surface while keeping the AI call path off. When the
+  // flag is off, the page does not exist at all (matches `/api/knowledge/
+  // [slug]/ai-structure` returning 404 in the same conditions).
+  const aiEnabled = await getFeatureFlag("knowledge_ai_structuring_enabled");
+  if (!aiEnabled) notFound();
+
   const { slug } = await params;
   const article = await getArticleDetail(user, slug);
   if (!article) notFound();

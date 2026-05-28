@@ -16,6 +16,7 @@ import type { KnowledgeArticleStatus } from "@prisma/client";
 
 export type KnowledgeTransitionAction =
   | "ai_structure"
+  | "reject_ai"
   | "submit_for_review"
   | "approve"
   | "request_changes"
@@ -25,7 +26,8 @@ export type KnowledgeTransitionAction =
   | "archive"
   | "un_archive"
   | "rescind"
-  | "re_verify";
+  | "re_verify"
+  | "re_verify_diff";
 
 /** Authorization tier required to fire a transition. */
 export type TransitionWho = "admin" | "author" | "reviewer";
@@ -54,14 +56,35 @@ export const ALLOWED_TRANSITIONS: ReadonlyArray<TransitionRule> = [
     action: "submit_for_review",
     who: "author",
   },
+  // Author rejects the AI version of the draft and reverts to the raw text.
+  // The structuring attempt remains in the audit log; the working state
+  // simply rewinds. See `knowledge_review_workflow.md` §1 "ai_structured ->
+  // draft".
+  { from: "ai_structured", to: "draft", action: "reject_ai", who: "author" },
   { from: "pending_review", to: "approved", action: "approve", who: "reviewer" },
   // Reviewer-driven revert: "request changes" lands the article back as a draft.
   { from: "pending_review", to: "draft", action: "request_changes", who: "reviewer" },
+  // Reviewer rejects outright. The article is archived (with a `rejected`
+  // sub-status carried on the review row) per workflow doc §1
+  // "pending_review -> archived (reject)". Authors can clone into a new
+  // draft if they want to try again. This replaces the V0 path that sent
+  // rejections back to `draft`, which conflated rejection with revision.
+  { from: "pending_review", to: "archived", action: "reject", who: "reviewer" },
   { from: "approved", to: "published", action: "publish", who: "reviewer" },
   // Admin override: pull an approved-but-unpublished article back into review.
   { from: "approved", to: "pending_review", action: "un_approve", who: "admin" },
   // Standard takedown of a published article (or rescind, see actionFor heuristic).
+  // The edge accepts both `archive` and `rescind` labels; the route handler
+  // chooses which to write to audit based on whether a rescission note was
+  // supplied.
   { from: "published", to: "archived", action: "archive", who: "admin" },
+  // Re-verify path that produces non-trivial edits: the published article
+  // returns to `pending_review` so a reviewer signs off on the new body.
+  // See workflow doc §1 "published -> pending_review (re-verification
+  // triggered edit)". The trivial-diff re-verify path bumps
+  // `last_verified_at` in place without a state change and is not modeled
+  // here.
+  { from: "published", to: "pending_review", action: "re_verify_diff", who: "admin" },
   // Resurrect a wrongly-archived article back to draft.
   { from: "archived", to: "draft", action: "un_archive", who: "admin" },
 ];

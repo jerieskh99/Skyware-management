@@ -409,6 +409,210 @@ async function main() {
   });
   console.log("  CompanySettings (TEST values) OK");
 
+  // ---- Mock client with full billing fixture (DEMO) ----
+  // A single rich client for testing + presentations: monthly retainer,
+  // an hourly bank pre-loaded past 90% usage (so the Wave-2 90% alert
+  // fires on the first cron run), a one-time job charge, and payments in
+  // several statuses including an overdue one with a lateness rule (so a
+  // reminder is scheduled on the first reminder-cron run). Idempotent:
+  // keyed off the client companyName. All values are TEST placeholders.
+  const ceoUser = await prisma.user.findUnique({ where: { username: "admin.ceo" } });
+  const helpdeskDept = deptMap["helpdesk"];
+  if (ceoUser && helpdeskDept) {
+    const MOCK_NAME = "Mock Client (DEMO)";
+    let mock = await prisma.client.findFirst({ where: { companyName: MOCK_NAME } });
+    if (!mock) {
+      mock = await prisma.client.create({
+        data: {
+          companyName: MOCK_NAME,
+          contactPerson: "Demo Contact",
+          email: "demo.client@skyware-it.example",
+          phone: "+972-3-0000099",
+          address: "1 Demo Street, Tel Aviv",
+          israeliTaxId: "TEST-DEMO-999",
+          status: "active",
+          notes: "DEMO fixture for testing + presentations. Safe to delete.",
+          createdByUserId: ceoUser.id,
+          billingAccount: { create: { defaultCurrency: "ILS", notes: "DEMO billing account." } },
+        },
+      });
+
+      const account = await prisma.billingAccount.findUnique({ where: { clientId: mock.id } });
+      if (account) {
+        const today = new Date();
+        const daysAgo = (n: number) => {
+          const d = new Date(today);
+          d.setDate(d.getDate() - n);
+          return d;
+        };
+        const daysAhead = (n: number) => {
+          const d = new Date(today);
+          d.setDate(d.getDate() + n);
+          return d;
+        };
+
+        // Monthly retainer (active).
+        await prisma.monthlyBillingItem.create({
+          data: {
+            billingAccountId: account.id,
+            serviceName: "Managed IT retainer (DEMO)",
+            priceAmountPlaceholder: 250000, // 2,500.00 ILS in agorot
+            currency: "ILS",
+            billingCycle: "monthly",
+            startDate: daysAgo(120),
+            status: "active",
+            nextDueDate: daysAhead(10),
+          },
+        });
+
+        // A job for the client (needed for hourly-usage + OTC FKs).
+        const demoJob = await prisma.job.create({
+          data: {
+            publicNumber: "DEMO-0001",
+            clientId: mock.id,
+            departmentId: helpdeskDept,
+            title: "DEMO support task",
+            description: "Demo job backing the hourly-bank usage + one-time charge fixtures.",
+            status: "reviewed",
+            priority: "normal",
+            severity: "moderate",
+            slaTargetMinutes: 240,
+            assignedEmployeeId: ceoUser.id,
+            createdByUserId: ceoUser.id,
+            assignedTimestamp: daysAgo(20),
+            completedTimestamp: daysAgo(15),
+            reviewedTimestamp: daysAgo(14),
+            timeSpentMinutes: 300,
+          },
+        });
+
+        // Hourly bank: 100h purchased, ~91% consumed -> triggers 90% alert.
+        const bank = await prisma.hourlyBank.create({
+          data: {
+            billingAccountId: account.id,
+            totalHoursPurchasedMinutes: 6000, // 100h
+            pricePerHourPlaceholder: 30000, // 300.00 ILS/h
+            totalPaymentPlaceholder: 3000000,
+            currency: "ILS",
+            purchaseDate: daysAgo(90),
+            status: "active",
+            alertThresholdPercent: 25,
+          },
+        });
+        // Two usage rows summing 5475 min = 91.25% of 6000.
+        await prisma.hourlyBankUsage.create({
+          data: {
+            hourlyBankId: bank.id,
+            jobId: demoJob.id,
+            minutesUsed: 3000,
+            usedAt: daysAgo(40),
+            recordedByUserId: ceoUser.id,
+            note: "DEMO usage 1",
+          },
+        });
+        await prisma.hourlyBankUsage.create({
+          data: {
+            hourlyBankId: bank.id,
+            jobId: demoJob.id,
+            minutesUsed: 2475,
+            usedAt: daysAgo(5),
+            recordedByUserId: ceoUser.id,
+            note: "DEMO usage 2 (pushes bank past 90%)",
+          },
+        });
+
+        // One-time job charge linked to the demo job.
+        await prisma.oneTimeJobCharge.create({
+          data: {
+            billingAccountId: account.id,
+            jobId: demoJob.id,
+            jobNameSnapshot: "DEMO support task",
+            priceAmountPlaceholder: 80000, // 800.00 ILS
+            currency: "ILS",
+            dateCreated: daysAgo(14),
+          },
+        });
+
+        // Payments in several statuses.
+        // 1. Paid (history + receipts content).
+        await prisma.payment.create({
+          data: {
+            clientId: mock.id,
+            sourceType: "monthly",
+            amountPlaceholder: 250000,
+            amountBeforeVat: 211864,
+            vatAmount: 38136,
+            totalAmount: 250000,
+            vatRateBasisPoints: 1800,
+            currency: "ILS",
+            issuedDate: daysAgo(45),
+            dueDate: daysAgo(31),
+            paidDate: daysAgo(28),
+            status: "paid",
+            method: "bank_transfer",
+            reference: "DEMO-PAID-001",
+            createdByUserId: ceoUser.id,
+          },
+        });
+        // 2. Overdue WITH lateness rule -> reminder cron schedules a reminder.
+        await prisma.payment.create({
+          data: {
+            clientId: mock.id,
+            sourceType: "one_time",
+            amountPlaceholder: 80000,
+            amountBeforeVat: 67797,
+            vatAmount: 12203,
+            totalAmount: 80000,
+            vatRateBasisPoints: 1800,
+            currency: "ILS",
+            issuedDate: daysAgo(30),
+            dueDate: daysAgo(14),
+            status: "overdue",
+            reference: "DEMO-OVERDUE-001",
+            createdByUserId: ceoUser.id,
+            latenessAmount: 7,
+            latenessUnit: "days",
+            latenessNotifyAdminFirst: true,
+          },
+        });
+        // 3. Waiting for payment, due soon.
+        await prisma.payment.create({
+          data: {
+            clientId: mock.id,
+            sourceType: "monthly",
+            amountPlaceholder: 250000,
+            amountBeforeVat: 211864,
+            vatAmount: 38136,
+            totalAmount: 250000,
+            vatRateBasisPoints: 1800,
+            currency: "ILS",
+            issuedDate: daysAgo(3),
+            dueDate: daysAhead(11),
+            status: "waiting_for_payment",
+            reference: "DEMO-WAITING-001",
+            createdByUserId: ceoUser.id,
+          },
+        });
+        // 4. Draft.
+        await prisma.payment.create({
+          data: {
+            clientId: mock.id,
+            sourceType: "one_time",
+            amountPlaceholder: 120000,
+            currency: "ILS",
+            issuedDate: today,
+            status: "draft",
+            reference: "DEMO-DRAFT-001",
+            createdByUserId: ceoUser.id,
+          },
+        });
+      }
+      console.log("  Mock client (DEMO) + billing fixture OK");
+    } else {
+      console.log("  Mock client (DEMO) already present, skipped");
+    }
+  }
+
   console.log("Seed complete.");
 }
 

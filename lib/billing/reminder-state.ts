@@ -19,6 +19,8 @@ import type { PaymentReminderStatus } from "@prisma/client";
  *   - approved        -> sent             (worker or admin sends the client email)
  *   - approved        -> cancelled        (admin cancels before send)
  *   - delayed         -> admin_notified   (worker re-notifies when the new date arrives)
+ *   - delayed         -> cancelled        (admin escape hatch: cancel a delayed reminder
+ *                                          without waiting for the re-notification cron)
  *
  * `send_failed` and `bounced` are terminal OUTCOMES recorded at send-attempt
  * time on the same row; they are NOT modeled as transitions here. A failed
@@ -41,6 +43,7 @@ export const ALLOWED_REMINDER_TRANSITIONS: ReadonlyArray<ReminderTransitionRule>
     { from: "approved", to: "sent" },
     { from: "approved", to: "cancelled" },
     { from: "delayed", to: "admin_notified" },
+    { from: "delayed", to: "cancelled" },
   ];
 
 const TRANSITION_INDEX: ReadonlySet<string> = new Set(

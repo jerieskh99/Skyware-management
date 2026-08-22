@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { PaymentReminderStatus, LatenessUnit } from "@prisma/client";
+import { isAllowedReminderTransition } from "@/lib/billing/reminder-state";
 import {
   Dialog,
   DialogContent,
@@ -39,6 +40,19 @@ export interface ReminderDTO {
 
 type Action = "approve" | "delay" | "cancel" | "send_now";
 
+/**
+ * Maps a UI action to the reminder status it produces. Used to filter the
+ * dialog's action buttons against the state-machine — buttons whose target
+ * status is not reachable from the reminder's current status are hidden,
+ * since the server would reject them with a 422 anyway.
+ */
+const ACTION_TARGET: Record<Action, PaymentReminderStatus> = {
+  approve: "approved",
+  delay: "delayed",
+  cancel: "cancelled",
+  send_now: "sent",
+};
+
 interface Props {
   reminder: ReminderDTO;
   open: boolean;
@@ -70,7 +84,6 @@ export function ReminderDecisionDialog({ reminder, open, onClose }: Props) {
   const { t, locale } = useT();
   const toast = useToast();
   const [isPending, startTransition] = useTransition();
-  const [action, setAction] = useState<Action>("approve");
   const [comment, setComment] = useState("");
   const [newScheduledFor, setNewScheduledFor] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -78,12 +91,29 @@ export function ReminderDecisionDialog({ reminder, open, onClose }: Props) {
   const p = reminder.payment;
   const handle = paymentHandle(p.reference, p.id);
 
-  const ACTIONS: { value: Action; icon: typeof Check }[] = [
+  const ALL_ACTIONS: { value: Action; icon: typeof Check }[] = [
     { value: "approve", icon: Check },
     { value: "delay", icon: Clock },
     { value: "send_now", icon: Send },
     { value: "cancel", icon: Ban },
   ];
+
+  // Only show actions whose target status is reachable from the reminder's
+  // current status per the state machine. Avoids surfacing buttons that the
+  // server would reject with a 422 (e.g. "Approve" from `delayed`).
+  const availableActions = useMemo(
+    () =>
+      ALL_ACTIONS.filter((a) =>
+        isAllowedReminderTransition(reminder.status, ACTION_TARGET[a.value]),
+      ),
+    // ALL_ACTIONS is a stable literal; only re-compute when the status changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [reminder.status],
+  );
+
+  const [action, setAction] = useState<Action>(
+    () => availableActions[0]?.value ?? "approve",
+  );
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -167,11 +197,17 @@ export function ReminderDecisionDialog({ reminder, open, onClose }: Props) {
           )}
         </dl>
 
+        {availableActions.length === 0 && (
+          <p className="rounded-md border border-muted bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+            {t("billingReminders.decision.noActionsAvailable")}
+          </p>
+        )}
+
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-sm font-medium">{t("billingReminders.decision.title")}</label>
             <div className="grid grid-cols-2 gap-2">
-              {ACTIONS.map(({ value, icon: Icon }) => {
+              {availableActions.map(({ value, icon: Icon }) => {
                 const active = action === value;
                 return (
                   <button
@@ -228,7 +264,11 @@ export function ReminderDecisionDialog({ reminder, open, onClose }: Props) {
           {error && <p className="text-sm text-destructive">{error}</p>}
 
           <div className="flex gap-2 pt-1">
-            <Button type="submit" disabled={isPending} className="flex-1">
+            <Button
+              type="submit"
+              disabled={isPending || availableActions.length === 0}
+              className="flex-1"
+            >
               {isPending ? t("common.saving") : t("billingReminders.decision.submit")}
             </Button>
             <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>

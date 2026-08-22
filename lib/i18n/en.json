@@ -427,7 +427,8 @@
       "successCancel": "Reminder cancelled.",
       "successSendNow": "Reminder sent.",
       "failed": "Could not apply the decision.",
-      "illegalTransition": "That action is not allowed from the current status."
+      "illegalTransition": "That action is not allowed from the current status.",
+      "noActionsAvailable": "No admin actions are available from this status. Wait for the scheduled re-notification or close this dialog."
     }
   },
   "manualContact": {

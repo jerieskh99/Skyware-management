@@ -19,8 +19,8 @@ const ALL_STATUSES: PaymentReminderStatus[] = [
 ];
 
 describe("ALLOWED_REMINDER_TRANSITIONS", () => {
-  it("encodes the 8 transitions from the Wave-2 brief §4", () => {
-    expect(ALLOWED_REMINDER_TRANSITIONS.length).toBe(8);
+  it("encodes the 9 transitions from the Wave-2 brief §4 + delayed-cancel escape hatch", () => {
+    expect(ALLOWED_REMINDER_TRANSITIONS.length).toBe(9);
   });
 
   it("every rule references known statuses", () => {
@@ -55,6 +55,9 @@ describe("isAllowedReminderTransition — allowed edges", () => {
   });
   it("delayed -> admin_notified (re-notify when new date arrives)", () => {
     expect(isAllowedReminderTransition("delayed", "admin_notified")).toBe(true);
+  });
+  it("delayed -> cancelled (admin escape hatch)", () => {
+    expect(isAllowedReminderTransition("delayed", "cancelled")).toBe(true);
   });
 });
 
@@ -101,8 +104,11 @@ describe("nextReminderStates", () => {
     expect(states).toContain("cancelled");
     expect(states.length).toBe(2);
   });
-  it("delayed has one edge (admin_notified)", () => {
-    expect(nextReminderStates("delayed")).toEqual(["admin_notified"]);
+  it("delayed has two edges (admin_notified, cancelled)", () => {
+    const states = nextReminderStates("delayed");
+    expect(states).toContain("admin_notified");
+    expect(states).toContain("cancelled");
+    expect(states.length).toBe(2);
   });
 });
 

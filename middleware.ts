@@ -3,7 +3,13 @@ import { NextResponse } from "next/server";
 
 export default auth(function middleware(req) {
   const { nextUrl } = req;
-  const isLoggedIn = !!req.auth;
+  // Guard on the presence of a user, not just a truthy `req.auth`. In the Edge
+  // runtime (production `next start`), NextAuth can hand middleware a
+  // truthy-but-empty session object, so `!!req.auth` reported EVERY request as
+  // logged in — bouncing unauthenticated visitors from /login to /dashboard
+  // and into a redirect loop, while the Node-side `auth()` in pages correctly
+  // saw no session. Requiring `req.auth.user` keeps the two in agreement.
+  const isLoggedIn = !!req.auth?.user;
 
   const isAuthRoute =
     nextUrl.pathname === "/login" ||

@@ -22,6 +22,12 @@ interface AuthUser {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  // Trust the Host header. Auth.js v5 requires this in production (`next start`);
+  // without it every /api/auth/* request fails with UntrustedHost and no session
+  // ever resolves — which also made the Edge middleware see a truthy-but-empty
+  // session. Dev auto-trusts localhost, so this only surfaced in production mode.
+  // Safe for a self-hosted single-origin deployment.
+  trustHost: true,
   providers: [
     Credentials({
       credentials: {

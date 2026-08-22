@@ -1,0 +1,1029 @@
+<title>Skyware Portal — Board Briefing · August 2026</title>
+<style>
+  :root {
+    --ink: #0F172A;
+    --ink-soft: #263145;
+    --paper: #F7F5F0;
+    --paper-raised: #FFFFFF;
+    --slate: #5A6474;
+    --slate-mute: #8B95A5;
+    --signal: #0E7C66;
+    --signal-soft: #E6F0EC;
+    --warn: #B5651D;
+    --warn-soft: #F5EAD8;
+    --good: #2F7D46;
+    --hairline: rgba(15, 23, 42, 0.09);
+    --hairline-strong: rgba(15, 23, 42, 0.16);
+    --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.04);
+
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "URW Palladio L", P052, "Book Antiqua", Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #F1EDE3;
+      --ink-soft: #D6D0C2;
+      --paper: #14181D;
+      --paper-raised: #1B2027;
+      --slate: #9BA5B4;
+      --slate-mute: #6E7684;
+      --signal: #4BB89E;
+      --signal-soft: rgba(75, 184, 158, 0.12);
+      --warn: #E5A166;
+      --warn-soft: rgba(229, 161, 102, 0.12);
+      --good: #6ABE7E;
+      --hairline: rgba(241, 237, 227, 0.09);
+      --hairline-strong: rgba(241, 237, 227, 0.18);
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+  }
+  :root[data-theme="light"] {
+    --ink: #0F172A;
+    --ink-soft: #263145;
+    --paper: #F7F5F0;
+    --paper-raised: #FFFFFF;
+    --slate: #5A6474;
+    --slate-mute: #8B95A5;
+    --signal: #0E7C66;
+    --signal-soft: #E6F0EC;
+    --warn: #B5651D;
+    --warn-soft: #F5EAD8;
+    --good: #2F7D46;
+    --hairline: rgba(15, 23, 42, 0.09);
+    --hairline-strong: rgba(15, 23, 42, 0.16);
+    --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.04);
+  }
+  :root[data-theme="dark"] {
+    --ink: #F1EDE3;
+    --ink-soft: #D6D0C2;
+    --paper: #14181D;
+    --paper-raised: #1B2027;
+    --slate: #9BA5B4;
+    --slate-mute: #6E7684;
+    --signal: #4BB89E;
+    --signal-soft: rgba(75, 184, 158, 0.12);
+    --warn: #E5A166;
+    --warn-soft: rgba(229, 161, 102, 0.12);
+    --good: #6ABE7E;
+    --hairline: rgba(241, 237, 227, 0.09);
+    --hairline-strong: rgba(241, 237, 227, 0.18);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.25);
+  }
+
+  html { color-scheme: light dark; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .page {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 4rem 1.5rem 6rem;
+  }
+
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--signal);
+    margin: 0 0 1.25rem;
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(2.2rem, 4.6vw, 3.6rem);
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+    margin: 0 0 1.5rem;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+
+  h2 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(1.5rem, 2.4vw, 1.9rem);
+    line-height: 1.15;
+    letter-spacing: -0.005em;
+    margin: 0 0 0.75rem;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--slate);
+    margin: 1.75rem 0 0.75rem;
+  }
+
+  p, li { color: var(--ink-soft); }
+
+  .lede {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(1.15rem, 1.6vw, 1.35rem);
+    line-height: 1.5;
+    color: var(--slate);
+    max-width: 62ch;
+    margin: 0 0 2.5rem;
+    text-wrap: pretty;
+  }
+
+  a { color: var(--signal); }
+
+  /* Hero */
+  .hero {
+    padding-bottom: 3rem;
+    border-bottom: 1px solid var(--hairline);
+    margin-bottom: 4rem;
+  }
+
+  .hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.5rem;
+    color: var(--slate-mute);
+    font-size: 0.85rem;
+    margin-top: 1.75rem;
+  }
+  .hero-meta span::before {
+    content: "";
+    display: inline-block;
+    width: 4px; height: 4px; border-radius: 50%;
+    background: var(--slate-mute);
+    margin-right: 0.6rem;
+    vertical-align: middle;
+    opacity: 0.6;
+  }
+  .hero-meta span:first-child::before { display: none; }
+
+  /* Stat strip */
+  .stat-strip {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1px;
+    background: var(--hairline);
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 2.5rem;
+    box-shadow: var(--shadow);
+  }
+  .stat {
+    background: var(--paper-raised);
+    padding: 1.25rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  .stat-num {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 2rem;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--slate);
+    font-weight: 500;
+  }
+  @media (max-width: 780px) {
+    .stat-strip { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* Sections */
+  section {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 2.5rem;
+    padding: 3.5rem 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  section:last-of-type { border-bottom: 0; }
+
+  .section-num {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 3rem;
+    line-height: 1;
+    color: var(--signal);
+    letter-spacing: -0.02em;
+    padding-top: 0.35rem;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "onum";
+  }
+
+  .section-body { min-width: 0; }
+
+  .section-body > p + p { margin-top: 1rem; }
+
+  @media (max-width: 720px) {
+    section { grid-template-columns: 1fr; gap: 1rem; }
+    .section-num { font-size: 2.25rem; padding-top: 0; }
+  }
+
+  /* Module + flag table */
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    background: var(--paper-raised);
+    margin-top: 1.25rem;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.92rem;
+    font-variant-numeric: tabular-nums;
+  }
+  th, td {
+    text-align: left;
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--hairline);
+    vertical-align: top;
+  }
+  th {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--slate);
+    background: transparent;
+    border-bottom: 1px solid var(--hairline-strong);
+  }
+  tr:last-child td { border-bottom: 0; }
+  td.mono {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+  }
+  td.num {
+    font-family: var(--mono);
+    color: var(--slate);
+    width: 3rem;
+  }
+  td.name {
+    font-weight: 600;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  /* Theme grid (data model) */
+  .theme-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-top: 1.25rem;
+  }
+  .theme-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    padding: 1.15rem 1.15rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    box-shadow: var(--shadow);
+  }
+  .theme-count {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 1.7rem;
+    letter-spacing: -0.02em;
+    color: var(--signal);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .theme-name {
+    font-weight: 600;
+    color: var(--ink);
+    font-size: 0.95rem;
+  }
+  .theme-list {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--slate);
+    line-height: 1.5;
+  }
+
+  /* Compliance quotes */
+  .rule {
+    background: var(--paper-raised);
+    border: 1px solid var(--hairline);
+    border-left: 3px solid var(--warn);
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    margin-top: 1rem;
+    box-shadow: var(--shadow);
+  }
+  .rule-code {
+    font-family: var(--mono);
+    font-size: 0.83rem;
+    color: var(--ink);
+    background: transparent;
+    display: block;
+    white-space: pre-wrap;
+    overflow-x: auto;
+  }
+  .rule-src {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--slate-mute);
+    margin-top: 0.55rem;
+    letter-spacing: 0.01em;
+  }
+
+  .gate-block {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+  }
+  .gate {
+    background: var(--warn-soft);
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    padding: 1rem 1rem;
+  }
+  .gate-title {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--warn);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    margin-bottom: 0.35rem;
+  }
+  .gate-desc {
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+  @media (max-width: 640px) {
+    .gate-block { grid-template-columns: 1fr; }
+  }
+
+  /* Timeline */
+  .timeline {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border-left: 2px solid var(--hairline-strong);
+    padding-left: 1.5rem;
+  }
+  .timeline-item {
+    position: relative;
+    padding: 0.65rem 0;
+  }
+  .timeline-item::before {
+    content: "";
+    position: absolute;
+    left: -1.65rem;
+    top: 1.05rem;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--signal);
+    border: 2px solid var(--paper);
+    box-shadow: 0 0 0 1px var(--hairline-strong);
+  }
+  .timeline-item.done::before { background: var(--good); }
+  .timeline-item.pending::before { background: var(--paper-raised); border: 2px solid var(--slate-mute); }
+  .timeline-date {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--slate-mute);
+    letter-spacing: 0.04em;
+    margin-bottom: 0.15rem;
+  }
+  .timeline-title {
+    font-weight: 600;
+    color: var(--ink);
+    font-size: 0.98rem;
+    margin-bottom: 0.15rem;
+  }
+  .timeline-note {
+    font-size: 0.88rem;
+    color: var(--slate);
+    line-height: 1.5;
+  }
+
+  /* Roadmap cards */
+  .roadmap {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  .wave {
+    background: var(--paper-raised);
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    padding: 1.35rem 1.35rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    box-shadow: var(--shadow);
+    position: relative;
+  }
+  .wave-tag {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--signal);
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .wave-title {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 1.25rem;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+    line-height: 1.2;
+  }
+  .wave-size {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--slate);
+  }
+  .wave-body {
+    font-size: 0.88rem;
+    color: var(--slate);
+    line-height: 1.55;
+  }
+  @media (max-width: 780px) {
+    .roadmap { grid-template-columns: 1fr; }
+  }
+
+  /* Guardrail list */
+  .guardrails {
+    list-style: none;
+    padding: 0;
+    margin: 1.25rem 0 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem 1.25rem;
+  }
+  .guardrails li {
+    padding-left: 1.5rem;
+    position: relative;
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+    line-height: 1.55;
+  }
+  .guardrails li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    width: 8px; height: 8px;
+    background: var(--warn);
+    border-radius: 2px;
+    transform: rotate(45deg);
+  }
+  @media (max-width: 640px) {
+    .guardrails { grid-template-columns: 1fr; }
+  }
+
+  /* Chips */
+  .chip {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.02em;
+    background: var(--signal-soft);
+    color: var(--signal);
+    font-weight: 500;
+  }
+  .chip.warn { background: var(--warn-soft); color: var(--warn); }
+  .chip.mute { background: var(--hairline); color: var(--slate); }
+
+  /* Footer */
+  footer {
+    margin-top: 5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--hairline);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--slate-mute);
+  }
+
+  ::selection { background: var(--signal); color: var(--paper); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    section { transition: opacity 0.3s ease; }
+  }
+</style>
+
+<div class="page">
+
+  <header class="hero">
+    <p class="eyebrow">Board briefing · 10 August 2026</p>
+    <h1>The internal system Skyware runs on.</h1>
+    <p class="lede">
+      One portal for jobs, clients, billing, receipts, hourly banks, and the
+      institutional knowledge behind every service call. Built for our own
+      team. Staged behind feature flags. Anything that touches a client's
+      inbox or a tax authority stays locked until a real accountant signs off.
+    </p>
+    <div class="hero-meta">
+      <span>Owner: Product engineering</span>
+      <span>Stack: Next.js 15 · Postgres · Prisma</span>
+      <span>Live in: internal testing</span>
+    </div>
+
+    <div class="stat-strip" role="group" aria-label="Portal at a glance">
+      <div class="stat">
+        <span class="stat-num">16</span>
+        <span class="stat-label">Modules</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">44</span>
+        <span class="stat-label">Data models</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">33</span>
+        <span class="stat-label">Pages</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">867</span>
+        <span class="stat-label">Tests passing</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">24</span>
+        <span class="stat-label">Feature flags</span>
+      </div>
+    </div>
+  </header>
+
+  <section>
+    <div class="section-num">1</div>
+    <div class="section-body">
+      <h2>What it is, in one paragraph</h2>
+      <p>
+        The portal is the single place our team opens every morning. Employees
+        take jobs from a queue and log the work. Admins watch aging invoices,
+        approve outgoing client emails, review knowledge articles before they
+        become the company answer, and run monthly billing. Clients never log in
+        themselves &mdash; they see the portal indirectly, through the receipts,
+        reminders, and manual emails it sends on our behalf. Every mutation
+        writes an audit row. Every new capability sits behind a switch we
+        control.
+      </p>
+      <h3>Who uses which surface</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Role</th><th>What they see</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="name">CEO / CTO</td>
+              <td>Full portal: admin console, audit log, feature flags, statistics, company settings, all billing surfaces, template editor.</td>
+            </tr>
+            <tr>
+              <td class="name">Employee</td>
+              <td>Their own jobs, the hub queue, department channels, timers, knowledge search, personal statistics.</td>
+            </tr>
+            <tr>
+              <td class="name">Client (indirect)</td>
+              <td>Receipts, payment reminders, manual contact emails &mdash; never a login. All still test-mode in V2; nothing actually transmits.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-num">2</div>
+    <div class="section-body">
+      <h2>The sixteen modules</h2>
+      <p>
+        Every top-level route under <span class="chip mono" style="font-family:var(--mono)">/app/(portal)/</span>. Nothing hidden.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Module</th>
+              <th style="width:5rem">Pages</th>
+              <th>What it does</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="name">dashboard</td><td class="num">1</td><td>Role-scoped landing tiles: pending reminders, hourly banks near depletion, jobs assigned to me.</td></tr>
+            <tr><td class="name">my-jobs</td><td class="num">2</td><td>The caller's own jobs; a job detail view with tabs, timer, and work reports.</td></tr>
+            <tr><td class="name">hub</td><td class="num">2</td><td>Race-safe take/assign queue &mdash; two employees can't accidentally claim the same job.</td></tr>
+            <tr><td class="name">global-jobs</td><td class="num">1</td><td>Cross-department job hub for the multi-team ceiling.</td></tr>
+            <tr><td class="name">department-jobs</td><td class="num">2</td><td>Admin queue of department-scoped jobs by department.</td></tr>
+            <tr><td class="name">clients</td><td class="num">2</td><td>Client list; per-client detail with environment notes, billing tab, health snapshots.</td></tr>
+            <tr><td class="name">billing</td><td class="num">2</td><td>Accounts receivable, aging strip, hourly-bank burn, and the reminders review queue.</td></tr>
+            <tr><td class="name">receipts</td><td class="num">2</td><td>Draft / preview / finalize tax invoices, receipts, credit notes. Finalize is locked in production.</td></tr>
+            <tr><td class="name">financial-documents</td><td class="num">1</td><td>Placeholder for Wave 3 ingestion module.</td></tr>
+            <tr><td class="name">knowledge</td><td class="num">8</td><td>Company knowledge base &mdash; list, review queue, article view/edit, AI structuring, revisions.</td></tr>
+            <tr><td class="name">communication</td><td class="num">3</td><td>Department channels, per-channel feed, per-post thread.</td></tr>
+            <tr><td class="name">statistics</td><td class="num">3</td><td>Admin KPIs; personal self-view; the email-to-job operational stats.</td></tr>
+            <tr><td class="name">search</td><td class="num">1</td><td>Global full-text search across jobs, clients, knowledge.</td></tr>
+            <tr><td class="name">admin</td><td class="num">1</td><td>Single tabbed console: users, tags, feature flags, audit log, company settings, email templates.</td></tr>
+            <tr><td class="name">agent</td><td class="num">1</td><td>Agent Control Center &mdash; scaffolded, feature-flag off.</td></tr>
+            <tr><td class="name">settings</td><td class="num">1</td><td>Per-user preferences: language, theme.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-num">3</div>
+    <div class="section-body">
+      <h2>The data behind it</h2>
+      <p>
+        44 database tables, grouped by what they're for. The count matters less
+        than the shape: every meaningful action &mdash; a job status change, a
+        receipt draft, an email attempt, a knowledge review &mdash; leaves a
+        recorded trail.
+      </p>
+      <div class="theme-grid">
+        <div class="theme-card">
+          <div class="theme-count">9</div>
+          <div class="theme-name">Billing &amp; receipts</div>
+          <div class="theme-list">payment, receipt, credit note, hourly bank, monthly billing, reminders, alert log</div>
+        </div>
+        <div class="theme-card">
+          <div class="theme-count">8</div>
+          <div class="theme-name">Work &amp; jobs</div>
+          <div class="theme-list">job, work report, time session, tags, recurring templates, SLA defaults</div>
+        </div>
+        <div class="theme-card">
+          <div class="theme-count">6</div>
+          <div class="theme-name">Communications</div>
+          <div class="theme-list">channels, posts, replies, email templates, email log</div>
+        </div>
+        <div class="theme-card">
+          <div class="theme-count">6</div>
+          <div class="theme-name">Audit &amp; ops</div>
+          <div class="theme-list">audit log, feature flags, attachments (three types)</div>
+        </div>
+        <div class="theme-card">
+          <div class="theme-count">5</div>
+          <div class="theme-name">Identity &amp; access</div>
+          <div class="theme-list">departments, roles, users, saved views, company settings</div>
+        </div>
+        <div class="theme-card">
+          <div class="theme-count">5</div>
+          <div class="theme-name">Knowledge base</div>
+          <div class="theme-list">article, revision, review, reference, tag</div>
+        </div>
+        <div class="theme-card">
+          <div class="theme-count">4</div>
+          <div class="theme-name">Clients</div>
+          <div class="theme-list">client, billing account, environment note, health snapshot</div>
+        </div>
+        <div class="theme-card">
+          <div class="theme-count">1</div>
+          <div class="theme-name">Notifications</div>
+          <div class="theme-list">notification (10 kinds: SLA, assignment, mention, knowledge, billing, alerts)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-num">4</div>
+    <div class="section-body">
+      <h2>Compliance posture &mdash; enforced in code, not on paper</h2>
+      <p>
+        The portal is written for Israeli operations. Every rule below is
+        checked at runtime by the code itself, not by a policy PDF a person has
+        to remember. Turning any single gate off does not silently loosen
+        anything &mdash; the system refuses to proceed and says why.
+      </p>
+
+      <h3>Israeli VAT and allocation thresholds</h3>
+      <div class="rule">
+        <code class="rule-code">defaultVatBasisPoints: 1800,    // 18.00%
+defaultCurrency: "ILS",
+documentLanguageDefault: "he",
+retentionYears: 7,</code>
+        <div class="rule-src">lib/compliance/country.ts · lines 78&ndash;87</div>
+      </div>
+      <div class="rule">
+        <code class="rule-code">// Tax Authority allocation threshold schedule.
+// Pre-VAT, ILS minor units, applies to tax_invoice and tax_invoice_receipt.
+2026-01-01  →  NIS 10,000 pre-VAT
+2026-06-01  →  NIS  5,000 pre-VAT</code>
+        <div class="rule-src">lib/compliance/country.ts · lines 91&ndash;102 (verbatim schedule)</div>
+      </div>
+
+      <h3>Receipts: three gates, all must be true</h3>
+      <p>
+        No receipt PDF renders clean until every one of these is on. Any
+        single one being off keeps the DRAFT watermark on every page and
+        blocks finalize.
+      </p>
+      <div class="gate-block">
+        <div class="gate">
+          <div class="gate-title">Gate 1 · Env var</div>
+          <div class="gate-desc"><code>ALLOW_PRODUCTION_ISSUANCE=true</code> on the server itself. Ops-level.</div>
+        </div>
+        <div class="gate">
+          <div class="gate-title">Gate 2 · Flag</div>
+          <div class="gate-desc"><code>receipt_finalize_enabled=true</code> in the database. Admin-controlled.</div>
+        </div>
+        <div class="gate">
+          <div class="gate-title">Gate 3 · Flag</div>
+          <div class="gate-desc"><code>pdf_watermark_disabled=true</code> confirms a real accountant reviewed the templates.</div>
+        </div>
+      </div>
+      <div class="rule">
+        <code class="rule-code">const clean = await isCleanProductionIssuance();
+const watermarked = !clean;</code>
+        <div class="rule-src">lib/pdf/render.ts · lines 112&ndash;113 &mdash; every PDF renders watermarked unless all three pass</div>
+      </div>
+
+      <h3>Wave 2 email: test mode only, always</h3>
+      <p>
+        The most recent wave added late-payment reminders and manual client
+        contact. In V2 no email leaves the building. Even if every gate is
+        flipped on, the code throws:
+      </p>
+      <div class="rule">
+        <code class="rule-code">throw new Error("real email provider not wired in V2");</code>
+        <div class="rule-src">lib/email/transport.ts · line 124</div>
+      </div>
+      <p>
+        Every attempt still writes a row to <code>EmailLog</code> with
+        <code>testMode = true, status = queued</code>. The board sees the full
+        content the client would have received; the client never does.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-num">5</div>
+    <div class="section-body">
+      <h2>Twenty-four feature flags, all default off</h2>
+      <p>
+        Every new capability lands behind a flag. Nothing self-activates in
+        production. The flags below are the discipline &mdash; they are why
+        Wave 2 could ship the reminder engine, the alert system, the manual
+        contact dialog, and the template editor all at once without anything
+        reaching a real client.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Flag</th>
+              <th>What it gates</th>
+              <th style="width:5rem">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="mono">receipt_finalize_enabled</td><td>Allow finalizing invoices, receipts, credit notes. Locked until accountant sign-off.</td><td><span class="chip warn">Locked</span></td></tr>
+            <tr><td class="mono">pdf_watermark_disabled</td><td>Removes the DRAFT watermark. Only meaningful with the other two gates on.</td><td><span class="chip warn">Locked</span></td></tr>
+            <tr><td class="mono">billing_email_real_send</td><td>Production email transport. Wave 2 code refuses to transmit regardless.</td><td><span class="chip warn">Locked</span></td></tr>
+            <tr><td class="mono">billing_reminders_enabled</td><td>Late-payment reminder cron + admin review UI.</td><td><span class="chip">Ready</span></td></tr>
+            <tr><td class="mono">hourly_bank_alerts_enabled</td><td>Bank-at-90% cron + dashboard strip + admin+client email.</td><td><span class="chip">Ready</span></td></tr>
+            <tr><td class="mono">manual_contact_enabled</td><td>The compose-email-to-client dialog on billing and payment surfaces.</td><td><span class="chip">Ready</span></td></tr>
+            <tr><td class="mono">knowledge_articles_enabled</td><td>The whole Knowledge module. When off, /knowledge 404s.</td><td><span class="chip">Ready</span></td></tr>
+            <tr><td class="mono">knowledge_ai_structuring_enabled</td><td>AI-assisted article structuring (dry-run only in V1).</td><td><span class="chip warn">Locked</span></td></tr>
+            <tr><td class="mono">email_templates_admin_ui</td><td>Admin editor for the 5 bilingual email templates.</td><td><span class="chip">Ready</span></td></tr>
+            <tr><td class="mono">saved_views_enabled</td><td>Personal Saved Views on jobs, clients, billing.</td><td><span class="chip mute">Off</span></td></tr>
+            <tr><td class="mono">fts_search_enabled</td><td>Global full-text search UI. API stays callable.</td><td><span class="chip mute">Off</span></td></tr>
+            <tr><td class="mono">notifications_enabled</td><td>The notification bell and the trigger writers behind it.</td><td><span class="chip mute">Off</span></td></tr>
+            <tr><td class="mono">sla_breach_automation_enabled</td><td>SLA-breach scan cron.</td><td><span class="chip mute">Off</span></td></tr>
+            <tr><td class="mono">recurring_jobs_enabled</td><td>Recurring job templates and the nightly cron that materializes them.</td><td><span class="chip mute">Off</span></td></tr>
+            <tr><td class="mono">aging_buckets_enabled</td><td>4-bucket AR aging strip on billing and admin dashboard.</td><td><span class="chip mute">Off</span></td></tr>
+            <tr><td class="mono">hourly_burn_enabled</td><td>Hourly-bank burn-rate projections on client billing.</td><td><span class="chip mute">Off</span></td></tr>
+            <tr><td class="mono">client_health_snapshots_enabled</td><td>Weekly per-client health snapshots.</td><td><span class="chip mute">Off</span></td></tr>
+            <tr><td class="mono">attachments_enabled</td><td>S3-backed file uploads. Off until storage is provisioned per environment.</td><td><span class="chip mute">Off</span></td></tr>
+            <tr><td class="mono">statistics_me_enabled</td><td>/statistics/me for employees.</td><td><span class="chip mute">Off</span></td></tr>
+            <tr><td class="mono">job_detail_tabs_enabled</td><td>New tabbed layout on job detail (Overview / Timeline / Related / Files).</td><td><span class="chip mute">Off</span></td></tr>
+            <tr><td class="mono">financial_documents_module</td><td>Wave 3 ingestion module.</td><td><span class="chip mute">Off</span></td></tr>
+            <tr><td class="mono">agent_control_center_module</td><td>Placeholder for a future agent surface.</td><td><span class="chip mute">Off</span></td></tr>
+            <tr><td class="mono">saved_views_team_shared_enabled</td><td>Allow marking a Saved View as team-shared.</td><td><span class="chip mute">Off</span></td></tr>
+            <tr><td class="mono">knowledge_ai_provider_verified</td><td>Set true only after vendor + redaction review. Required for real AI call.</td><td><span class="chip warn">Locked</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:1rem;color:var(--slate);font-size:0.85rem;">
+        <span class="chip">Ready</span> the capability is built and can be turned on for a pilot.
+        &nbsp;<span class="chip mute">Off</span> built or partial, awaiting a decision.
+        &nbsp;<span class="chip warn">Locked</span> off by design until external sign-off.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-num">6</div>
+    <div class="section-body">
+      <h2>Where the quality bar sits</h2>
+      <p>
+        The build is green.
+      </p>
+      <div class="stat-strip">
+        <div class="stat">
+          <span class="stat-num">867</span>
+          <span class="stat-label">Tests passing</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">0</span>
+          <span class="stat-label">Failing</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">120</span>
+          <span class="stat-label">Test files</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">+115</span>
+          <span class="stat-label">Added in Wave 2</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">3</span>
+          <span class="stat-label">Layers</span>
+        </div>
+      </div>
+      <p style="margin-top:1.5rem">
+        Three layers: unit tests around the domain logic (state machines, VAT
+        math, PDF gate checks); integration tests behind every API route;
+        end-to-end tests for the flows a person actually walks &mdash; taking
+        a job, drafting a receipt, approving a reminder. The typechecker and
+        linter both pass with zero warnings.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-num">7</div>
+    <div class="section-body">
+      <h2>What we shipped, in order</h2>
+      <p>
+        The record of what was designed, reviewed, built, and merged over the
+        last four months. Every bullet corresponds to a merged branch and a
+        written review document in <code>/docs/</code>.
+      </p>
+      <div class="timeline">
+        <div class="timeline-item done">
+          <div class="timeline-date">May 2026 &middot; original audit</div>
+          <div class="timeline-title">Portal audit &amp; three-phase plan</div>
+          <div class="timeline-note">
+            Seven-agent audit team (architect, engineering lead, data engineer, data scientist, evaluation, experiment designer, PM). Baseline: 22 pages, 38 API routes, 35 models. Approval gate before implementation.
+          </div>
+        </div>
+        <div class="timeline-item done">
+          <div class="timeline-date">May 2026 &middot; phases 1&ndash;3</div>
+          <div class="timeline-title">Post-pilot expansion</div>
+          <div class="timeline-note">
+            SLA automation, attachments, receipts foundations, recurring jobs, knowledge base scaffolding, health snapshots.
+          </div>
+        </div>
+        <div class="timeline-item done">
+          <div class="timeline-date">May 2026 &middot; knowledge sprint</div>
+          <div class="timeline-title">Knowledge System &mdash; 10-day planning sprint</div>
+          <div class="timeline-note">
+            Eleven role personas. Current-state audit, product strategy, review workflow, DB schema plan, UX plan, security &amp; permissions matrix, quality-control plan, phased V1 / V2 / V3 rollout.
+          </div>
+        </div>
+        <div class="timeline-item done">
+          <div class="timeline-date">May 2026 &middot; knowledge V1</div>
+          <div class="timeline-title">Knowledge V1 shipped</div>
+          <div class="timeline-note">
+            Five forward-only migrations. Twelve library modules. Twelve API routes. Approved by engineering, QA, security, evaluation, PM, product design.
+          </div>
+        </div>
+        <div class="timeline-item done">
+          <div class="timeline-date">May 2026 &middot; debug sweep</div>
+          <div class="timeline-title">Knowledge debug sprint &mdash; five blockers, twelve more bugs</div>
+          <div class="timeline-note">
+            User-visible symptom: /knowledge returned 500. Root cause: a <code>.gitignore</code> rule had silently dropped every Prisma migration since the initial commit. Two-line patch, one consolidated migration, all tests green.
+          </div>
+        </div>
+        <div class="timeline-item done">
+          <div class="timeline-date">May 2026 &middot; billing audit</div>
+          <div class="timeline-title">Billing / Receipts / Financial Documents audit</div>
+          <div class="timeline-note">
+            Israel compliance research with cited sources. Internal senior-accountant approval agent. Three-gate lock model established. Wave 1 authorized.
+          </div>
+        </div>
+        <div class="timeline-item done">
+          <div class="timeline-date">May 2026 &middot; billing wave 1</div>
+          <div class="timeline-title">Foundations + critical bug fixes</div>
+          <div class="timeline-note">
+            VAT split on payments, credit-note flow, exchange-rate carry, allocation-threshold country profile.
+          </div>
+        </div>
+        <div class="timeline-item done">
+          <div class="timeline-date">May 2026 &middot; billing wave 2 (current)</div>
+          <div class="timeline-title">Reminders, hourly-bank alerts, manual contact, template editor</div>
+          <div class="timeline-note">
+            Late-payment reminder engine (days/weeks rules, admin-first review, auto-send policy). Hourly-bank 90% alert. Manual client contact from three surfaces. Editable bilingual email templates. Everything test-mode only. Signed off by all eight reviewers.
+          </div>
+        </div>
+        <div class="timeline-item pending">
+          <div class="timeline-date">next &middot; wave 3</div>
+          <div class="timeline-title">Financial Documents V1</div>
+          <div class="timeline-note">Estimated 3&ndash;5 engineering days, described below.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-num">8</div>
+    <div class="section-body">
+      <h2>Roadmap: the next three waves</h2>
+      <p>
+        The billing implementation plan carries the last three waves to
+        completion. Estimates are one engineer full-time.
+      </p>
+      <div class="roadmap">
+        <div class="wave">
+          <div class="wave-tag">Wave 3 · next</div>
+          <div class="wave-title">Financial Documents V1</div>
+          <div class="wave-size">3&ndash;5 engineering days</div>
+          <div class="wave-body">
+            New <code>FinancialDocument</code> model. Upload with presigned S3 URL, list, detail, patch, delete. Link picker to attach documents to a client, payment, or receipt. Full audit trail on every mutation. Tests at three levels: unit, per-endpoint contract, end-to-end upload &rarr; review &rarr; link.
+          </div>
+        </div>
+        <div class="wave">
+          <div class="wave-tag">Wave 4</div>
+          <div class="wave-title">Country toggle &amp; polish</div>
+          <div class="wave-size">1&ndash;2 engineering days</div>
+          <div class="wave-body">
+            Country chip in the admin header. Country profile read on every receipt and financial-document write. Hebrew RTL pass over the new pages. Cross-module deep links. Split the 936-line client billing tab into four focused files.
+          </div>
+        </div>
+        <div class="wave">
+          <div class="wave-tag">Wave 5</div>
+          <div class="wave-title">Accountant flip &amp; smoke</div>
+          <div class="wave-size">operational, not eng-days</div>
+          <div class="wave-body">
+            Accountant verifies the live render of a draft, a finalized invoice, a credit note, and the allocation flow in a sandbox environment. Admin flips <code>receipt_finalize_enabled</code> to true in production. Pilot a single low-value real invoice end-to-end. Document the rollback: set the flag back to false.
+          </div>
+        </div>
+      </div>
+      <p style="margin-top:1.5rem;color:var(--slate);font-size:0.9rem;">
+        Also in the follow-up backlog: real email provider integration behind
+        the three-gate lock; delivery and bounce webhooks; per-client language
+        preference; Knowledge V2 (senior-employee reviewer role, real LLM
+        integration after vendor sign-off, cost quotas).
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-num">9</div>
+    <div class="section-body">
+      <h2>The guardrails that stay on</h2>
+      <p>
+        Nothing on the roadmap loosens any of these. They are the difference
+        between an internal system that can move fast and one that could
+        embarrass us with a client.
+      </p>
+      <ul class="guardrails">
+        <li>No real client emails go out in Wave 2. The transport throws even if the flags are flipped.</li>
+        <li>No production receipts finalized. The DRAFT watermark stays on every PDF until a real accountant signs off on templates and numbering.</li>
+        <li>Every billing mutation is admin-only. Employees see billing; they can't change it.</li>
+        <li>Every mutation writes an audit row in the same transaction as the change &mdash; not after, not later, not maybe.</li>
+        <li>Every new module ships behind a feature flag that defaults off.</li>
+        <li>Every rate-limited surface has a rate limit &mdash; the manual-contact dialog is 30 sends per 15 minutes per IP.</li>
+        <li>Fail-loud on unsupported jurisdiction: the country profile throws if a non-Israel country is passed. No silent defaults.</li>
+        <li>Migrations are forward-only and committed to git. The May debug sweep proved why: one missing migration is one production outage.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <div>Skyware Internal Portal &middot; Board briefing</div>
+    <div>Generated 2026-08-10 &middot; docs/board-briefing-2026-08/</div>
+  </footer>
+</div>

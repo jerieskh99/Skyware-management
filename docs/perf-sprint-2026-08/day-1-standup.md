@@ -123,3 +123,15 @@ Verified end-to-end in prod: CSRF → credentials login → 302 to /dashboard �
 - **Fast daily use / demos / testing:** `pnpm serve` (build once, then serves production). Currently running on :3000.
 - **Active development (live reload on edit):** `pnpm dev`.
 - Caveat: in production mode, code edits do NOT appear until you re-run `pnpm serve`.
+
+## Phase B execution (Day 2)
+
+CEO approved: commit Day 1, then start Phase B. Ran two independent lanes in parallel (disjoint files), then the ClientBillingTab split solo. All committed on `team1`, all verified (typecheck + 868 tests each).
+
+- **Caching (Marco)** — `5d70e78`. `getFeatureFlag`/`getFeatureFlags` now cross-request cached via `unstable_cache` (tag `feature-flags`, 300s TTL) composed with the React `cache()` request-dedup; admin flag-toggle calls `revalidateTag` so flips are instant. `/api/statistics` snapshot cached 60s (tag `stats`). Narrow fallback reads straight through outside a request context (cron/tests) — first attempt failed 169 tests on that invariant, fixed cleanly within the assigned files.
+- **Code-splitting (Yusuf)** — `992a0cb`. Five click/flag-gated dialogs (3 receipts, 1 create-draft, 1 knowledge AI) deferred via `next/dynamic` out of their routes' initial JS.
+- **ClientBillingTab split, stage 1 (Theo)** — `1002649`. 1113-line file → 1-line re-export shim + 8 files under `client-billing/` (types, format, 5 sections, shell). Pure verbatim relocation, no behavior change. First agent run flaked (0 tool uses); re-ran clean. Verified additionally by a production rebuild + an authenticated smoke-load of the billing tab (200, full content, no server errors) since no automated test renders this component.
+
+### Phase B remaining (not yet done)
+- ClientBillingTab stages 2-4: memoize rows (kills the typing-lag re-renders), extract dialogs with local state, lazy-load them, server-side DTO trim (ship `usages` sum/count instead of full arrays).
+- B3: i18n payload reduction (52-63KB dict shipped per navigation) — namespace split. Touchier (RTL + key-parity), bigger.

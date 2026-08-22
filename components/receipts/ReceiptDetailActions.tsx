@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import type { ReceiptDocument } from "@prisma/client";
 import { Button } from "@/components/ui/button";
@@ -8,10 +9,23 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Download, FileEdit, Trash2, FileCheck, RefreshCw } from "lucide-react";
 import { useT } from "@/lib/i18n/client";
 import { useToast } from "@/components/ui/toast";
-import { EditDraftDrawer } from "./EditDraftDrawer";
-import { FinalizeConfirmDialog } from "./FinalizeConfirmDialog";
-import { IssueCreditNoteDialog } from "./IssueCreditNoteDialog";
 import { RequestAllocationButton } from "./RequestAllocationButton";
+
+// Heavy, click-gated dialogs: split out of the receipt detail route's initial
+// bundle. They render nothing until their `open` state is toggled, so a null
+// loading state keeps the visible behavior identical.
+const EditDraftDrawer = dynamic(
+  () => import("./EditDraftDrawer").then((m) => m.EditDraftDrawer),
+  { ssr: false },
+);
+const FinalizeConfirmDialog = dynamic(
+  () => import("./FinalizeConfirmDialog").then((m) => m.FinalizeConfirmDialog),
+  { ssr: false },
+);
+const IssueCreditNoteDialog = dynamic(
+  () => import("./IssueCreditNoteDialog").then((m) => m.IssueCreditNoteDialog),
+  { ssr: false },
+);
 
 interface Props {
   receipt: ReceiptDocument;

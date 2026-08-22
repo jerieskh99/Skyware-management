@@ -1,10 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/i18n/client";
-import { CreateDraftDialog, type ClientOption } from "./CreateDraftDialog";
+import type { ClientOption } from "./CreateDraftDialog";
+
+// Click-gated dialog: kept out of the receipts list route's initial bundle and
+// loaded on demand. It renders nothing until `open` is set, so no fallback.
+const CreateDraftDialog = dynamic(
+  () => import("./CreateDraftDialog").then((m) => m.CreateDraftDialog),
+  { ssr: false },
+);
 
 interface Props {
   clients: ClientOption[];

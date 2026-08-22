@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, Trash2 } from "lucide-react";
@@ -19,8 +20,15 @@ import { RescindButton } from "./RescindButton";
 import { ReVerifyButton } from "./ReVerifyButton";
 import { UnApproveButton } from "./UnApproveButton";
 import { UnArchiveButton } from "./UnArchiveButton";
-import { AiStructureDialog } from "./AiStructureDialog";
 import { ReviewDecisionDialog } from "./ReviewDecisionDialog";
+
+// AI structuring is flag-gated and only mounts for draft articles. Defer the
+// import so this dialog (and its trigger) leaves the article detail route's
+// initial bundle instead of shipping eagerly and rendering merely disabled.
+const AiStructureDialog = dynamic(
+  () => import("./AiStructureDialog").then((m) => m.AiStructureDialog),
+  { ssr: false },
+);
 
 interface Props {
   slug: string;

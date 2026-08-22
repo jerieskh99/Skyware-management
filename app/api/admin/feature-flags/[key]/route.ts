@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, forbidden, badRequest, notFound } from "@/lib/api-utils";
 import { isAdmin } from "@/lib/permissions";
 import { writeAudit } from "@/lib/audit";
+import { FEATURE_FLAGS_TAG } from "@/lib/feature-flags";
 
 interface Params { params: Promise<{ key: string }> }
 
@@ -37,6 +39,10 @@ export async function PATCH(req: Request, { params }: Params) {
     });
     return f;
   });
+
+  // Purge the cross-request feature-flag cache so the toggle takes effect on
+  // the next navigation instead of waiting out the TTL backstop.
+  revalidateTag(FEATURE_FLAGS_TAG);
 
   return NextResponse.json({ key: updated.key, enabled: updated.enabled });
 }

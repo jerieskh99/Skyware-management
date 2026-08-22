@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 
 // Security headers applied to all routes.
@@ -27,11 +28,30 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: "4mb",
     },
+    // Tree-shake Radix barrel imports so each route ships only the entry
+    // points it uses. lucide-react and date-fns are deliberately omitted:
+    // Next 15 already includes them in its built-in optimize list, so listing
+    // them here would be a no-op.
+    optimizePackageImports: [
+      "@radix-ui/react-avatar",
+      "@radix-ui/react-dialog",
+      "@radix-ui/react-dropdown-menu",
+      "@radix-ui/react-label",
+      "@radix-ui/react-separator",
+      "@radix-ui/react-slot",
+      "@radix-ui/react-tooltip",
+    ],
   },
   // Puppeteer ships Node-only deps (fs, child_process, ws). If Next.js tries
   // to bundle it into the server bundle, webpack fails to resolve. Mark it
   // as external so it loads from node_modules at runtime in the API route.
   serverExternalPackages: ["puppeteer", "puppeteer-core", "@puppeteer/browsers"],
+  // Pin Turbopack workspace root to this project. Without this, Next infers
+  // it from the nearest lockfile and picks up `/Users/jeries/package-lock.json`
+  // (a stray lockfile in $HOME) instead of our `pnpm-lock.yaml`.
+  turbopack: {
+    root: path.resolve(__dirname),
+  },
   images: {
     remotePatterns: [],
   },

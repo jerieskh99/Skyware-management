@@ -8,7 +8,17 @@ export default function QueryProvider({ children }: { children: React.ReactNode 
     () =>
       new QueryClient({
         defaultOptions: {
-          queries: { staleTime: 10_000, retry: 1 },
+          // refetchOnWindowFocus defaults to true in React Query v5. Combined
+          // with a short staleTime, every window refocus refetched all mounted
+          // queries at once (the "focus-refetch storm"). Disabling it and
+          // lengthening staleTime keeps navigation and refocus quiet; the
+          // handful of live views that need freshness use their own
+          // refetchInterval.
+          queries: {
+            staleTime: 30_000,
+            retry: 1,
+            refetchOnWindowFocus: false,
+          },
         },
       })
   );

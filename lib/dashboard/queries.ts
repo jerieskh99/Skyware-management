@@ -37,19 +37,25 @@ function startOfISOWeek(): Date {
 // ---- Admin KPIs ----
 
 export async function getAdminKpis() {
-  const [activeJobs, reviewsCount, billingKpis] = await Promise.all([
-    prisma.job.findMany({
-      where: { status: { in: [...ACTIVE_STATUSES] } },
-      select: { id: true, assignedTimestamp: true, slaTargetMinutes: true },
-    }),
-    prisma.job.count({ where: { status: "done" } }),
-    getBillingKpis(),
-  ]);
+  const [activeCount, delayedRows, reviewsCount, billingKpis] =
+    await Promise.all([
+      prisma.job.count({ where: { status: { in: [...ACTIVE_STATUSES] } } }),
+      // Count SLA breaches directly in SQL instead of loading every active job
+      // into Node to filter in JS. Uses the same breach predicate the dashboard
+      // delayed list already relies on (getAdminDashboardLists below), so the
+      // KPI number and the list stay in agreement.
+      prisma.$queryRaw<Array<{ count: bigint }>>`
+        SELECT COUNT(*)::bigint AS count
+        FROM jobs
+        WHERE status IN ${ACTIVE_STATUSES_SQL}
+          AND assigned_timestamp IS NOT NULL
+          AND (assigned_timestamp + (sla_target_minutes || ' minutes')::interval) < NOW()
+      `,
+      prisma.job.count({ where: { status: "done" } }),
+      getBillingKpis(),
+    ]);
 
-  const activeCount = activeJobs.length;
-  const delayedCount = activeJobs.filter((j) =>
-    isDelayed(j.assignedTimestamp, j.slaTargetMinutes)
-  ).length;
+  const delayedCount = Number(delayedRows[0]?.count ?? 0);
 
   return {
     activeCount,

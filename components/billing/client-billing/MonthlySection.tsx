@@ -54,9 +54,9 @@ export function MonthlySection({ clientId, items, currency }: { clientId: string
         }),
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})) as { error?: string }; setError(d.error ?? "Failed."); return; }
-      router.refresh();
       setOpen(false);
       resetForm();
+      startTransition(() => { router.refresh(); });
     });
   }
 
@@ -72,7 +72,7 @@ export function MonthlySection({ clientId, items, currency }: { clientId: string
         return;
       }
       setDeleteTarget(null);
-      router.refresh();
+      startTransition(() => { router.refresh(); });
     });
   }
 

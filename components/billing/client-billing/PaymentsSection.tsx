@@ -111,9 +111,9 @@ export function PaymentsSection({
         body: JSON.stringify(body),
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})) as { error?: string }; setError(d.error ?? "Failed."); return; }
-      router.refresh();
       setCreateOpen(false);
       resetCreateForm();
+      startTransition(() => { router.refresh(); });
     });
   }
 

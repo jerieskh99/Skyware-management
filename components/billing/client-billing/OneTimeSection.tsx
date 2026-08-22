@@ -51,9 +51,9 @@ export function OneTimeSection({ clientId, charges }: { clientId: string; charge
         }),
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})) as { error?: string }; setError(d.error ?? "Failed."); return; }
-      router.refresh();
       setOpen(false);
       resetForm();
+      startTransition(() => { router.refresh(); });
     });
   }
 
@@ -69,7 +69,7 @@ export function OneTimeSection({ clientId, charges }: { clientId: string; charge
         return;
       }
       setDeleteTarget(null);
-      router.refresh();
+      startTransition(() => { router.refresh(); });
     });
   }
 

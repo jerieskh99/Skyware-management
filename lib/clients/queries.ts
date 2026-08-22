@@ -63,6 +63,25 @@ export async function getClientJobs(clientId: string) {
   });
 }
 
+/**
+ * Lightweight job list for the client-scoped job picker (e.g. the hourly-bank
+ * "Log usage" dialog). Returns only the fields the picker needs, most-recent
+ * first, capped for safety.
+ */
+export async function listClientJobOptions(clientId: string) {
+  return prisma.job.findMany({
+    where: { clientId },
+    select: {
+      id: true,
+      publicNumber: true,
+      title: true,
+      status: true,
+    },
+    orderBy: { createdAt: "desc" },
+    take: 200,
+  });
+}
+
 export async function getClientEnvironmentNotes(clientId: string) {
   return prisma.clientEnvironmentNote.findMany({
     where: { clientId },

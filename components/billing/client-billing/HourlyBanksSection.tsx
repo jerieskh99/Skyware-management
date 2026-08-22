@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,14 @@ import type { BankBurn } from "@/lib/billing/queries";
 import { useT } from "@/lib/i18n/client";
 import { Plus, Trash2, Clock, Mail } from "lucide-react";
 import type { HourlyBank } from "./types";
-import { fmtDate, fmtAmount } from "./format";
+import { fmtDate, fmtAmount, selectClass } from "./format";
+
+interface JobOption {
+  id: string;
+  publicNumber: string;
+  title: string;
+  status: string;
+}
 
 export function HourlyBanksSection({
   clientId,
@@ -61,6 +68,34 @@ export function HourlyBanksSection({
   const [deleteTarget, setDeleteTarget] = useState<HourlyBank | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
+  const [jobOptions, setJobOptions] = useState<JobOption[]>([]);
+  const [jobsLoading, setJobsLoading] = useState(false);
+  const [jobsLoaded, setJobsLoaded] = useState(false);
+
+  // Load this client's jobs whenever the "Log usage" dialog opens.
+  useEffect(() => {
+    if (logUsageBankId === null) return;
+    let cancelled = false;
+    setJobsLoading(true);
+    setJobsLoaded(false);
+    fetch(`/api/clients/${clientId}/jobs`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("Failed to load jobs"))))
+      .then((data: JobOption[]) => {
+        if (cancelled) return;
+        setJobOptions(data);
+        setJobsLoaded(true);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setJobOptions([]);
+        setJobsLoaded(true);
+      })
+      .finally(() => {
+        if (!cancelled) setJobsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [logUsageBankId, clientId]);
+
   function resetAddForm() { setError(null); setTotalHours(""); setPricePerHour(""); }
   function resetUsageForm() { setError(null); setUsageJobId(""); setUsageHours(""); setUsageNote(""); }
 
@@ -88,15 +123,15 @@ export function HourlyBanksSection({
         }),
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})) as { error?: string }; setError(d.error ?? "Failed."); return; }
-      router.refresh();
       setOpen(false);
       resetAddForm();
+      startTransition(() => { router.refresh(); });
     });
   }
 
   function submitLogUsage(e: React.FormEvent) {
     e.preventDefault();
-    if (!usageJobId.trim()) { setError("Job ID is required."); return; }
+    if (!usageJobId.trim()) { setError("Please select a job."); return; }
     if (!usageHours || parseFloat(usageHours) <= 0) { setError("Hours used must be greater than 0."); return; }
     setError(null);
     startTransition(async () => {
@@ -111,9 +146,9 @@ export function HourlyBanksSection({
         }),
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})) as { error?: string }; setError(d.error ?? "Failed."); return; }
-      router.refresh();
       setLogUsageBankId(null);
       resetUsageForm();
+      startTransition(() => { router.refresh(); });
     });
   }
 
@@ -129,7 +164,7 @@ export function HourlyBanksSection({
         return;
       }
       setDeleteTarget(null);
-      router.refresh();
+      startTransition(() => { router.refresh(); });
     });
   }
 
@@ -258,17 +293,32 @@ export function HourlyBanksSection({
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Log hourly usage</DialogTitle>
-            <DialogDescription>Paste the Job ID from the job detail URL.</DialogDescription>
+            <DialogDescription>Select the job this usage applies to.</DialogDescription>
           </DialogHeader>
           <form onSubmit={submitLogUsage} className="space-y-3">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Job ID *</label>
-              <Input
-                value={usageJobId}
-                onChange={(e) => setUsageJobId(e.target.value)}
-                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                disabled={isPending}
-              />
+              <label className="text-sm font-medium">Job *</label>
+              {jobsLoading ? (
+                <p className="text-sm text-muted-foreground">Loading jobs…</p>
+              ) : jobsLoaded && jobOptions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  This client has no jobs yet. Create a job for this client before logging usage.
+                </p>
+              ) : (
+                <select
+                  value={usageJobId}
+                  onChange={(e) => setUsageJobId(e.target.value)}
+                  disabled={isPending}
+                  className={selectClass}
+                >
+                  <option value="" disabled>Select a job…</option>
+                  {jobOptions.map((j) => (
+                    <option key={j.id} value={j.id}>
+                      {j.publicNumber} — {j.title} ({j.status})
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Hours used *</label>
@@ -294,7 +344,7 @@ export function HourlyBanksSection({
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <div className="flex gap-2 pt-1">
-              <Button type="submit" disabled={isPending} className="flex-1">{isPending ? "Saving..." : "Log usage"}</Button>
+              <Button type="submit" disabled={isPending || jobsLoading || jobOptions.length === 0} className="flex-1">{isPending ? "Saving..." : "Log usage"}</Button>
               <Button type="button" variant="outline" onClick={() => handleUsageOpenChange(false)} disabled={isPending}>Cancel</Button>
             </div>
           </form>

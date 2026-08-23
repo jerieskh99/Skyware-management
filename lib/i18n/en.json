@@ -365,7 +365,8 @@
       "summaryDays": "After {{amount}} day(s) overdue",
       "summaryWeeks": "After {{amount}} week(s) overdue"
     },
-    "contactClient": "Contact client"
+    "contactClient": "Contact client",
+    "update": "Update"
   },
   "billingReminders": {
     "title": "Billing reminders",

@@ -365,7 +365,8 @@
       "summaryDays": "לאחר {{amount}} ימי איחור",
       "summaryWeeks": "לאחר {{amount}} שבועות איחור"
     },
-    "contactClient": "צור קשר עם הלקוח"
+    "contactClient": "צור קשר עם הלקוח",
+    "update": "עדכן"
   },
   "billingReminders": {
     "title": "תזכורות חיוב",

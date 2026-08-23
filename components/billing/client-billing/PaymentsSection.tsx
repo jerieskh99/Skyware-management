@@ -163,7 +163,7 @@ export function PaymentsSection({
                 )}
                 {p.status !== "paid" && p.status !== "cancelled" && (
                   <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setActivePayment(p)}>
-                    <Pencil className="me-1 h-3 w-3" /> Update
+                    <Pencil className="me-1 h-3 w-3" /> {t("billing.update")}
                   </Button>
                 )}
               </div>

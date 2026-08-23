@@ -68,7 +68,7 @@ export function BillingPageActions({
           className="h-7 text-xs"
           onClick={() => setOpen(true)}
         >
-          <Pencil className="me-1 h-3 w-3" /> Update
+          <Pencil className="me-1 h-3 w-3" /> {t("billing.update")}
         </Button>
       )}
 

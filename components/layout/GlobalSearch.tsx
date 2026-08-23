@@ -201,7 +201,10 @@ export function GlobalSearch({
     <div ref={containerRef} className="relative flex-1">
       <form onSubmit={handleSubmit} className="space-y-1.5">
         {ftsEnabled && (
-          <div className="flex flex-wrap items-center gap-1.5">
+          // Scope chips are a desktop power-feature; on phones they wrapped to
+          // two rows and bloated the header. Hide below sm — mobile search just
+          // uses the default "all" scope.
+          <div className="hidden flex-wrap items-center gap-1.5 sm:flex">
             {chips.map((c) => (
               <button
                 key={c.value}

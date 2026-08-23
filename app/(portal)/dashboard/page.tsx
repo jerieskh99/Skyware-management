@@ -149,7 +149,7 @@ interface QuickAction {
 
 function QuickActions({ actions }: { actions: QuickAction[] }) {
   return (
-    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
       {actions.map(({ href, label, icon: Icon, hint }) => (
         <Link
           key={href + label}
@@ -210,7 +210,7 @@ function AdminDashboard({
       />
 
       {/* KPI strip */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <KpiCard
           label={t("dashboard.kpiActive")}
           value={kpis.activeCount}

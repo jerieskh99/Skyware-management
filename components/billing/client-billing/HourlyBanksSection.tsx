@@ -187,9 +187,9 @@ export function HourlyBanksSection({
             const usedMinutes = bank.usages.reduce((s, u) => s + u.minutesUsed, 0);
             return (
               <div key={bank.id} className="space-y-2 rounded-lg border p-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-medium">Purchased {fmtDate(bank.purchaseDate, locale)}</p>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     {bank.totalPaymentPlaceholder !== null && (
                       <span className="text-xs text-muted-foreground">
                         {fmtAmount(bank.totalPaymentPlaceholder, bank.currency, locale)}

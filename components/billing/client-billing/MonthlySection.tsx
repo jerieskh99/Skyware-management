@@ -92,7 +92,7 @@ export function MonthlySection({ clientId, items, currency }: { clientId: string
       ) : (
         <div className="divide-y rounded-lg border">
           {items.map((item) => (
-            <div key={item.id} className="flex items-center justify-between px-4 py-3 text-sm">
+            <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
               <div className="min-w-0">
                 <p className="font-medium">{item.serviceName}</p>
                 <p className="text-xs text-muted-foreground">

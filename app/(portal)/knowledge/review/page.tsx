@@ -87,7 +87,7 @@ export default async function ReviewQueuePage({ searchParams }: Props) {
         description={t("knowledge.review.subtitle")}
       />
 
-      <div className="flex flex-wrap items-center gap-1.5 border-b text-sm">
+      <div className="flex items-center gap-1.5 overflow-x-auto border-b text-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {tabs.map((tt) => {
           const active = tab === tt.key;
           return (
@@ -95,7 +95,7 @@ export default async function ReviewQueuePage({ searchParams }: Props) {
               key={tt.key}
               href={tabHref(tt.key)}
               aria-current={active ? "page" : undefined}
-              className={`-mb-px border-b-2 px-3 py-2 font-medium transition-colors ${
+              className={`-mb-px shrink-0 whitespace-nowrap border-b-2 px-3 py-2 font-medium transition-colors ${
                 active
                   ? "border-brand text-brand"
                   : "border-transparent text-muted-foreground hover:text-foreground"

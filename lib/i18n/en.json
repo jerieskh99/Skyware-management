@@ -31,7 +31,8 @@
     "groupAdmin": "Admin",
     "groupSystem": "System",
     "brandTagline": "Operations",
-    "adminBadge": "Admin"
+    "adminBadge": "Admin",
+    "openMenu": "Open menu"
   },
   "auth": {
     "login": "Log in",

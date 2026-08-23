@@ -122,15 +122,15 @@ export default async function AdminPage({ searchParams }: Props) {
         description={t("admin.description")}
       />
 
-      {/* Tab nav */}
-      <div className="flex flex-wrap gap-1 overflow-x-auto border-b">
+      {/* Tab nav — scrolls horizontally on narrow screens instead of clipping. */}
+      <div className="flex gap-1 overflow-x-auto border-b [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {TAB_KEYS.map(({ key, icon: Icon }) => {
           const isActive = tab === key;
           return (
             <Link
               key={key}
               href={`/admin?tab=${key}`}
-              className={`inline-flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors ${
+              className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition-colors ${
                 isActive
                   ? "border-brand text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground"

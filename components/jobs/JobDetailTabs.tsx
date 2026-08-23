@@ -28,7 +28,7 @@ export function JobDetailTabs({ jobId, active, from }: Props) {
       aria-label="Job detail sections"
       data-testid="job-detail-tabs"
     >
-      <div className="flex gap-1">
+      <div className="flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {TABS.map((tab) => {
           const selected = tab.key === active;
           const href = `/my-jobs/${jobId}?tab=${tab.key}&from=${encodeURIComponent(from)}`;
@@ -40,7 +40,7 @@ export function JobDetailTabs({ jobId, active, from }: Props) {
               aria-selected={selected}
               prefetch={false}
               className={cn(
-                "relative -mb-px border-b-2 px-3 py-2 text-sm transition-colors",
+                "relative -mb-px shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-sm transition-colors",
                 selected
                   ? "border-foreground font-medium text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground"

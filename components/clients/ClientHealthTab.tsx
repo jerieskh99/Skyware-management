@@ -89,7 +89,8 @@ export async function ClientHealthTab({ clientId }: Props) {
             {t("clientHealth.trendEmpty")}
           </p>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="px-4 py-2 text-start font-medium">{t("clientHealth.colWeek")}</th>
@@ -106,7 +107,8 @@ export async function ClientHealthTab({ clientId }: Props) {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         )}
       </div>
     </div>

@@ -43,7 +43,12 @@ export default async function PortalLayout({
               billingRemindersEnabled={billingRemindersEnabled}
             />
             <div className="flex flex-1 flex-col overflow-hidden">
-              <Header user={user} />
+              <Header
+                user={user}
+                statisticsMeEnabled={statisticsMeEnabled}
+                knowledgeEnabled={knowledgeEnabled}
+                billingRemindersEnabled={billingRemindersEnabled}
+              />
               {/* pb-16 reserves space so content isn't hidden behind TimerBar */}
               <main className="scrollbar-thin flex-1 overflow-y-auto px-4 py-6 pb-16 sm:px-6 lg:px-8">
                 <div className="mx-auto w-full max-w-6xl">{children}</div>

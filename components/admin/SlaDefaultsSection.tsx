@@ -62,6 +62,7 @@ export function SlaDefaultsSection({ rows }: Props) {
       )}
 
       <div className="rounded-lg border">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="border-b bg-muted/30">
             <tr>
@@ -119,6 +120,7 @@ export function SlaDefaultsSection({ rows }: Props) {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       <p className="text-xs text-muted-foreground">{t("admin.sla.severityNote")}</p>

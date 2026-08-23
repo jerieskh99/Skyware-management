@@ -1,30 +1,42 @@
 import type { SessionUser } from "@/lib/permissions";
 import { LanguageToggle } from "./LanguageToggle";
 import { GlobalSearch } from "./GlobalSearch";
+import { MobileNav } from "./MobileNav";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { getT } from "@/lib/i18n/server";
 import { getFeatureFlags } from "@/lib/feature-flags";
 
 interface Props {
   user: SessionUser;
+  /** Nav feature flags, forwarded to the mobile drawer so it mirrors the sidebar. */
+  statisticsMeEnabled?: boolean;
+  knowledgeEnabled?: boolean;
+  billingRemindersEnabled?: boolean;
 }
 
-export async function Header({ user }: Props) {
+export async function Header({
+  user,
+  statisticsMeEnabled = false,
+  knowledgeEnabled = false,
+  billingRemindersEnabled = false,
+}: Props) {
   const [{ locale, t }, flags] = await Promise.all([
     getT(),
-    getFeatureFlags([
-      "fts_search_enabled",
-      "notifications_enabled",
-      "knowledge_articles_enabled",
-    ]),
+    getFeatureFlags(["fts_search_enabled", "notifications_enabled"]),
   ]);
   const ftsEnabled = flags["fts_search_enabled"] ?? false;
   const notificationsEnabled = flags["notifications_enabled"] ?? false;
-  const knowledgeEnabled = flags["knowledge_articles_enabled"] ?? false;
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur-sm">
-      <div className="max-w-xl flex-1">
+    <header className="flex min-h-14 shrink-0 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur-sm">
+      <MobileNav
+        user={user}
+        statisticsMeEnabled={statisticsMeEnabled}
+        knowledgeEnabled={knowledgeEnabled}
+        billingRemindersEnabled={billingRemindersEnabled}
+      />
+
+      <div className="min-w-0 max-w-xl flex-1">
         <GlobalSearch
           ftsEnabled={ftsEnabled}
           isAdmin={user.isAdmin}

@@ -266,7 +266,7 @@ export function RecurringTemplatesSection({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">{t("admin.recurring.intro")}</p>
         <Button size="sm" onClick={openCreate} disabled={isPending}>
           <Plus className="me-1.5 h-3.5 w-3.5" /> {t("admin.recurring.addTemplate")}

@@ -101,8 +101,9 @@ export default async function ClientDetailPage({ params, searchParams }: Props) 
       {/* Header */}
       <ClientDetailHeader client={client} />
 
-      {/* Tab nav */}
-      <div className="flex gap-1 border-b">
+      {/* Tab nav — scrolls horizontally on narrow screens instead of clipping
+          the trailing tabs (Environment/Health were unreachable below ~800px). */}
+      <div className="flex gap-1 overflow-x-auto border-b [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
@@ -110,7 +111,7 @@ export default async function ClientDetailPage({ params, searchParams }: Props) 
             <Link
               key={tab.key}
               href={`/clients/${id}?tab=${tab.key}`}
-              className={`inline-flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+              className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
                 isActive
                   ? "border-primary text-primary"
                   : "border-transparent text-muted-foreground hover:text-foreground"

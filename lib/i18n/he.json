@@ -31,7 +31,8 @@
     "groupAdmin": "ניהול",
     "groupSystem": "מערכת",
     "brandTagline": "תפעול",
-    "adminBadge": "מנהל"
+    "adminBadge": "מנהל",
+    "openMenu": "פתח תפריט"
   },
   "auth": {
     "login": "כניסה",

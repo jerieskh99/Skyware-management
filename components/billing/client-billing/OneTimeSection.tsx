@@ -89,7 +89,7 @@ export function OneTimeSection({ clientId, charges }: { clientId: string; charge
       ) : (
         <div className="divide-y rounded-lg border">
           {charges.map((c) => (
-            <div key={c.id} className="flex items-center justify-between px-4 py-3 text-sm">
+            <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
               <div className="min-w-0">
                 <Link href={`/my-jobs/${c.job.id}`} className="font-medium hover:underline">
                   {c.job.publicNumber} · {c.jobNameSnapshot}
